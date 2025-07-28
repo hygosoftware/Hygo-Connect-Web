@@ -57,13 +57,22 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   const handleLogout = async () => {
     try {
       console.log('Logout clicked');
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userId');
+
+      // Import AuthService dynamically to avoid circular dependencies
+      const { AuthService } = await import('../../services/auth');
+      await AuthService.logout();
+
       window.location.href = '/login';
       onClose();
     } catch (error) {
       console.error('Logout failed:', error);
+      // Fallback: clear tokens manually if service fails
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('userInfo');
+      window.location.href = '/login';
+      onClose();
     }
   };
 

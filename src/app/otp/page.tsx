@@ -38,10 +38,31 @@ const OTPPageContent: React.FC = () => {
     );
   }
 
-  const handleOTPSubmit = (otp: string) => {
-    console.log('OTP submitted:', otp, 'for email:', email);
-    // Here you would typically handle the OTP verification
-    // For now, we'll just log it
+  const handleOTPSubmit = async (otp: string) => {
+    if (!email) {
+      console.error('No email found for OTP verification');
+      return;
+    }
+
+    try {
+      console.log('OTP submitted:', otp, 'for email:', email);
+
+      // Import AuthService dynamically
+      const { AuthService } = await import('../../services/auth');
+
+      // Verify OTP
+      const response = await AuthService.verifyOTP(email, otp);
+
+      if (response && response.success) {
+        console.log('OTP verification successful, navigating to home...');
+        // Navigate to home page after successful verification
+        window.location.href = '/';
+      } else {
+        console.error('OTP verification failed:', response);
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+    }
   };
 
   const handleResend = () => {

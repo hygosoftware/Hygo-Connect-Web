@@ -72,16 +72,23 @@ const SideMenu: React.FC<SideMenuProps> = ({
   const handleLogout = async () => {
     try {
       console.log('Logout clicked');
-      // Clear any stored data
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('userId');
+
+      // Import AuthService dynamically to avoid circular dependencies
+      const { AuthService } = await import('../../services/authService');
+      await AuthService.logout();
 
       // Navigate to login page
       window.location.href = '/login';
       onClose();
     } catch (error) {
       console.error('Logout failed:', error);
+      // Fallback: clear tokens manually if service fails
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userId');
+      localStorage.removeItem('userInfo');
+      window.location.href = '/login';
+      onClose();
     }
   };
 

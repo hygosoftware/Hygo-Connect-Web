@@ -100,42 +100,33 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           borderRight: '1px solid rgba(255, 255, 255, 0.1)'
         }}
       >
-        {/* Sidebar Header */}
-        <div
-          className="p-4 border-b border-blue-400"
-          style={{
-            background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%)',
-            boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 2px 8px rgba(0, 0, 0, 0.1)'
-          }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <div
-                className={`${isSidebarExpanded ? 'h-12 w-12' : 'h-10 w-10'} rounded-full bg-white flex items-center justify-center border-2 border-blue-300 transition-all duration-300`}
-                style={{
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.8)',
-                  background: 'linear-gradient(145deg, #ffffff 0%, #f0f9ff 100%)'
-                }}
-              >
-                <span className="text-blue-800 font-bold text-lg">H</span>
-              </div>
-              {isSidebarExpanded && (
-                <div className="ml-3">
-                  <h3 className="text-lg font-bold text-white">Hygo</h3>
-                  <p className="text-sm text-blue-200">Health Platform</p>
-                </div>
-              )}
-            </div>
+        {/* Clickable User Profile Section */}
+        {isSidebarExpanded ? (
+          <div className="p-4 border-b border-blue-400">
             <button
               onClick={handleSidebarToggle}
-              className="p-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="w-full flex items-center space-x-3 hover:bg-blue-700/30 rounded-lg p-2 transition-colors duration-200"
             >
-              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={isSidebarExpanded ? "M11 19l-7-7 7-7M21 12H3" : "M13 5l7 7-7 7M5 12h14"} />
-              </svg>
+              <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform duration-200">
+                <span className="text-blue-800 font-bold text-lg">JD</span>
+              </div>
+              <div className="text-left">
+                <h3 className="text-white font-semibold">John Doe</h3>
+                <p className="text-blue-200 text-sm">Click to collapse</p>
+              </div>
             </button>
           </div>
-        </div>
+        ) : (
+          <div className="p-3 border-b border-blue-400 flex justify-center">
+            <button
+              onClick={handleSidebarToggle}
+              className="h-10 w-10 rounded-full bg-white flex items-center justify-center hover:scale-110 transition-all duration-200 hover:shadow-lg"
+              title="Click to expand"
+            >
+              <span className="text-blue-800 font-bold">JD</span>
+            </button>
+          </div>
+        )}
 
         {/* Navigation Items */}
         <div className="py-2 flex-1">
@@ -227,14 +218,16 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
           {/* Side Menu */}
           <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-xl">
             <div className="flex flex-col h-full">
-              {/* Profile Section */}
-              <div className="p-6 bg-blue-50 border-b border-gray-200">
-                <div className="flex flex-col items-center mb-4">
-                  <div className="h-20 w-20 rounded-full bg-blue-100 flex items-center justify-center mb-2 border-2 border-blue-300">
-                    <span className="text-blue-800 font-bold text-2xl">H</span>
+              {/* Simple Mobile Profile Section */}
+              <div className="p-4 bg-blue-50 border-b border-gray-200">
+                <div className="flex items-center space-x-3">
+                  <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center border-2 border-blue-300">
+                    <span className="text-blue-800 font-bold text-xl">JD</span>
                   </div>
-                  <h3 className="text-lg font-bold text-gray-800 text-center">John Doe</h3>
-                  <p className="text-sm text-gray-500">View and edit profile</p>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800">John Doe</h3>
+                    <p className="text-gray-500 text-sm">View and edit profile</p>
+                  </div>
                 </div>
               </div>
 

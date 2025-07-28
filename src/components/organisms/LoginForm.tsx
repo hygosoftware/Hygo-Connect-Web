@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Typography } from '../atoms';
 import { EmailInput, OfflineBanner, ToastNotification } from '../molecules';
+import { AuthService } from '../../services/auth';
 
 interface LoginFormProps {
   onSubmit?: (email: string) => void;
@@ -80,21 +81,26 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       setIsLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      showToast('OTP sent successfully to email', 'success');
 
-      // Call onSubmit callback if provided
-      onSubmit?.(email);
+      // Call the actual AuthService login method
+      const response = await AuthService.login({ Email: email.trim() });
 
-      // Navigate to OTP page with email parameter
-      setTimeout(() => {
-        router.push(`/otp?email=${encodeURIComponent(email)}`);
-      }, 1000);
-    } catch (error) {
-      showToast('Failed to send OTP. Please try again.', 'error');
+      if (response && response.success) {
+        showToast('OTP sent successfully to email', 'success');
+
+        // Call onSubmit callback if provided
+        onSubmit?.(email);
+
+        // Navigate to OTP page with email parameter after a delay to ensure session is established
+        setTimeout(() => {
+          router.push(`/otp?email=${encodeURIComponent(email)}`);
+        }, 2000);
+      } else {
+        showToast(response?.message || 'Failed to send OTP. Please try again.', 'error');
+      }
+    } catch (error: any) {
+      const errorMessage = error.message || 'Failed to send OTP. Please try again.';
+      showToast(errorMessage, 'error');
     } finally {
       setIsLoading(false);
     }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Typography, BackButton } from '../atoms';
 import { OTPInputGroup, ResendSection, ToastNotification } from '../molecules';
+import { AuthService } from '../../services/auth';
 
 interface OTPFormProps {
   email?: string;
@@ -86,24 +87,30 @@ const OTPForm: React.FC<OTPFormProps> = ({
     setLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      showToast('OTP verified successfully', 'success');
+      // Call the actual AuthService verifyOTP method
+      const response = await AuthService.verifyOTP(email, otpValue);
 
-      // Call onSubmit callback if provided
-      onSubmit?.(otpValue);
+      if (response && response.success) {
+        showToast('OTP verified successfully', 'success');
 
-      // Navigate to home page after successful verification
-      setTimeout(() => {
-        showToast('Login successful! Redirecting...', 'success');
+        // Call onSubmit callback if provided
+        onSubmit?.(otpValue);
+
+        // Navigate to home page after successful verification
         setTimeout(() => {
-          router.push('/home');
+          showToast('Login successful! Redirecting...', 'success');
+          setTimeout(() => {
+            router.push('/home');
+          }, 1000);
         }, 1000);
-      }, 1000);
-      
-    } catch (error) {
-      showToast('Failed to verify OTP. Please try again.', 'error');
+      } else {
+        showToast(response?.message || 'Failed to verify OTP. Please try again.', 'error');
+      }
+
+    } catch (error: any) {
+      console.error('OTP verification error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to verify OTP. Please try again.';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }
@@ -118,20 +125,26 @@ const OTPForm: React.FC<OTPFormProps> = ({
 
     try {
       setLoading(true);
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      showToast('OTP has been resent to your email', 'success');
-      
-      // Clear current OTP
-      setOtp(Array(6).fill(''));
-      
-      // Call onResend callback if provided
-      onResend?.();
-      
-    } catch (error) {
-      showToast('Failed to resend OTP. Please try again.', 'error');
+
+      // Call the actual AuthService login method to resend OTP
+      const response = await AuthService.login({ Email: email });
+
+      if (response && response.success) {
+        showToast('OTP has been resent to your email', 'success');
+
+        // Clear current OTP
+        setOtp(Array(6).fill(''));
+
+        // Call onResend callback if provided
+        onResend?.();
+      } else {
+        showToast(response?.message || 'Failed to resend OTP. Please try again.', 'error');
+      }
+
+    } catch (error: any) {
+      console.error('Resend OTP error:', error);
+      const errorMessage = error.response?.data?.message || error.message || 'Failed to resend OTP. Please try again.';
+      showToast(errorMessage, 'error');
     } finally {
       setLoading(false);
     }

@@ -70,88 +70,69 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <div className={`px-4 pt-3 pb-6 shadow-lg bg-blue-800 ${className}`}>
-      {/* Top row with menu, location and notification */}
-      <div className="flex justify-between items-center mb-4">
-        {/* Left side - Menu and Location */}
+    <div className={`px-4 py-3 bg-blue-800 shadow-sm ${className}`}>
+      {/* Compact Header - Single Row */}
+      <div className="flex justify-between items-center">
+        {/* Left Side - Menu & Greeting */}
         <div className="flex items-center flex-1">
-          {/* Menu button - Only visible on mobile */}
+          {/* Mobile Menu Button */}
           <button
-            className="md:hidden w-10 h-10 bg-white/20 rounded-full flex items-center justify-center mr-3 hover:bg-white/30 transition-colors duration-200"
+            className="md:hidden w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-3 hover:bg-white/30 transition-colors duration-200"
             onClick={mobileMenuHandler}
           >
             <Icon name="menu" size="small" color="white" />
           </button>
 
-          {/* Location Display with Dropdown */}
+          {/* Compact Greeting */}
+          <div>
+            <Typography variant="body2" className="text-white font-semibold">
+              Hi, {userName ? userName.split(' ')[0] : 'User'}!
+            </Typography>
+            <Typography variant="caption" className="text-white/70 text-xs">
+              {new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 18 ? 'Good Afternoon' : 'Good Evening'}
+            </Typography>
+          </div>
+        </div>
+
+        {/* Right Side - Actions */}
+        <div className="flex items-center space-x-2">
+          {/* Location */}
           <button
-            className="flex items-center bg-white/15 px-3 py-2 rounded-full flex-1 max-w-48 hover:bg-white/25 transition-colors duration-200"
+            className="hidden sm:flex items-center bg-white/15 px-3 py-1.5 rounded-lg hover:bg-white/25 transition-colors duration-200"
             onClick={permissionDenied ? handleLocationPermission : handleLocationPress}
           >
-            <Icon 
-              name={permissionDenied ? "alert" : "location"} 
-              size="small" 
-              color="white" 
-              className="mr-2"
-            />
-            <Typography 
-              variant="body2" 
-              className="text-white flex-1 truncate"
-            >
-              {permissionDenied 
-                ? 'Enable Location' 
-                : (locationLoading ? 'Loading...' : (currentAddress || 'Select Location'))
-              }
+            <Icon name="location" size="small" color="white" className="mr-1" />
+            <Typography variant="caption" className="text-white text-xs truncate max-w-20">
+              {currentAddress || 'Location'}
             </Typography>
-            <Icon name="chevron-down" size="small" color="rgba(255,255,255,0.8)" className="ml-1" />
+          </button>
+
+          {/* Notification */}
+          <button
+            className="relative w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors duration-200"
+            onClick={handleNotificationPress}
+          >
+            <Icon name="notification" size="small" color="white" />
+            {unreadNotificationCount > 0 && (
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                <Typography variant="caption" className="text-white font-bold text-xs">
+                  {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount.toString()}
+                </Typography>
+              </div>
+            )}
+          </button>
+
+          {/* Book Appointment Button */}
+          <button
+            className="bg-white rounded-lg flex items-center py-1.5 px-3 hover:bg-gray-50 transition-colors duration-200"
+            onClick={handleBookAppointment}
+          >
+            <Icon name="plus" size="small" color="#1e40af" className="mr-1" />
+            <Typography variant="caption" className="font-semibold text-blue-800 text-xs">
+              Book
+            </Typography>
           </button>
         </div>
-
-        {/* Right side - Notification */}
-        <button
-          className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center relative hover:bg-white/30 transition-colors duration-200"
-          onClick={handleNotificationPress}
-        >
-          <Icon name="notification" size="small" color="white" />
-          {/* Dynamic notification badge based on unread count */}
-          {unreadNotificationCount > 0 && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-              <Typography variant="caption" className="text-white font-bold text-xs">
-                {unreadNotificationCount > 99 ? '99+' : unreadNotificationCount.toString()}
-              </Typography>
-            </div>
-          )}
-        </button>
-      </div>
-
-      {/* Greeting section with Book Appointment button */}
-      <div className="flex justify-between items-center">
-        <div className="flex-1">
-          <Typography variant="body2" className="text-white/80">
-            Hello,
-          </Typography>
-          <Typography variant="h4" className="text-white font-bold">
-            {userName ? `${userName}!` : 'Welcome!'}
-          </Typography>
-          <Typography variant="caption" className="text-white/70 mt-1">
-            How can we help you today?
-          </Typography>
-        </div>
-
-        {/* Book Appointment Button - Responsive */}
-        <button
-          className="bg-white rounded-xl flex items-center shadow-lg py-2 px-4 sm:py-2.5 sm:px-5 min-w-[120px] max-w-[180px] justify-center hover:bg-gray-50 transition-colors duration-200 active:scale-95"
-          onClick={handleBookAppointment}
-        >
-          <Icon name="plus" size="small" color="#0e3293" className="mr-2" />
-          <Typography
-            variant="body2"
-            className="font-semibold text-sm sm:text-base truncate"
-            style={{ color: '#0E3293' }}
-          >
-            Book Appointment
-          </Typography>
-        </button>
       </div>
 
       {/* Location Selection Modal - Placeholder for now */}
