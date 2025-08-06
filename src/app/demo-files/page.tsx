@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Button, Icon } from '../../components/atoms';
+import { Typography, Button, Icon, UniversalHeader } from '../../components/atoms';
 
 const DemoFilesPage: React.FC = () => {
   const router = useRouter();
@@ -73,27 +73,21 @@ const DemoFilesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Typography variant="h3" className="text-gray-900 font-bold">
-                File Management System
-              </Typography>
-              <Typography variant="body1" color="secondary" className="mt-2">
-                A complete file management solution with atomic design architecture
-              </Typography>
-            </div>
-            <Button
-              onClick={handleViewFiles}
-              className="flex items-center space-x-2"
-            >
-              <Icon name="folder" size="small" color="white" />
-              <span>View Demo Files</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      <UniversalHeader
+        title="File Management System"
+        subtitle="A complete file management solution with atomic design architecture"
+        variant="default"
+        showBackButton={true}
+        rightContent={
+          <Button
+            onClick={handleViewFiles}
+            className="flex items-center space-x-2"
+          >
+            <Icon name="folder" size="small" color="white" />
+            <span>View Demo Files</span>
+          </Button>
+        }
+      />
 
       {/* Hero Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

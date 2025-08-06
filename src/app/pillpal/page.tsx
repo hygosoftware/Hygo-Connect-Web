@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PillPal, PillPalDesktop } from '../../components/organisms';
+import AddMedicineModal from '../../components/organisms/AddMedicineModal';
+import { pillReminderService, pillReminderHelpers, PillReminder, Medicine } from '../../services/apiServices';
 
 // Helper function to get date strings
 const getDateString = (daysFromToday: number = 0) => {
@@ -10,102 +12,17 @@ const getDateString = (daysFromToday: number = 0) => {
   date.setDate(date.getDate() + daysFromToday);
   return date.toISOString().split('T')[0];
 };
-
-// Mock data for demonstration with dates
-const mockNotifications = [
-  {
-    id: '1',
-    medicineName: 'Metformin',
-    medicineType: 'tablet' as const,
-    dosage: '500mg',
-    mealTiming: 'after' as const,
-    scheduledTimes: ['08:00', '14:00', '20:00'],
-    isActive: true,
-    date: getDateString(0), // Today
-  },
-  {
-    id: '2',
-    medicineName: 'Vitamin D3',
-    medicineType: 'capsule' as const,
-    dosage: '1000 IU',
-    mealTiming: 'with' as const,
-    scheduledTimes: ['09:00'],
-    isActive: true,
-    date: getDateString(0), // Today
-  },
-  {
-    id: '3',
-    medicineName: 'Cough Syrup',
-    medicineType: 'syrup' as const,
-    dosage: '10ml',
-    mealTiming: 'before' as const,
-    scheduledTimes: ['10:00', '16:00', '22:00'],
-    isActive: true,
-    date: getDateString(1), // Tomorrow
-  },
-  {
-    id: '4',
-    medicineName: 'Insulin',
-    medicineType: 'injection' as const,
-    dosage: '10 units',
-    scheduledTimes: ['07:30', '19:30'],
-    isActive: true,
-    date: getDateString(0), // Today
-  },
-  {
-    id: '5',
-    medicineName: 'Blood Pressure Medication',
-    medicineType: 'tablet' as const,
-    dosage: '25mg',
-    mealTiming: 'before' as const,
-    scheduledTimes: ['08:00', '20:00'],
-    isActive: true,
-    date: getDateString(2), // Day after tomorrow
-  },
-  {
-    id: '6',
-    medicineName: 'Omega-3',
-    medicineType: 'capsule' as const,
-    dosage: '1000mg',
-    mealTiming: 'with' as const,
-    scheduledTimes: ['12:00'],
-    isActive: true,
-    date: getDateString(1), // Tomorrow
-  },
-];
-
-const mockFcmNotifications = [
-  {
-    id: '1',
-    title: 'Medication Reminder',
-    body: 'Time to take your Metformin (500mg)',
-    timestamp: new Date().toISOString(),
-    isRead: false,
-  },
-  {
-    id: '2',
-    title: 'Medication Taken',
-    body: 'You successfully logged your Vitamin D3 dose',
-    timestamp: new Date(Date.now() - 3600000).toISOString(),
-    isRead: true,
-  },
-  {
-    id: '3',
-    title: 'Missed Dose Alert',
-    body: 'You missed your evening Cough Syrup dose',
-    timestamp: new Date(Date.now() - 7200000).toISOString(),
-    isRead: false,
-  },
-];
-
 const PillPalPage: React.FC = () => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState(mockNotifications);
-  const [fcmNotifications, setFcmNotifications] = useState(mockFcmNotifications);
-  const [loading, setLoading] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [pillReminders, setPillReminders] = useState<PillReminder[]>([]);
+  const [fcmNotifications, setFcmNotifications] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showFcmHistory, setShowFcmHistory] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [showAddMedicineModal, setShowAddMedicineModal] = useState(false);
+  const [addingMedicines, setAddingMedicines] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [toast, setToast] = useState({
@@ -113,6 +30,51 @@ const PillPalPage: React.FC = () => {
     type: 'info' as 'success' | 'error' | 'info',
     visible: false,
   });
+
+  // Load pill reminders from API
+  const loadPillReminders = async () => {
+    try {
+      setLoading(true);
+      // Using the sample user ID from your API example
+      const userId = '685e823b3ec68e8bb8dae392';
+      console.log('💊 Loading pill reminders for user:', userId);
+
+      const apiReminders = await pillReminderService.getPillRemindersByUserId(userId);
+      console.log('API Response Data:', apiReminders);
+
+      // Ensure apiReminders is an array
+      const remindersArray = Array.isArray(apiReminders) ? apiReminders : [];
+      setPillReminders(remindersArray);
+
+      // Convert API data to component format - now returns arrays of notifications for each day
+      const convertedNotifications = remindersArray.flatMap(reminder => {
+        try {
+          return pillReminderHelpers.convertToComponentFormat(reminder);
+        } catch (conversionError) {
+          console.error('Error converting reminder:', conversionError);
+          return [];
+        }
+      });
+
+      setNotifications(convertedNotifications);
+      console.log('Converted Notifications:', convertedNotifications);
+
+      if (convertedNotifications.length === 0) {
+        showToast('No medication reminders found. Click + to add your first medicine.', 'info');
+      } else {
+        showToast(`Loaded ${convertedNotifications.length} medication${convertedNotifications.length > 1 ? 's' : ''}`, 'success');
+      }
+
+    } catch (error) {
+      console.error('❌ Failed to load pill reminders:', error);
+      showToast('Failed to load medication reminders. Please check your connection.', 'error');
+      // Keep empty arrays on error
+      setPillReminders([]);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Detect desktop screen size and handle client-side hydration
   useEffect(() => {
@@ -128,6 +90,11 @@ const PillPalPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
+  // Load pill reminders on component mount
+  useEffect(() => {
+    loadPillReminders();
+  }, []);
+
   const unreadFcmCount = fcmNotifications.filter(n => !n.isRead).length;
 
   const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
@@ -141,12 +108,16 @@ const PillPalPage: React.FC = () => {
     router.back(); // Navigate back to previous page
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setRefreshing(true);
-    setTimeout(() => {
-      setRefreshing(false);
+    try {
+      await loadPillReminders();
       showToast('Medications refreshed successfully', 'success');
-    }, 1000);
+    } catch (error) {
+      showToast('Failed to refresh medications', 'error');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleToggleFcmHistory = () => {
@@ -174,15 +145,91 @@ const PillPalPage: React.FC = () => {
     // In a real app, navigate to edit screen
   };
 
-  const handleDeleteNotification = (id: string) => {
+  const handleDeleteNotification = async (id: string) => {
     const medication = notifications.find(n => n.id === id);
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    showToast(`${medication?.medicineName || 'Medication'} deleted successfully`, 'success');
+
+    try {
+      // Call API to delete the pill reminder
+      const success = await pillReminderService.deletePillReminder(id);
+
+      if (success) {
+        // Remove from local state
+        setNotifications(prev => prev.filter(n => n.id !== id));
+        setPillReminders(prev => prev.filter(r => r._id !== id));
+        showToast(`${medication?.medicineName || 'Medication'} deleted successfully`, 'success');
+      } else {
+        showToast('Failed to delete medication', 'error');
+      }
+    } catch (error) {
+      console.error('Error deleting medication:', error);
+      showToast('Failed to delete medication', 'error');
+    }
   };
 
   const handleAddButtonPress = () => {
-    showToast('Add new medication', 'info');
-    // In a real app, navigate to add medication screen
+    setShowAddMedicineModal(true);
+  };
+
+
+
+  const handleAddMedicines = async (medicines: Medicine[]) => {
+    setAddingMedicines(true);
+
+    try {
+      // Using the sample user ID from your API example
+      const userId = '685e823b3ec68e8bb8dae392';
+      console.log('💊 Adding medicines for user:', userId);
+      console.log('📋 Medicines to add:', medicines);
+
+      // Show initial loading message
+      showToast('Adding medicines... This may take a moment', 'info');
+
+      const result = await pillReminderService.addMedicines(medicines, userId);
+
+      if (result.success) {
+        showToast(`Successfully added ${result.created.length} medicine${result.created.length > 1 ? 's' : ''}`, 'success');
+        setShowAddMedicineModal(false);
+
+        // Reload the pill reminders to show the new ones
+        await loadPillReminders();
+
+        // Show any warnings
+        if (result.errors.length > 0) {
+          setTimeout(() => {
+            showToast(result.errors.join('; '), 'info');
+          }, 2000);
+        }
+      } else {
+        const errorMessage = result.errors.join('; ') || 'Failed to add medicines';
+        console.error('❌ Add medicines failed:', errorMessage);
+
+        // Check if it's a timeout error
+        if (errorMessage.includes('timeout') || errorMessage.includes('exceeded')) {
+          showToast('Request timed out. Please check your connection and try again.', 'error');
+        } else {
+          showToast(errorMessage, 'error');
+        }
+      }
+    } catch (error: any) {
+      console.error('❌ Error adding medicines:', error);
+
+      // Handle different types of errors
+      let errorMessage = 'Failed to add medicines';
+
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        errorMessage = 'Request timed out. Please check your connection and try again.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'Authentication failed. Please login again.';
+      } else if (error.response?.status >= 500) {
+        errorMessage = 'Server error. Please try again later.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
+      showToast(errorMessage, 'error');
+    } finally {
+      setAddingMedicines(false);
+    }
   };
 
   const handleMarkTaken = (id: string) => {
@@ -218,6 +265,8 @@ const PillPalPage: React.FC = () => {
   // Render desktop or mobile version based on screen size
   const PillPalComponent = isDesktop ? PillPalDesktop : PillPal;
 
+
+
   return (
     <>
       <PillPalComponent
@@ -243,6 +292,16 @@ const PillPalPage: React.FC = () => {
         onCloseNotificationModal={handleCloseNotificationModal}
         onHideToast={handleHideToast}
       />
+
+      {/* Add Medicine Modal */}
+      <AddMedicineModal
+        isOpen={showAddMedicineModal}
+        onClose={() => setShowAddMedicineModal(false)}
+        onAddMedicines={handleAddMedicines}
+        loading={addingMedicines}
+      />
+
+
 
       {/* Demo Controls - Only show on mobile */}
       {/* {!isDesktop && (

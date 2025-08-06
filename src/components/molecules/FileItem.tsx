@@ -7,6 +7,7 @@ interface FileItemProps {
   onDelete: (fileId: string) => void;
   onDownload?: (fileId: string) => void;
   onView?: (fileId: string) => void;
+  onFileClick?: (fileId: string, fileName: string) => void;
   className?: string;
 }
 
@@ -15,6 +16,7 @@ const FileItem: React.FC<FileItemProps> = ({
   onDelete,
   onDownload,
   onView,
+  onFileClick,
   className = '',
 }) => {
   const [showActions, setShowActions] = useState(false);
@@ -52,6 +54,21 @@ const FileItem: React.FC<FileItemProps> = ({
       onView(file._id);
     } else if (file.fileUrl) {
       window.open(file.fileUrl, '_blank');
+    }
+  };
+
+  const handleFileClick = () => {
+    console.log('🖱️ File name clicked:', file.fileName);
+    console.log('🖱️ File ID:', file._id);
+    console.log('🖱️ onFileClick handler exists:', !!onFileClick);
+
+    if (onFileClick) {
+      console.log('🖱️ Calling onFileClick handler');
+      onFileClick(file._id, file.fileName);
+    } else {
+      console.log('🖱️ No onFileClick handler, falling back to view');
+      // Fallback to view if no file click handler
+      handleView();
     }
   };
 
@@ -105,10 +122,10 @@ const FileItem: React.FC<FileItemProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between">
             <div className="flex-1 min-w-0">
-              <Typography 
-                variant="subtitle2" 
+              <Typography
+                variant="subtitle2"
                 className="text-gray-900 truncate cursor-pointer hover:text-blue-600 transition-colors"
-                onClick={handleView}
+                onClick={handleFileClick}
               >
                 {file.fileName}
               </Typography>

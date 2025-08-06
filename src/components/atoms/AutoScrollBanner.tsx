@@ -22,8 +22,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
   className = '',
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<number | null>(null);  const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll logic
   useEffect(() => {

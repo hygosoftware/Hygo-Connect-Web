@@ -89,7 +89,7 @@ export interface BookingDetails {
 
 export interface BookingState {
   // Flow control
-  currentStep: 'selection' | 'doctor' | 'clinic' | 'date' | 'slot' | 'details' | 'review' | 'payment' | 'confirmation';
+  currentStep: 'selection' | 'doctor' | 'clinic' | 'clinic-doctor' | 'date' | 'slot' | 'details' | 'review' | 'payment' | 'confirmation';
   bookingFlow: 'doctor' | 'clinic';
   
   // Selected data

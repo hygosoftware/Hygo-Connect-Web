@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Typography, Icon, BackButton, Button, WeeklyCalendar } from '../atoms';
+import { Typography, Icon, BackButton, Button, WeeklyCalendar, UniversalHeader } from '../atoms';
 import { MedicationSidebar } from '../molecules';
 
 // Types and Interfaces
@@ -126,61 +126,55 @@ const PillPalDesktop: React.FC<PillPalDesktopProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+      {/* Universal Header */}
+      <UniversalHeader
+        title="PillPal - Medication Calendar"
+        subtitle="Manage your daily medication schedule"
+        variant="gradient"
+        icon="pill"
+        showBackButton={true}
+        onBackPress={onGoBack}
+        rightContent={
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={onAddButtonPress}
+              variant="primary"
+              className="bg-white text-[#0e3293] hover:bg-blue-50 border border-white flex items-center justify-center"
+            >
+              <Icon name="plus" size="small" color="#0e3293" className="mr-2" />
+              <span className="text-[#0e3293] font-bold">Add Medication</span>
+            </Button>
+
+            <button
+              onClick={onRefresh}
+              disabled={refreshing}
+              className="p-2 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-colors disabled:opacity-50"
+            >
+              <Icon
+                name="notification"
+                size="medium"
+                color="currentColor"
+                className={refreshing ? 'animate-spin' : ''}
+              />
+            </button>
+
+            <button
+              onClick={onToggleFcmHistory}
+              className="relative p-2 text-white/70 hover:text-white hover:bg-white/20 rounded-lg transition-colors"
+            >
+              <Icon name="bell" size="medium" color="currentColor" />
+              {unreadFcmCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {unreadFcmCount}
+                </span>
+              )}
+            </button>
+          </div>
+        }
+      />
+
       {/* Main Content Area */}
       <div className="flex flex-col">
-        {/* Top Header */}
-        <div className="bg-[#0e3293] px-6 py-4 border-b border-blue-800">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <BackButton
-                onClick={onGoBack}
-                variant="white"
-                className="mr-2"
-              />
-              <div>
-                <Typography variant="h5" className="text-white font-bold">
-                  PillPal - Medication Calendar
-                </Typography>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-4">
-              <Button
-                onClick={onAddButtonPress}
-                variant="primary"
-                className="bg-white text-[#0e3293] hover:bg-blue-50 border border-white flex items-center justify-center"
-              >
-                <Icon name="plus" size="small" color="#0e3293" className="mr-2" />
-                <span className="text-[#0e3293] font-bold">Add Medication</span>
-              </Button>
-
-              <button
-                onClick={onRefresh}
-                disabled={refreshing}
-                className="p-2 text-blue-200 hover:text-white hover:bg-blue-800 rounded-lg transition-colors disabled:opacity-50"
-              >
-                <Icon
-                  name="notification"
-                  size="medium"
-                  color="currentColor"
-                  className={refreshing ? 'animate-spin' : ''}
-                />
-              </button>
-
-              <button
-                onClick={onToggleFcmHistory}
-                className="relative p-2 text-blue-200 hover:text-white hover:bg-blue-800 rounded-lg transition-colors"
-              >
-                <Icon name="bell" size="medium" color="currentColor" />
-                {unreadFcmCount > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                    {unreadFcmCount}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
 
         {/* Hero Banner */}
         <div className="px-6 py-4">

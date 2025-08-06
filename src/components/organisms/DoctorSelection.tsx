@@ -22,7 +22,9 @@ const DoctorSelection: React.FC = () => {
   const loadDoctors = async () => {
     try {
       setLoading(true);
-      const doctorsData = await mockAPI.getDoctors();
+      // Replace mockAPI.getDoctors with doctorService.getAllDoctors
+      const { doctorService } = await import('../../services/apiServices');
+      const doctorsData = await doctorService.getAllDoctors();
       setDoctors(doctorsData);
     } catch (error) {
       showToast({
@@ -136,7 +138,7 @@ const DoctorSelection: React.FC = () => {
 
         {/* Consultation Fee */}
         <div className="mb-3">
-          <Typography variant="h6" className="text-[#0e3293] font-bold">
+          <Typography variant="body1" className="text-[#0e3293] font-bold">
             ₹{doctor.consultationFee}
           </Typography>
           <Typography variant="caption" className="text-gray-600">
@@ -172,7 +174,7 @@ const DoctorSelection: React.FC = () => {
   );
 
   return (
-    <div className="flex-1 bg-gray-50">
+    <div className="flex-1 bg-gray-50 overflow-auto">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Typography, Icon } from './';
+import { useAuth } from '../../hooks/useAuth';
 
 interface UserProfile {
   profilePhoto?: string;
@@ -45,14 +46,26 @@ const SideMenu: React.FC<SideMenuProps> = ({
   userName,
   className = '',
 }) => {
+  const { user, isAuthenticated } = useAuth();
   const [userId, setUserId] = useState<string | null>('demo-user-123');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [expandedMenus, setExpandedMenus] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     const fetchUserProfile = async () => {
-      // Simulate fetching user profile - static data for demo
-      if (visible) {
+      // Use real user data from authentication if available
+      if (visible && user) {
+        setProfile({
+          FullName: user.FullName || user.fullName || 'User',
+          Email: user.Email || user.email || 'user@example.com',
+          profilePhoto: '', // Empty for demo - will show initials
+          Gender: 'Not specified',
+          DateOfBirth: 'Not specified',
+          MobileNumber: 'Not specified'
+        });
+        setUserId(user._id || 'demo-user-123');
+      } else if (visible) {
+        // Fallback to demo data if no user is authenticated
         setProfile({
           FullName: 'John Doe',
           Email: 'john.doe@example.com',
@@ -65,7 +78,7 @@ const SideMenu: React.FC<SideMenuProps> = ({
     };
 
     fetchUserProfile();
-  }, [visible]);
+  }, [visible, user]);
 
   if (!visible || !userId) return null;
 
@@ -255,8 +268,8 @@ const SideMenu: React.FC<SideMenuProps> = ({
               <Typography variant="h5" className="font-bold text-white text-center">
                 {displayName}
               </Typography>
-              <Typography variant="body2" className="text-blue-200">
-                View and edit profile
+              <Typography variant="body2" className="text-blue-200 text-center">
+                {profile?.Email || 'user@example.com'}
               </Typography>
             </div>
           </div>

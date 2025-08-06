@@ -1,9 +1,8 @@
 import React from 'react';
-import { Icon, Typography } from './';
+import { Icon } from './';
 
 interface BackButtonProps {
   onClick: () => void;
-  label?: string;
   disabled?: boolean;
   className?: string;
   variant?: 'default' | 'white';
@@ -11,23 +10,20 @@ interface BackButtonProps {
 
 const BackButton: React.FC<BackButtonProps> = ({
   onClick,
-  label = 'Back',
   disabled = false,
   className = '',
   variant = 'default',
 }) => {
-  const baseClasses = 'flex items-center space-x-1 transition-all duration-200 focus:outline-none focus:ring-2 rounded-md p-1';
+  const baseClasses = 'flex items-center justify-center w-10 h-10 transition-all duration-200 focus:outline-none focus:ring-2 rounded-lg';
 
   const variantClasses = {
     default: {
       button: 'cursor-pointer hover:bg-blue-50 active:bg-blue-100 focus:ring-blue-500',
-      icon: '#0e3293',
-      text: 'text-blue-800'
+      icon: '#0e3293'
     },
     white: {
       button: 'cursor-pointer hover:bg-white hover:bg-opacity-20 active:bg-white active:bg-opacity-30 focus:ring-white',
-      icon: 'white',
-      text: 'text-white'
+      icon: 'white'
     }
   };
 
@@ -42,15 +38,9 @@ const BackButton: React.FC<BackButtonProps> = ({
       onClick={onClick}
       disabled={disabled}
       className={buttonClasses}
-      aria-label={`Go back to previous page`}
+      aria-label="Go back to previous page"
     >
       <Icon name="arrow-left" size="medium" color={variantClasses[variant].icon} />
-      <Typography
-        variant="body1"
-        className={`font-medium ${variantClasses[variant].text}`}
-      >
-        {label}
-      </Typography>
     </button>
   );
 };

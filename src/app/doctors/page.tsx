@@ -3,20 +3,19 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DoctorsListUI } from '../../components/organisms';
+import { doctorService, Doctor as ApiDoctor, doctorHelpers } from '../../services/apiServices';
 
-// Types
-interface Qualification {
-  _id: string;
-  degree: string;
-  institution: string;
-  year: number;
-}
-
+// Types - Use the API types but create a compatible interface for the UI
 interface Doctor {
   _id: string;
   fullName: string;
   specializations: string[];
-  qualifications: Qualification[];
+  qualifications: Array<{
+    _id: string;
+    degree: string;
+    institution: string;
+    year: number;
+  }>;
   ratings: {
     average: number;
     count: number;
@@ -48,115 +47,74 @@ interface Doctor {
   }>;
 }
 
-// Mock data for demonstration
-const mockDoctors: Doctor[] = [
-  {
-    _id: '1',
-    fullName: 'Dr. Sarah Johnson',
-    specializations: ['Cardiology', 'Internal Medicine'],
-    qualifications: [
-      { _id: '1', degree: 'MD', institution: 'Harvard Medical School', year: 2010 },
-      { _id: '2', degree: 'Fellowship', institution: 'Mayo Clinic', year: 2015 }
-    ],
-    ratings: { average: 4.8, count: 127 },
-    profileImage: '/api/uploads/doctors/sarah-johnson.jpg',
-    experience: 12,
-    consultationFee: 500,
-    isAvailableNow: true,
-    department: 'Cardiology',
-    clinic: [
-      {
-        _id: '1',
-        clinicName: 'Heart Care Center',
-        clinicAddress: {
-          addressLine: '123 Medical Plaza',
-          city: 'Mumbai',
-          state: 'Maharashtra',
-          zipCode: '400001',
-          country: 'India'
-        },
-        clinicType: 'Specialty',
-        rating: 4.7,
-        phone: '+91-9876543210',
-        email: 'info@heartcare.com'
-      }
-    ]
-  },
-  {
-    _id: '2',
-    fullName: 'Dr. Rajesh Kumar',
-    specializations: ['Orthopedics', 'Sports Medicine'],
-    qualifications: [
-      { _id: '3', degree: 'MBBS', institution: 'AIIMS Delhi', year: 2008 },
-      { _id: '4', degree: 'MS Orthopedics', institution: 'PGIMER Chandigarh', year: 2012 }
-    ],
-    ratings: { average: 4.6, count: 89 },
-    profileImage: '/api/uploads/doctors/rajesh-kumar.jpg',
-    experience: 15,
-    consultationFee: 400,
-    isAvailableNow: false,
-    department: 'Orthopedics',
-    clinic: [
-      {
-        _id: '2',
-        clinicName: 'Bone & Joint Clinic',
-        clinicAddress: {
-          addressLine: '456 Health Street',
-          city: 'Delhi',
-          state: 'Delhi',
-          zipCode: '110001',
-          country: 'India'
-        },
-        clinicType: 'Multi-specialty',
-        rating: 4.5
-      }
-    ]
-  },
-  {
-    _id: '3',
-    fullName: 'Dr. Priya Sharma',
-    specializations: ['Dermatology', 'Cosmetic Surgery'],
-    qualifications: [
-      { _id: '5', degree: 'MBBS', institution: 'Grant Medical College', year: 2012 },
-      { _id: '6', degree: 'MD Dermatology', institution: 'KEM Hospital', year: 2016 }
-    ],
-    ratings: { average: 4.9, count: 156 },
-    profileImage: '/api/uploads/doctors/priya-sharma.jpg',
-    experience: 8,
-    consultationFee: 350,
-    isAvailableNow: true,
-    department: 'Dermatology',
-    clinic: [
-      {
-        _id: '3',
-        clinicName: 'Skin Care Clinic',
-        clinicAddress: {
-          addressLine: '789 Beauty Lane',
-          city: 'Bangalore',
-          state: 'Karnataka',
-          zipCode: '560001',
-          country: 'India'
-        },
-        clinicType: 'Specialty',
-        rating: 4.8
-      }
-    ]
-  }
-];
+// Helper function to convert API doctor to UI doctor format
+const convertApiDoctorToUiDoctor = (apiDoctor: ApiDoctor): Doctor => {
+  return {
+    _id: apiDoctor._id,
+    fullName: apiDoctor.fullName,
+    specializations: apiDoctor.specializations,
+    qualifications: apiDoctor.qualifications.map(qual => ({
+      _id: qual._id,
+      degree: qual.degree,
+      institution: qual.institution,
+      year: qual.year
+    })),
+    ratings: apiDoctor.ratings,
+    profileImage: doctorHelpers.getFullImageUrl(apiDoctor.profileImage),
+    experience: apiDoctor.experience,
+    consultationFee: apiDoctor.consultationFee,
+    isAvailableNow: apiDoctor.isAvailableNow,
+    department: apiDoctor.department?.[0]?.departmentName,
+    clinic: apiDoctor.clinic?.map(clinic => ({
+      _id: clinic._id,
+      clinicName: clinic.clinicName,
+      clinicAddress: clinic.clinicAddress ? {
+        addressLine: clinic.clinicAddress.addressLine,
+        city: clinic.clinicAddress.city,
+        state: clinic.clinicAddress.state,
+        zipCode: clinic.clinicAddress.zipCode,
+        country: clinic.clinicAddress.country,
+        location: clinic.clinicAddress.location
+      } : undefined
+    }))
+  };
+};
+
+
 
 const DoctorsPage: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // State
-  const [doctors] = useState<Doctor[]>(mockDoctors);
-  const [loading, setLoading] = useState(false);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
   const [activeClinicFilter, setActiveClinicFilter] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Load doctors from API
+  const loadDoctors = async () => {
+    try {
+      setError(null);
+      const apiDoctors = await doctorService.getAllDoctors();
+      const uiDoctors = apiDoctors.map(convertApiDoctorToUiDoctor);
+      setDoctors(uiDoctors);
+    } catch (err) {
+      console.error('Failed to load doctors:', err);
+      setError(err instanceof Error ? err.message : 'Failed to load doctors');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load doctors on component mount
+  useEffect(() => {
+    loadDoctors();
+  }, []);
 
   // Get location from URL params
   const locationFromParams = useMemo(() => {
@@ -215,9 +173,17 @@ const DoctorsPage: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setRefreshing(false);
+    try {
+      const apiDoctors = await doctorService.getAllDoctors();
+      const uiDoctors = apiDoctors.map(convertApiDoctorToUiDoctor);
+      setDoctors(uiDoctors);
+      setError(null);
+    } catch (err) {
+      console.error('Failed to refresh doctors:', err);
+      setError(err instanceof Error ? err.message : 'Failed to refresh doctors');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   const handleSearchChange = (query: string) => {
@@ -247,14 +213,14 @@ const DoctorsPage: React.FC = () => {
   };
 
   const handleDoctorPress = (doctor: Doctor) => {
+    console.log('👨‍⚕️ Doctors List: Doctor card clicked:', doctor);
+    console.log('🔗 Navigating to doctor ID:', doctor._id);
     router.push(`/doctors/${doctor._id}`);
   };
 
   const handleRetry = () => {
-    setError(null);
     setLoading(true);
-    // Simulate retry
-    setTimeout(() => setLoading(false), 1000);
+    loadDoctors();
   };
 
   const handleErrorDetails = () => {

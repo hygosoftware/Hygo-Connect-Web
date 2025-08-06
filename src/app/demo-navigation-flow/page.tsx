@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Button, Icon } from '../../components/atoms';
+import { Typography, Button, Icon, UniversalHeader } from '../../components/atoms';
 
 const DemoNavigationFlowPage: React.FC = () => {
   const router = useRouter();
@@ -77,27 +77,21 @@ const DemoNavigationFlowPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <Typography variant="h3" className="text-gray-900 font-bold">
-                Navigation Flow Demo
-              </Typography>
-              <Typography variant="body1" color="secondary" className="mt-2">
-                Records Icon → Folder Screen → File Screen
-              </Typography>
-            </div>
-            <Button
-              onClick={() => router.push('/records')}
-              className="flex items-center space-x-2"
-            >
-              <Icon name="records" size="small" color="white" />
-              <span>Start Demo</span>
-            </Button>
-          </div>
-        </div>
-      </div>
+      <UniversalHeader
+        title="Navigation Flow Demo"
+        subtitle="Records Icon → Folder Screen → File Screen"
+        variant="default"
+        showBackButton={true}
+        rightContent={
+          <Button
+            onClick={() => router.push('/records')}
+            className="flex items-center space-x-2"
+          >
+            <Icon name="records" size="small" color="white" />
+            <span>Start Demo</span>
+          </Button>
+        }
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}

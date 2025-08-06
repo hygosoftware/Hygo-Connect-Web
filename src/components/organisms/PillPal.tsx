@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Typography, Icon, BackButton, Button, HorizontalDatePicker } from '../atoms';
+import { Typography, Icon, BackButton, Button, HorizontalDatePicker, UniversalHeader } from '../atoms';
 
 // Types and Interfaces
 interface MedicationNotification {
@@ -148,30 +148,20 @@ const PillPal: React.FC<PillPalProps> = ({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
-      {/* Header Bar */}
-      <div className="bg-[#0E3293] px-4 lg:px-6 py-4 shadow-lg">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center flex-1">
-            <BackButton
-              onClick={onGoBack}
-              variant="white"
-              className="mr-3"
-            />
-            <div className="flex-1">
-              <Typography variant="h6" className="text-white font-semibold">
-                Medication Reminders
-              </Typography>
-              <Typography variant="body2" className="text-blue-100 text-sm">
-                {getNextMedicationInfo()}
-              </Typography>
-            </div>
-          </div>
-
+      {/* Universal Header */}
+      <UniversalHeader
+        title="Medication Reminders"
+        subtitle={getNextMedicationInfo()}
+        variant="gradient"
+        icon="pill"
+        showBackButton={true}
+        onBackPress={onGoBack}
+        rightContent={
           <div className="flex items-center space-x-3">
             {/* FCM Bell with Badge */}
             <button
               onClick={onToggleFcmHistory}
-              className="relative p-2 rounded-full hover:bg-[#0A2470] transition-colors"
+              className="relative p-2 rounded-full hover:bg-white/20 transition-colors"
             >
               <Icon name="bell" size="medium" color="white" />
               {unreadFcmCount > 0 && (
@@ -184,13 +174,13 @@ const PillPal: React.FC<PillPalProps> = ({
             {/* WiFi Icon for FCM Testing */}
             <button
               onClick={onTestFcmToken}
-              className="p-2 rounded-full hover:bg-[#0A2470] transition-colors"
+              className="p-2 rounded-full hover:bg-white/20 transition-colors"
             >
               <Icon name="activity" size="medium" color="white" />
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* FCM Notification History */}
       {showFcmHistory && (
@@ -397,7 +387,7 @@ const PillPal: React.FC<PillPalProps> = ({
         onClick={onAddButtonPress}
         className="fixed bottom-6 right-6 lg:bottom-8 lg:right-8 w-14 h-14 lg:w-16 lg:h-16 bg-[#0E3293] hover:bg-[#0A2470] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50"
       >
-        <Icon name="plus" size="medium" color="white" />
+        <Icon name="plus" size="small" color="white" />
       </button>
 
       {/* Toast Notification */}

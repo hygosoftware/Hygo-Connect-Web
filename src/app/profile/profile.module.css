@@ -211,6 +211,46 @@
   }
 }
 
+/* Scrollbar hiding */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Enhanced input styling */
+.input-enhanced {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.input-enhanced:focus {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 50, 147, 0.15);
+}
+
+.input-enhanced:hover:not(:focus) {
+  transform: translateY(-0.5px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Button enhancements */
+.button-enhanced {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.button-enhanced:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.button-enhanced:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 /* Animation classes */
 .fadeIn {
   animation: fadeIn 0.5s ease-in-out;

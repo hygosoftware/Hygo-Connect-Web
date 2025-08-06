@@ -2,9 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Icon } from '../../../components/atoms';
-import { Button } from '../../../components/atoms';
-import { Typography } from '../../../components/atoms';
+import { Icon, Button, Typography, UniversalHeader } from '../../../components/atoms';
 import { SUBSCRIPTION_PLANS, HealthCard } from '../../../types/healthCard';
 
 const HealthCardDisplayPage: React.FC = () => {
@@ -78,12 +76,22 @@ const HealthCardDisplayPage: React.FC = () => {
 
   if (!healthCard) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0E3293] mx-auto mb-4"></div>
-          <Typography variant="body1" className="text-gray-600">
-            Loading your health card...
-          </Typography>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+        <UniversalHeader
+          title="My Health Card"
+          subtitle="Loading your health card..."
+          variant="gradient"
+          icon="health-card"
+          showBackButton={true}
+          onBackPress={handleGoBack}
+        />
+        <div className="flex items-center justify-center pt-20">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0E3293] mx-auto mb-4"></div>
+            <Typography variant="body1" className="text-gray-600">
+              Loading your health card...
+            </Typography>
+          </div>
         </div>
       </div>
     );
@@ -94,31 +102,14 @@ const HealthCardDisplayPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
       {/* Header */}
-      <div className="bg-gradient-to-r from-[#0E3293] via-[#1e40af] to-[#3b82f6] px-4 md:px-6 py-6 md:py-8 shadow-xl sticky top-0 z-20">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <button
-              onClick={handleGoBack}
-              className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 mr-3 backdrop-blur-sm"
-            >
-              <Icon name="arrow-left" size="medium" color="white" />
-            </button>
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mr-4 backdrop-blur-sm">
-                <Icon name="health-card" size="medium" color="white" />
-              </div>
-              <div>
-                <Typography variant="h4" className="text-white font-bold">
-                  My Health Card
-                </Typography>
-                <Typography variant="body2" className="text-white/80">
-                  {healthCard.planName} • {healthCard.status === 'active' ? 'Active' : 'Inactive'}
-                </Typography>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <UniversalHeader
+        title="My Health Card"
+        subtitle={`${healthCard.planName} • ${healthCard.status === 'active' ? 'Active' : 'Inactive'}`}
+        variant="gradient"
+        icon="health-card"
+        showBackButton={true}
+        onBackPress={handleGoBack}
+      />
 
       {/* Main Content */}
       <div className="px-4 md:px-6 py-8">

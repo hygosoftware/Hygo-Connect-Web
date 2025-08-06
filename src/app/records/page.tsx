@@ -2,7 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Typography, Icon, SearchBar } from '../../components/atoms';
+import { Typography, Icon, SearchBar, UniversalHeader } from '../../components/atoms';
+import { folderService, Folder } from '../../services/apiServices';
+import { TokenManager } from '../../services/auth';
 
 interface RecordFolder {
   id: string;
@@ -11,15 +13,26 @@ interface RecordFolder {
   sharedWith: string[];
   sharedWithNames: string[];
   lastUpdated: string;
+  fileCount?: number;
 }
 
 const RecordsPage: React.FC = () => {
   const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const [isDesktop, setIsDesktop] = useState(false);
+  const [folders, setFolders] = useState<RecordFolder[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Mock user ID - in a real app, this would come from authentication
-  const userId = 'user-123';
+  // Get user ID from auth context
+  const { userId, accessToken, userInfo } = TokenManager.getTokens();
+
+  // Log authentication state
+  console.log('🔐 Records Page - Auth state:', {
+    userId,
+    hasAccessToken: !!accessToken,
+    userInfo: userInfo // userInfo is already parsed in TokenManager.getTokens()
+  });
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -31,49 +44,114 @@ const RecordsPage: React.FC = () => {
     return () => window.removeEventListener('resize', checkDesktop);
   }, []);
 
-  const recordFolders: RecordFolder[] = [
-    {
-      id: 'abc',
-      name: 'Abc',
-      usersWithAccess: 1,
-      sharedWith: ['devyani.kadachha@example.com'],
-      sharedWithNames: ['Devyani Kadachha'],
-      lastUpdated: '2024-01-15'
-    },
-    {
-      id: 'updated-reports',
-      name: 'Updated Reports',
-      usersWithAccess: 1,
-      sharedWith: ['685e823b3e6c68e8bb8dae392'],
-      sharedWithNames: ['685e823b3e6c68e8bb8dae392'],
-      lastUpdated: '2024-01-10'
-    },
-    {
-      id: 'rohan',
-      name: 'Rohan',
-      usersWithAccess: 0,
-      sharedWith: [],
-      sharedWithNames: [],
-      lastUpdated: '2024-01-08'
-    },
-    {
-      id: 'dr-priyank-vasavada',
-      name: 'Dr. Priyank H Vasavada',
-      usersWithAccess: 0,
-      sharedWith: [],
-      sharedWithNames: [],
-      lastUpdated: '2024-01-05'
-    }
-  ];
+  // Fetch folders from API
+  useEffect(() => {
+    const fetchFolders = async () => {
+      if (!userId) {
+        setError('User not authenticated');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError(null);
+
+        console.log('🔄 Fetching folders for user:', userId);
+        const apiResponse = await folderService.getFoldersByUserId(userId);
+
+        console.log('📦 Records Page - Raw API response:', apiResponse);
+        console.log('📊 Records Page - API response type:', typeof apiResponse);
+        console.log('📊 Records Page - Is API response array?', Array.isArray(apiResponse));
+        console.log('📊 Records Page - API response length:', apiResponse?.length);
+
+        // Transform API response to match RecordFolder interface
+        const transformedFolders: RecordFolder[] = apiResponse.map((folder: Folder, index: number) => {
+          console.log(`🔄 Transforming folder ${index + 1}:`, folder);
+
+          // Extract access information from the actual structure
+          const accessUsers = folder.folderAccess?.map(access => access.DelegateFolderAuthID) || [];
+          const fileCount = folder.files ? folder.files.length : 0;
+
+          // Get the most recent file upload date for lastUpdated
+          let lastUpdated = new Date().toISOString().split('T')[0];
+          if (folder.files && folder.files.length > 0) {
+            const mostRecentFile = folder.files.reduce((latest, file) =>
+              new Date(file.uploadedAt) > new Date(latest.uploadedAt) ? file : latest
+            );
+            lastUpdated = new Date(mostRecentFile.uploadedAt).toISOString().split('T')[0];
+          } else if (folder.updatedAt) {
+            lastUpdated = new Date(folder.updatedAt).toISOString().split('T')[0];
+          } else if (folder.createdAt) {
+            lastUpdated = new Date(folder.createdAt).toISOString().split('T')[0];
+          }
+
+          const transformed = {
+            id: folder._id,
+            name: folder.folderName,
+            usersWithAccess: accessUsers.length,
+            sharedWith: accessUsers,
+            sharedWithNames: accessUsers, // For now, using IDs as names
+            lastUpdated: lastUpdated,
+            fileCount: fileCount
+          };
+
+          console.log(`✅ Transformed folder ${index + 1}:`, transformed);
+          return transformed;
+        });
+
+        console.log('✅ All folders transformed:', transformedFolders);
+        console.log('📊 Total transformed folders:', transformedFolders.length);
+        setFolders(transformedFolders);
+      } catch (err) {
+        console.error('❌ Error fetching folders:', err);
+        setError('Failed to load folders. Please try again.');
+
+        // Fallback to mock data if API fails
+        const mockFolders: RecordFolder[] = [
+          {
+            id: 'medical-reports',
+            name: 'Medical Reports',
+            usersWithAccess: 1,
+            sharedWith: [userId || 'user'],
+            sharedWithNames: ['You'],
+            lastUpdated: '2024-01-15',
+            fileCount: 5
+          },
+          {
+            id: 'prescriptions',
+            name: 'Prescriptions',
+            usersWithAccess: 1,
+            sharedWith: [userId || 'user'],
+            sharedWithNames: ['You'],
+            lastUpdated: '2024-01-10',
+            fileCount: 3
+          }
+        ];
+        setFolders(mockFolders);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFolders();
+  }, [userId]);
 
   const handleFolderClick = (folder: RecordFolder) => {
     // Navigate to the file management screen with the folder ID
-    router.push(`/file-screen?folderId=${folder.id}&userId=${userId}&folderName=${encodeURIComponent(folder.name)}`);
+    router.push(`/files?folderId=${folder.id}&userId=${userId}&folderName=${encodeURIComponent(folder.name)}`);
   };
 
-  const filteredFolders = recordFolders.filter(folder =>
+  const filteredFolders = folders.filter(folder =>
     folder.name.toLowerCase().includes(searchText.toLowerCase())
   );
+
+  // Log filtered folders for debugging
+  console.log('🔍 Records Page - Current folders state:', folders);
+  console.log('🔍 Records Page - Search text:', searchText);
+  console.log('🔍 Records Page - Filtered folders:', filteredFolders);
+  console.log('🔍 Records Page - Loading state:', loading);
+  console.log('🔍 Records Page - Error state:', error);
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -133,70 +211,50 @@ const RecordsPage: React.FC = () => {
       `}</style>
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        {/* Modern Header with Gradient */}
-        <div className="bg-gradient-to-r from-[#0E3293] via-[#1e40af] to-[#3b82f6] shadow-xl">
-          <div className="px-4 py-6 md:py-8">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <button
-                  onClick={() => router.back()}
-                  className="mr-4 p-2 hover:bg-white/20 rounded-xl transition-all duration-200 backdrop-blur-sm"
-                >
-                  <Icon name="arrow-left" size="medium" color="white" />
-                </button>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mr-4 backdrop-blur-sm">
-                    <Icon name="records" size="medium" color="white" />
-                  </div>
-                  <div>
-                    <Typography variant="h4" className="font-bold text-white">
-                      My Medical Records
-                    </Typography>
-                    <Typography variant="body1" className="text-blue-100">
-                      Organize and manage your health documents
-                    </Typography>
-                  </div>
-                </div>
+        {/* Universal Header */}
+        <UniversalHeader
+          title="My Medical Records"
+          subtitle="Organize and manage your health documents"
+          variant="gradient"
+          icon="records"
+          showBackButton={true}
+          rightContent={
+            <div className="hidden md:flex items-center space-x-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">{filteredFolders.length}</div>
+                <div className="text-blue-100 text-xs">Total Folders</div>
               </div>
-
-              {/* Quick Stats */}
-              <div className="hidden md:flex items-center space-x-6">
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">{filteredFolders.length}</div>
-                  <div className="text-blue-100 text-xs">Total Folders</div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-white">
+                  {filteredFolders.reduce((acc, folder) => acc + folder.fileCount, 0)}
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl font-bold text-white">
-                    {filteredFolders.reduce((acc, folder) => acc + folder.fileCount, 0)}
-                  </div>
-                  <div className="text-blue-100 text-xs">Total Files</div>
-                </div>
+                <div className="text-blue-100 text-xs">Total Files</div>
               </div>
             </div>
+          }
+        />
 
-            {/* Enhanced Search Bar */}
-            <div className="mt-6">
-              <div className="max-w-2xl mx-auto">
-                <div className="relative">
-                  <div className="flex bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 items-center shadow-lg border border-white/20">
-                    <Icon name="search" size="small" color="#0E3293" className="mr-3" />
-                    <input
-                      type="text"
-                      placeholder="Search folders, documents, or file types..."
-                      value={searchText}
-                      onChange={(e) => setSearchText(e.target.value)}
-                      className="flex-1 text-base outline-none bg-transparent placeholder-gray-500"
-                    />
-                    {searchText.length > 0 && (
-                      <button
-                        onClick={() => setSearchText('')}
-                        className="ml-2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <Icon name="close" size="small" color="#6B7280" />
-                      </button>
-                    )}
-                  </div>
-                </div>
+        {/* Enhanced Search Bar */}
+        <div className="px-4 md:px-6 py-6 bg-transparent">
+          <div className="max-w-2xl mx-auto">
+            <div className="relative">
+              <div className="flex bg-white rounded-2xl px-4 py-3 items-center shadow-sm border border-gray-200">
+                <Icon name="search" size="small" color="#0E3293" className="mr-3" />
+                <input
+                  type="text"
+                  placeholder="Search folders, documents, or file types..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                  className="flex-1 text-base outline-none bg-transparent placeholder-gray-500 text-gray-900"
+                />
+                {searchText.length > 0 && (
+                  <button
+                    onClick={() => setSearchText('')}
+                    className="ml-2 p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+                  >
+                    <Icon name="close" size="small" color="#6B7280" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -204,34 +262,68 @@ const RecordsPage: React.FC = () => {
 
         {/* Enhanced Folders Section */}
         <div className="px-4 md:px-6 pb-24">
-          {/* Section Header */}
-          <div className="mb-6">
-            <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className="w-10 h-10 bg-[#0E3293]/10 rounded-xl flex items-center justify-center mr-3">
-                    <Icon name="folder" size="small" color="#0E3293" />
+          {/* Loading State */}
+          {loading && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
+                <Icon name="folder" size="large" color="#0E3293" />
+              </div>
+              <Typography variant="h6" className="text-gray-600 mb-2">
+                Loading your folders...
+              </Typography>
+              <div className="w-8 h-8 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <div className="text-center py-16">
+              <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Icon name="alert" size="large" color="#DC2626" />
+              </div>
+              <Typography variant="h6" className="text-red-600 mb-2">
+                {error}
+              </Typography>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-red-600 text-white rounded-2xl hover:bg-red-700 transition-all duration-200 hover:scale-105 shadow-lg"
+              >
+                Try Again
+              </button>
+            </div>
+          )}
+
+          {/* Section Header - Only show when not loading */}
+          {!loading && !error && (
+            <div className="mb-6">
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-4 border border-white/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-[#0E3293]/10 rounded-xl flex items-center justify-center mr-3">
+                      <Icon name="folder" size="small" color="#0E3293" />
+                    </div>
+                    <div>
+                      <Typography variant="h6" className="font-bold text-gray-800">
+                        Medical Folders ({filteredFolders.length})
+                      </Typography>
+                      <Typography variant="body2" className="text-gray-600">
+                        {searchText ? `Showing results for "${searchText}"` : 'Organize your health documents'}
+                      </Typography>
+                    </div>
                   </div>
-                  <div>
-                    <Typography variant="h6" className="font-bold text-gray-800">
-                      Medical Folders ({filteredFolders.length})
-                    </Typography>
-                    <Typography variant="body2" className="text-gray-600">
-                      {searchText ? `Showing results for "${searchText}"` : 'Organize your health documents'}
-                    </Typography>
+                  <div className="text-right">
+                    <div className="text-xl font-bold text-[#0E3293]">
+                      {filteredFolders.reduce((acc, folder) => acc + (folder.fileCount || 0), 0)}
+                    </div>
+                    <div className="text-xs text-gray-500">Total Files</div>
                   </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xl font-bold text-[#0E3293]">
-                    {filteredFolders.reduce((acc, folder) => acc + (folder.fileCount || 0), 0)}
-                  </div>
-                  <div className="text-xs text-gray-500">Total Files</div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {filteredFolders.length === 0 ? (
+          {/* Folders Content - Only show when not loading */}
+          {!loading && !error && (filteredFolders.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-32 h-32 bg-gradient-to-br from-gray-100 to-gray-200 rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse-gentle">
                 <Icon name="folder" size="large" color="#9CA3AF" />
@@ -341,13 +433,13 @@ const RecordsPage: React.FC = () => {
                 </div>
               ))}
             </div>
-          )}
+          ))}
         </div>
 
         {/* Enhanced Floating Action Button */}
         <div className="fixed bottom-6 right-6 z-50">
           <button className="group bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white p-4 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 animate-pulse-gentle">
-            <Icon name="plus" size="medium" color="white" />
+            <Icon name="plus" size="small" color="white" />
             <div className="absolute -top-12 right-0 bg-gray-800 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
               Add New Folder
             </div>

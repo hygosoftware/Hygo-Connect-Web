@@ -6,6 +6,7 @@ export { default as Icon } from './Icon';
 export { default as OTPInput } from './OTPInput';
 export { default as BackButton } from './BackButton';
 export { default as Header } from './Header';
+export { default as UniversalHeader } from './UniversalHeader';
 export { default as HeaderWrapper, HeaderProvider, useHeader } from './HeaderWrapper';
 export { default as SideMenu } from './SideMenu';
 export { default as ResponsiveNavigation } from './ResponsiveNavigation';

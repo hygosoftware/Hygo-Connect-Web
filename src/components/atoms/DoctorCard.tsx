@@ -60,12 +60,12 @@ const DoctorCard: React.FC<DoctorCardProps> = ({
 
   return (
     <button
-      className={`bg-white p-3 rounded-xl mr-4 w-44 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer ${className}`}
+      className={`bg-white p-4 rounded-xl mr-4 w-52 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex-shrink-0 ${className}`}
       onClick={handlePress}
     >
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center h-full">
         {/* Doctor Image */}
-        <div className="relative mb-2">
+        <div className="relative mb-3">
           {resolvedImageSrc ? (
             <img
               src={resolvedImageSrc}
@@ -95,36 +95,71 @@ const DoctorCard: React.FC<DoctorCardProps> = ({
         </div>
 
         {/* Doctor Name */}
-        <Typography variant="body1" className="font-semibold text-center text-base mb-1 truncate w-full">
-          {fullName}
-        </Typography>
+        <div className="w-full mb-2">
+          <Typography
+            variant="body1"
+            className="font-semibold text-center text-sm leading-tight px-1"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxHeight: '2.5rem'
+            }}
+          >
+            {fullName}
+          </Typography>
+        </div>
 
         {/* Qualifications */}
-        <div className="mt-1">
-          <Typography variant="caption" className="text-gray-600 text-center leading-4 truncate w-full">
+        <div className="w-full mb-2">
+          <Typography
+            variant="caption"
+            className="text-gray-600 text-center text-xs leading-tight px-1"
+            style={{
+              display: '-webkit-box',
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: 'vertical',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxHeight: '1.25rem'
+            }}
+          >
             {formattedQualifications}
           </Typography>
         </div>
 
         {/* Specializations */}
         {formattedSpecializations && (
-          <div className="mt-2">
-            <Typography variant="caption" className="text-gray-600 text-center leading-4 truncate w-full">
+          <div className="w-full mb-3">
+            <Typography
+              variant="caption"
+              className="text-gray-500 text-center text-xs leading-tight px-1"
+              style={{
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                maxHeight: '2.5rem'
+              }}
+            >
               {formattedSpecializations}
             </Typography>
           </div>
         )}
 
         {/* Rating */}
-        <div className="flex items-center mt-2">
-          <Typography variant="body2" className="text-blue-800 font-bold mr-1">
+        <div className="flex items-center justify-center mt-auto">
+          <Typography variant="body2" className="text-blue-800 font-bold mr-1 text-sm">
             {validRating.toFixed(1)}
           </Typography>
           <div className="flex">
             {[1, 2, 3, 4, 5].map((star) => (
               <span
                 key={star}
-                className={`text-sm ${
+                className={`text-xs ${
                   star <= Math.round(validRating) ? "text-yellow-500" : "text-gray-300"
                 }`}
               >

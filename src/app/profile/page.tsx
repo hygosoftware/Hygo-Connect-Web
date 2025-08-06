@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react'
 import Image from "next/image"
 import { useRouter } from "next/navigation"
+import { UniversalHeader } from '../../components/atoms'
+import { useAuth } from '../../hooks/useAuth'
+import { profileService } from '../../services/apiServices'
 import {
   User,
   Mail,
@@ -21,8 +24,6 @@ import {
   Ruler,
   Weight,
   ArrowLeft,
-  Settings,
-  Eye,
   Check
 } from 'lucide-react'
 
@@ -56,24 +57,25 @@ interface QuickStat {
 // Main Profile Component
 const ProfileScreen: React.FC = () => {
   const router = useRouter()
+  const { user, isAuthenticated, loading: authLoading } = useAuth()
 
   const [profileData, setProfileData] = useState<ProfileData>({
-    FullName: "Devyani Kadachha",
-    Email: "devyanikadachha29@gmail.com",
-    MobileNumber: "+918200744009",
+    FullName: "",
+    Email: "",
+    MobileNumber: "",
     AlternativeNumber: "",
-    Gender: "Female",
-    Age: "23",
-    DateOfBirth: "2001-01-29",
-    Country: "India",
-    State: "Gujarat",
-    City: "Ahmedabad",
+    Gender: "",
+    Age: "",
+    DateOfBirth: "",
+    Country: "",
+    State: "",
+    City: "",
     Address: "",
-    Height: "165",
-    Weight: "55",
-    BloodGroup: "O+",
-    ChronicDiseases: ["Diabetes"],
-    Allergies: ["Peanuts", "Dairy"],
+    Height: "",
+    Weight: "",
+    BloodGroup: "",
+    ChronicDiseases: [],
+    Allergies: [],
     profilePhoto: null,
   })
 
@@ -82,6 +84,84 @@ const ProfileScreen: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [showGenderModal, setShowGenderModal] = useState(false)
+
+  // Load user data when authentication state changes
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (!authLoading) {
+        if (isAuthenticated && user) {
+          setIsLoading(true)
+
+          try {
+            // First, try to fetch complete profile data from API
+            console.log('🔄 Loading profile data for user:', user._id)
+            const apiProfileData = await profileService.getProfileByUserId(user._id)
+
+            if (apiProfileData) {
+              // Use API data if available
+              console.log('✅ Profile data loaded from API:', apiProfileData)
+
+              // Helper function to extract phone number from API response
+              const extractPhoneNumber = (phoneData: any): string => {
+                if (!phoneData) return "";
+                if (typeof phoneData === 'string') return phoneData;
+                if (Array.isArray(phoneData) && phoneData.length > 0) {
+                  return phoneData[0].number || phoneData[0].toString();
+                }
+                if (typeof phoneData === 'object' && phoneData.number) {
+                  return phoneData.number;
+                }
+                return "";
+              };
+
+              setProfileData({
+                FullName: apiProfileData.FullName || "",
+                Email: apiProfileData.Email || "",
+                MobileNumber: extractPhoneNumber(apiProfileData.MobileNumber),
+                AlternativeNumber: extractPhoneNumber(apiProfileData.AlternativeNumber),
+                Gender: apiProfileData.Gender || "",
+                Age: apiProfileData.Age?.toString() || "",
+                DateOfBirth: apiProfileData.DateOfBirth || "",
+                Country: apiProfileData.Country || "",
+                State: apiProfileData.State || "",
+                City: apiProfileData.City || "",
+                Address: apiProfileData.Address || "",
+                Height: apiProfileData.Height?.toString() || "",
+                Weight: apiProfileData.Weight?.toString() || "",
+                BloodGroup: apiProfileData.BloodGroup || "",
+                ChronicDiseases: apiProfileData.ChronicDiseases || [],
+                Allergies: apiProfileData.Allergies || [],
+                profilePhoto: apiProfileData.profilePhoto || null,
+              })
+            } else {
+              // Fallback to basic user data from authentication
+              console.log('⚠️ API profile data not available, using auth data')
+              setProfileData(prevData => ({
+                ...prevData,
+                FullName: user.FullName || user.fullName || "",
+                Email: user.Email || user.email || "",
+              }))
+            }
+          } catch (error) {
+            console.error('❌ Error loading profile data:', error)
+            // Fallback to basic user data from authentication
+            setProfileData(prevData => ({
+              ...prevData,
+              FullName: user.FullName || user.fullName || "",
+              Email: user.Email || user.email || "",
+            }))
+          }
+        } else {
+          // Redirect to login if not authenticated
+          router.push('/login')
+          return
+        }
+        setIsLoading(false)
+      }
+    }
+
+    loadUserData()
+  }, [user, isAuthenticated, authLoading, router])
   const [showBloodGroupModal, setShowBloodGroupModal] = useState(false)
 
   // Options
@@ -127,40 +207,95 @@ const ProfileScreen: React.FC = () => {
 
   // Handle save
   const handleSave = async () => {
+    if (!user?._id) {
+      console.error('❌ No user ID available for saving profile')
+      return
+    }
+
     setIsSaving(true)
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log('🔄 Saving profile data for user:', user._id)
+
+      // Prepare update data
+      const updateData = {
+        FullName: profileData.FullName,
+        Email: profileData.Email,
+        MobileNumber: profileData.MobileNumber,
+        AlternativeNumber: profileData.AlternativeNumber,
+        Gender: profileData.Gender,
+        Age: profileData.Age,
+        DateOfBirth: profileData.DateOfBirth,
+        Country: profileData.Country,
+        State: profileData.State,
+        City: profileData.City,
+        Address: profileData.Address,
+        Height: profileData.Height,
+        Weight: profileData.Weight,
+        BloodGroup: profileData.BloodGroup,
+        ChronicDiseases: profileData.ChronicDiseases,
+        Allergies: profileData.Allergies,
+        profilePhoto: profileData.profilePhoto,
+      }
+
+      // Save to API
+      const updatedProfile = await profileService.updateProfile(user._id, updateData)
+
+      if (updatedProfile) {
+        console.log('✅ Profile saved successfully:', updatedProfile)
+
+        // Helper function to extract phone number from API response
+        const extractPhoneNumber = (phoneData: any): string => {
+          if (!phoneData) return "";
+          if (typeof phoneData === 'string') return phoneData;
+          if (Array.isArray(phoneData) && phoneData.length > 0) {
+            return phoneData[0].number || phoneData[0].toString();
+          }
+          if (typeof phoneData === 'object' && phoneData.number) {
+            return phoneData.number;
+          }
+          return "";
+        };
+
+        // Update local state with the response data
+        setProfileData({
+          FullName: updatedProfile.FullName || "",
+          Email: updatedProfile.Email || "",
+          MobileNumber: extractPhoneNumber(updatedProfile.MobileNumber),
+          AlternativeNumber: extractPhoneNumber(updatedProfile.AlternativeNumber),
+          Gender: updatedProfile.Gender || "",
+          Age: updatedProfile.Age?.toString() || "",
+          DateOfBirth: updatedProfile.DateOfBirth || "",
+          Country: updatedProfile.Country || "",
+          State: updatedProfile.State || "",
+          City: updatedProfile.City || "",
+          Address: updatedProfile.Address || "",
+          Height: updatedProfile.Height?.toString() || "",
+          Weight: updatedProfile.Weight?.toString() || "",
+          BloodGroup: updatedProfile.BloodGroup || "",
+          ChronicDiseases: updatedProfile.ChronicDiseases || [],
+          Allergies: updatedProfile.Allergies || [],
+          profilePhoto: updatedProfile.profilePhoto || null,
+        })
+        setIsEditing(false)
+      } else {
+        console.error('❌ Failed to save profile - no response data')
+        // Fallback to localStorage for now
+        localStorage.setItem("profileData", JSON.stringify(profileData))
+        setIsEditing(false)
+      }
+    } catch (error) {
+      console.error('❌ Save error:', error)
+      // Fallback to localStorage on error
       localStorage.setItem("profileData", JSON.stringify(profileData))
       setIsEditing(false)
-    } catch (error) {
-      console.error('Save error:', error)
     } finally {
       setIsSaving(false)
     }
   }
 
-  // Handle cancel
-  const handleCancel = () => {
-    setIsEditing(false)
-  }
 
-  // Load profile data
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const storedData = localStorage.getItem("profileData")
-        if (storedData) {
-          setProfileData(JSON.parse(storedData))
-        }
-        await new Promise(resolve => setTimeout(resolve, 1000))
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Load error:', error)
-        setIsLoading(false)
-      }
-    }
-    loadProfile()
-  }, [])
+
+
 
   // Mobile Section Components
   const MobileOverviewSection: React.FC = () => {
@@ -213,9 +348,20 @@ const ProfileScreen: React.FC = () => {
 
   const MobilePersonalSection: React.FC = () => (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-        <div className="space-y-4">
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-semibold text-gray-900">Personal Information</h3>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-[#0e3293] text-sm font-medium flex items-center space-x-1 hover:text-blue-700 transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Edit</span>
+            </button>
+          )}
+        </div>
+        <div className="space-y-5">
           <InputField
             label="Full Name"
             value={profileData.FullName}
@@ -285,9 +431,20 @@ const ProfileScreen: React.FC = () => {
   const MobileMedicalSection: React.FC = () => (
     <div className="space-y-4">
       {/* Physical Information */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Physical Information</h3>
-        <div className="space-y-4">
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-semibold text-gray-900">Physical Information</h3>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-[#0e3293] text-sm font-medium flex items-center space-x-1 hover:text-blue-700 transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Edit</span>
+            </button>
+          )}
+        </div>
+        <div className="space-y-5">
           <InputField
             label="Height (cm)"
             value={profileData.Height}
@@ -318,8 +475,19 @@ const ProfileScreen: React.FC = () => {
       </div>
 
       {/* Health Conditions */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Health Conditions</h3>
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-semibold text-gray-900">Health Conditions</h3>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-[#0e3293] text-sm font-medium flex items-center space-x-1 hover:text-blue-700 transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Edit</span>
+            </button>
+          )}
+        </div>
 
         {/* Chronic Diseases */}
         <div className="mb-6">
@@ -328,13 +496,12 @@ const ProfileScreen: React.FC = () => {
             {chronicDiseaseOptions.map((disease) => (
               <button
                 key={disease}
-                onClick={() => isEditing && handleArrayFieldToggle('ChronicDiseases', disease)}
-                disabled={!isEditing}
-                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                onClick={() => handleArrayFieldToggle('ChronicDiseases', disease)}
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 border ${
                   profileData.ChronicDiseases.includes(disease)
-                    ? 'bg-[#0e3293] text-white'
-                    : 'bg-gray-100 text-gray-600'
-                } ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}
+                    ? 'bg-[#0e3293] text-white border-[#0e3293] shadow-sm'
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                } cursor-pointer`}
               >
                 {disease}
               </button>
@@ -349,13 +516,12 @@ const ProfileScreen: React.FC = () => {
             {allergiesOptions.map((allergy) => (
               <button
                 key={allergy}
-                onClick={() => isEditing && handleArrayFieldToggle('Allergies', allergy)}
-                disabled={!isEditing}
-                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 ${
+                onClick={() => handleArrayFieldToggle('Allergies', allergy)}
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-all duration-200 border ${
                   profileData.Allergies.includes(allergy)
-                    ? 'bg-[#0e3293] text-white'
-                    : 'bg-gray-100 text-gray-600'
-                } ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}
+                    ? 'bg-[#0e3293] text-white border-[#0e3293] shadow-sm'
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                } cursor-pointer`}
               >
                 {allergy}
               </button>
@@ -368,9 +534,20 @@ const ProfileScreen: React.FC = () => {
 
   const MobileContactSection: React.FC = () => (
     <div className="space-y-4">
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h3>
-        <div className="space-y-4">
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-lg font-semibold text-gray-900">Contact Information</h3>
+          {!isEditing && (
+            <button
+              onClick={() => setIsEditing(true)}
+              className="text-[#0e3293] text-sm font-medium flex items-center space-x-1 hover:text-blue-700 transition-colors"
+            >
+              <Edit3 className="w-4 h-4" />
+              <span>Edit</span>
+            </button>
+          )}
+        </div>
+        <div className="space-y-5">
           <InputField
             label="Mobile Number"
             value={profileData.MobileNumber}
@@ -560,13 +737,17 @@ const ProfileScreen: React.FC = () => {
             {chronicDiseaseOptions.map((disease) => (
               <button
                 key={disease}
-                onClick={() => isEditing && handleArrayFieldToggle('ChronicDiseases', disease)}
-                disabled={!isEditing}
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                onClick={() => {
+                  if (!isEditing) {
+                    setIsEditing(true)
+                  }
+                  handleArrayFieldToggle('ChronicDiseases', disease)
+                }}
+                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border cursor-pointer ${
                   profileData.ChronicDiseases.includes(disease)
-                    ? 'bg-[#0e3293] text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                } ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}
+                    ? 'bg-[#0e3293] text-white border-[#0e3293] shadow-md'
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                }`}
               >
                 {disease}
               </button>
@@ -581,13 +762,17 @@ const ProfileScreen: React.FC = () => {
             {allergiesOptions.map((allergy) => (
               <button
                 key={allergy}
-                onClick={() => isEditing && handleArrayFieldToggle('Allergies', allergy)}
-                disabled={!isEditing}
-                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+                onClick={() => {
+                  if (!isEditing) {
+                    setIsEditing(true)
+                  }
+                  handleArrayFieldToggle('Allergies', allergy)
+                }}
+                className={`px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 border cursor-pointer ${
                   profileData.Allergies.includes(allergy)
-                    ? 'bg-[#0e3293] text-white shadow-md'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                } ${!isEditing ? 'cursor-default' : 'cursor-pointer'}`}
+                    ? 'bg-[#0e3293] text-white border-[#0e3293] shadow-md'
+                    : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:border-gray-300'
+                }`}
               >
                 {allergy}
               </button>
@@ -630,26 +815,47 @@ const ProfileScreen: React.FC = () => {
     icon: React.ReactNode
     placeholder: string
     type?: string
-  }> = ({ label, value, field, icon, placeholder, type = "text" }) => (
-    <div className="space-y-2">
-      <label className="block text-sm font-medium text-gray-700">{label}</label>
-      <div className="relative">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#0e3293]">
-          {icon}
+  }> = ({ label, value, field, icon, placeholder, type = "text" }) => {
+    const handleClick = () => {
+      if (!isEditing) {
+        setIsEditing(true)
+      }
+    }
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      // Ensure we're in edit mode when typing
+      if (!isEditing) {
+        setIsEditing(true)
+      }
+      // Always allow changes when the field is focused/active
+      handleInputChange(field, e.target.value)
+    }
+
+    return (
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <div className="relative">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#0e3293] z-10">
+            {icon}
+          </div>
+          <input
+            type={type}
+            className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg transition-all duration-200 relative z-0 ${
+              isEditing
+                ? "bg-white border-[#0e3293] focus:ring-4 focus:ring-[#0e3293]/20 focus:border-[#0e3293] shadow-sm"
+                : "bg-white border-gray-200 cursor-pointer hover:border-gray-300 hover:shadow-sm"
+            } ${!isEditing && value ? "text-gray-900" : ""}`}
+            value={value?.toString() || ""}
+            onChange={handleChange}
+            placeholder={placeholder}
+            readOnly={!isEditing}
+            onClick={handleClick}
+            onFocus={() => !isEditing && setIsEditing(true)}
+          />
         </div>
-        <input
-          type={type}
-          className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#0e3293] focus:border-transparent transition-all duration-200 ${
-            isEditing ? "bg-white" : "bg-gray-50"
-          }`}
-          value={value?.toString() || ""}
-          onChange={(e) => handleInputChange(field, e.target.value)}
-          placeholder={placeholder}
-          disabled={!isEditing}
-        />
       </div>
-    </div>
-  )
+    )
+  }
 
   // Dropdown Field Component
   const DropdownField: React.FC<{
@@ -665,15 +871,21 @@ const ProfileScreen: React.FC = () => {
     <div className="space-y-2">
       <label className="block text-sm font-medium text-gray-700">{label}</label>
       <div className="relative">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#0e3293]">
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#0e3293] z-10">
           {icon}
         </div>
         <button
-          className={`w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-left flex items-center justify-between transition-all duration-200 ${
-            isEditing ? "bg-white hover:bg-gray-50" : "bg-gray-50"
+          className={`w-full pl-10 pr-4 py-3 border-2 rounded-lg text-left flex items-center justify-between transition-all duration-200 relative z-0 ${
+            isEditing
+              ? "bg-white border-[#0e3293] hover:shadow-sm focus:ring-4 focus:ring-[#0e3293]/20"
+              : "bg-white border-gray-200 cursor-pointer hover:border-gray-300 hover:shadow-sm"
           }`}
-          onClick={() => isEditing && setModalVisible(true)}
-          disabled={!isEditing}
+          onClick={() => {
+            if (!isEditing) {
+              setIsEditing(true)
+            }
+            setModalVisible(true)
+          }}
         >
           <span className={value ? "text-gray-900" : "text-gray-400"}>
             {value || placeholder}
@@ -684,9 +896,17 @@ const ProfileScreen: React.FC = () => {
 
       {/* Modal */}
       {modalVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl p-6 w-full max-w-sm max-h-96">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">{label}</h3>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[9999] p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm max-h-96 relative z-[10000]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
+              <button
+                onClick={() => setModalVisible(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
             <div className="max-h-64 overflow-y-auto space-y-1">
               {options.map((option) => (
                 <button
@@ -708,7 +928,7 @@ const ProfileScreen: React.FC = () => {
     </div>
   )
 
-  if (isLoading) {
+  if (isLoading || authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -721,21 +941,21 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Universal Header */}
+      <UniversalHeader
+        title="My Profile"
+        subtitle={`${calculateProfileCompletion()}% Complete`}
+        variant="gradient"
+        icon="user"
+        showBackButton={true}
+      />
+
       {/* Mobile Layout */}
       <div className="lg:hidden">
         {/* Mobile Header */}
-        <div className="bg-gradient-to-br from-[#0e3293] to-blue-600 relative">
-          {/* Status Bar Simulation */}
-          <div className="flex justify-between items-center px-4 py-1 text-sm text-white">
-            <span>5:47</span>
-            <div className="flex items-center space-x-2">
-              <span className="text-xs">0.20 KB/s</span>
-              <span className="text-xs">64%</span>
-            </div>
-          </div>
-
+        <div className="bg-gradient-to-br from-[#0e3293] to-blue-600 relative z-0">
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-4">
+          <div className="flex items-center justify-between px-4 py-6 relative z-10">
             <button
               onClick={() => router.back()}
               className="flex items-center space-x-2 text-white hover:text-blue-200 transition-colors"
@@ -743,19 +963,40 @@ const ProfileScreen: React.FC = () => {
               <ArrowLeft className="w-6 h-6" />
               <span className="font-medium">Profile</span>
             </button>
-            <button
-              onClick={() => setIsEditing(!isEditing)}
-              className="p-2 rounded-full bg-white bg-opacity-20 hover:bg-opacity-30 transition-colors"
-            >
-              {isEditing ? <X className="w-5 h-5 text-white" /> : <Edit3 className="w-5 h-5 text-white" />}
-            </button>
+            <div className="flex items-center space-x-2">
+              {isEditing && (
+                <button
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className="px-4 py-2 bg-white/20 text-white rounded-lg font-medium hover:bg-white/30 transition-colors disabled:opacity-50 flex items-center space-x-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span className="text-sm">Saving...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      <span className="text-sm">Save</span>
+                    </>
+                  )}
+                </button>
+              )}
+              <button
+                onClick={() => setIsEditing(!isEditing)}
+                className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
+              >
+                {isEditing ? <X className="w-5 h-5 text-white" /> : <Edit3 className="w-5 h-5 text-white" />}
+              </button>
+            </div>
           </div>
 
           {/* Profile Info */}
-          <div className="px-4 pb-8">
+          <div className="px-4 pb-8 relative z-10">
             <div className="flex items-center space-x-4 mb-6">
               <div className="relative">
-                <div className="w-20 h-20 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                <div className="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center border-2 border-white/30">
                   {profileData.profilePhoto ? (
                     <Image
                       src={profileData.profilePhoto}
@@ -765,54 +1006,58 @@ const ProfileScreen: React.FC = () => {
                       className="w-full h-full rounded-full object-cover"
                     />
                   ) : (
-                    <Camera className="w-8 h-8 text-white" />
+                    <User className="w-8 h-8 text-white" />
                   )}
                 </div>
                 {isEditing && (
-                  <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center">
+                  <button className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-lg">
                     <Camera className="w-3 h-3 text-[#0e3293]" />
                   </button>
                 )}
               </div>
               <div className="flex-1">
-                <h1 className="text-white text-xl font-bold mb-1">
-                  {profileData.FullName || "Your Name"}
+                <h1 className="text-white text-xl font-bold mb-2">
+                  {profileData.FullName || "Complete Your Profile"}
                 </h1>
-                <div className="flex items-center text-white text-opacity-80 text-sm mb-1">
-                  <Mail className="w-4 h-4 mr-1" />
-                  <span>{profileData.Email}</span>
-                </div>
-                <div className="flex items-center text-white text-opacity-80 text-sm">
-                  <Phone className="w-4 h-4 mr-1" />
-                  <span>{profileData.MobileNumber}</span>
-                </div>
+                {profileData.Email && (
+                  <div className="flex items-center text-white/80 text-sm mb-1">
+                    <Mail className="w-4 h-4 mr-2" />
+                    <span>{profileData.Email}</span>
+                  </div>
+                )}
+                {profileData.MobileNumber && (
+                  <div className="flex items-center text-white/80 text-sm">
+                    <Phone className="w-4 h-4 mr-2" />
+                    <span>{profileData.MobileNumber}</span>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Progress Bar */}
-            <div className="bg-white bg-opacity-20 rounded-full h-2 overflow-hidden mb-2">
+            <div className="bg-white/20 rounded-full h-3 overflow-hidden mb-2">
               <div
-                className="h-full bg-white rounded-full transition-all duration-300"
+                className="h-full bg-white rounded-full transition-all duration-500 shadow-sm"
                 style={{ width: `${calculateProfileCompletion()}%` }}
               />
             </div>
-            <div className="flex justify-between text-white text-xs opacity-80">
+            <div className="flex justify-between text-white text-sm">
               <span>Profile Completion</span>
-              <span>{calculateProfileCompletion()}%</span>
+              <span className="font-semibold">{calculateProfileCompletion()}%</span>
             </div>
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        <div className="bg-white shadow-sm sticky top-0 z-10">
-          <div className="flex overflow-x-auto">
+        <div className="bg-white shadow-lg sticky top-0 z-20 border-b border-gray-100">
+          <div className="flex overflow-x-auto scrollbar-hide">
             {sections.map((section) => (
               <button
                 key={section.id}
-                className={`flex-1 px-4 py-3 text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+                className={`flex-1 px-4 py-4 text-sm font-medium whitespace-nowrap transition-all duration-300 relative ${
                   activeSection === section.id
-                    ? "text-[#0e3293] border-b-2 border-[#0e3293] bg-blue-50"
-                    : "text-gray-600 hover:text-gray-900"
+                    ? "text-[#0e3293] bg-blue-50"
+                    : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                 }`}
                 onClick={() => setActiveSection(section.id as any)}
               >
@@ -820,25 +1065,48 @@ const ProfileScreen: React.FC = () => {
                   {section.icon}
                   <span>{section.label}</span>
                 </div>
+                {activeSection === section.id && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0e3293] rounded-t-full"></div>
+                )}
               </button>
             ))}
           </div>
         </div>
 
         {/* Mobile Content */}
-        <div className="p-4 pb-20">
-          {activeSection === 'overview' && <MobileOverviewSection />}
-          {activeSection === 'personal' && <MobilePersonalSection />}
-          {activeSection === 'medical' && <MobileMedicalSection />}
-          {activeSection === 'contact' && <MobileContactSection />}
+        <div className="p-4 pb-24 min-h-screen bg-gray-50">
+          {/* Edit Mode Indicator */}
+          {isEditing && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center space-x-2">
+              <Edit3 className="w-4 h-4 text-blue-600" />
+              <span className="text-blue-800 text-sm font-medium">Edit mode active - Tap fields to modify</span>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            {activeSection === 'overview' && <MobileOverviewSection />}
+            {activeSection === 'personal' && <MobilePersonalSection />}
+            {activeSection === 'medical' && <MobileMedicalSection />}
+            {activeSection === 'contact' && <MobileContactSection />}
+          </div>
         </div>
+
+        {/* Floating Action Button for Mobile */}
+        {!isEditing && (
+          <button
+            onClick={() => setIsEditing(true)}
+            className="fixed bottom-6 right-6 w-14 h-14 bg-[#0e3293] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-30 hover:scale-105"
+          >
+            <Edit3 className="w-6 h-6" />
+          </button>
+        )}
       </div>
 
       {/* Desktop Layout */}
       <div className="hidden lg:block">
         <div className="max-w-7xl mx-auto p-6">
           {/* Desktop Header */}
-          <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <button
@@ -847,19 +1115,30 @@ const ProfileScreen: React.FC = () => {
                 >
                   <ArrowLeft className="w-5 h-5 text-gray-600" />
                 </button>
-                <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Profile Settings</h1>
+                  <p className="text-gray-600 text-sm mt-1">Manage your personal information and preferences</p>
+                </div>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="text-right mr-4">
+              <div className="flex items-center space-x-4">
+                <div className="text-right">
                   <div className="text-sm text-gray-600">Profile Completion</div>
-                  <div className="text-lg font-semibold text-[#0e3293]">{calculateProfileCompletion()}%</div>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-20 bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-[#0e3293] h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${calculateProfileCompletion()}%` }}
+                      />
+                    </div>
+                    <span className="text-lg font-semibold text-[#0e3293]">{calculateProfileCompletion()}%</span>
+                  </div>
                 </div>
                 <button
                   onClick={() => setIsEditing(!isEditing)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                  className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
                     isEditing
                       ? "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      : "bg-[#0e3293] text-white hover:bg-blue-700"
+                      : "bg-[#0e3293] text-white hover:bg-blue-700 hover:shadow-lg"
                   }`}
                 >
                   {isEditing ? (
@@ -878,7 +1157,7 @@ const ProfileScreen: React.FC = () => {
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                    className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 hover:shadow-lg transition-all duration-200 disabled:opacity-50"
                   >
                     {isSaving ? (
                       <div className="flex items-center space-x-2">
@@ -901,11 +1180,11 @@ const ProfileScreen: React.FC = () => {
           <div className="grid grid-cols-12 gap-6">
             {/* Sidebar */}
             <div className="col-span-3">
-              <div className="bg-white rounded-xl shadow-sm p-6 sticky top-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 sticky top-6">
                 {/* Profile Card */}
                 <div className="text-center mb-6">
                   <div className="relative inline-block">
-                    <div className="w-24 h-24 bg-gradient-to-br from-[#0e3293] to-blue-600 rounded-full flex items-center justify-center mb-4">
+                    <div className="w-24 h-24 bg-gradient-to-br from-[#0e3293] to-blue-600 rounded-full flex items-center justify-center mb-4 border-4 border-white shadow-lg">
                       {profileData.profilePhoto ? (
                         <Image
                           src={profileData.profilePhoto}
@@ -915,43 +1194,45 @@ const ProfileScreen: React.FC = () => {
                           className="w-full h-full rounded-full object-cover"
                         />
                       ) : (
-                        <Camera className="w-8 h-8 text-white" />
+                        <User className="w-8 h-8 text-white" />
                       )}
                     </div>
                     {isEditing && (
-                      <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#0e3293] rounded-full flex items-center justify-center shadow-lg">
+                      <button className="absolute -bottom-1 -right-1 w-8 h-8 bg-[#0e3293] rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors">
                         <Camera className="w-4 h-4 text-white" />
                       </button>
                     )}
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                    {profileData.FullName || "Your Name"}
+                    {profileData.FullName || "Complete Your Profile"}
                   </h3>
-                  <p className="text-sm text-gray-600 mb-4">{profileData.Email}</p>
+                  <p className="text-sm text-gray-600 mb-4">{profileData.Email || "Add your email"}</p>
 
                   {/* Progress Bar */}
-                  <div className="bg-gray-200 rounded-full h-2 mb-2">
+                  <div className="bg-gray-200 rounded-full h-3 mb-2">
                     <div
-                      className="bg-[#0e3293] rounded-full h-2 transition-all duration-300"
+                      className="bg-gradient-to-r from-[#0e3293] to-blue-600 rounded-full h-3 transition-all duration-500"
                       style={{ width: `${calculateProfileCompletion()}%` }}
                     />
                   </div>
-                  <p className="text-xs text-gray-500">{calculateProfileCompletion()}% Complete</p>
+                  <p className="text-sm text-gray-600 font-medium">{calculateProfileCompletion()}% Complete</p>
                 </div>
 
                 {/* Navigation */}
-                <nav className="space-y-2">
+                <nav className="space-y-1">
                   {sections.map((section) => (
                     <button
                       key={section.id}
-                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors ${
+                      className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-all duration-200 ${
                         activeSection === section.id
-                          ? "bg-[#0e3293] text-white"
-                          : "text-gray-700 hover:bg-gray-100"
+                          ? "bg-gradient-to-r from-[#0e3293] to-blue-600 text-white shadow-md"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                       onClick={() => setActiveSection(section.id as any)}
                     >
-                      {section.icon}
+                      <div className={`${activeSection === section.id ? 'text-white' : 'text-[#0e3293]'}`}>
+                        {section.icon}
+                      </div>
                       <span className="font-medium">{section.label}</span>
                     </button>
                   ))}
@@ -961,7 +1242,18 @@ const ProfileScreen: React.FC = () => {
 
             {/* Main Content */}
             <div className="col-span-9">
-              <div className="bg-white rounded-xl shadow-sm p-6">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
+                {/* Edit Mode Indicator */}
+                {isEditing && (
+                  <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center space-x-3">
+                    <Edit3 className="w-5 h-5 text-blue-600" />
+                    <div>
+                      <p className="text-blue-800 font-medium">Edit mode is active</p>
+                      <p className="text-blue-600 text-sm">Click on any field to modify your information</p>
+                    </div>
+                  </div>
+                )}
+
                 {activeSection === 'overview' && <DesktopOverviewSection />}
                 {activeSection === 'personal' && <DesktopPersonalSection />}
                 {activeSection === 'medical' && <DesktopMedicalSection />}

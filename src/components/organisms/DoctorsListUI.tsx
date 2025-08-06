@@ -2,7 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
-import { Icon, Button } from '../atoms';
+import { Icon, Button, UniversalHeader } from '../atoms';
 
 interface Qualification {
   _id: string;
@@ -156,32 +156,15 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
       `}</style>
 
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      {/* Modern Header with Gradient */}
-      <div className="bg-gradient-to-r from-[#0E3293] via-[#1e40af] to-[#3b82f6] px-4 md:px-6 py-6 md:py-8 shadow-xl sticky top-0 z-20 backdrop-blur-sm">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center">
-            <button
-              onClick={onGoBack}
-              className="p-2 hover:bg-white/20 rounded-xl transition-all duration-200 md:hidden mr-3 backdrop-blur-sm"
-            >
-              <Icon name="arrow-left" size="medium" color="white" />
-            </button>
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mr-4 backdrop-blur-sm">
-                <Icon name="doctor" size="medium" color="white" />
-              </div>
-              <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-white">
-                  Find Your Doctor
-                </h1>
-                <p className="text-blue-100 text-sm md:text-base">
-                  {filteredDoctors.length} expert doctors available
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick Stats */}
+      {/* Universal Header */}
+      <UniversalHeader
+        title="Find Your Doctor"
+        subtitle={`${filteredDoctors.length} expert doctors available`}
+        variant="gradient"
+        icon="doctor"
+        showBackButton={true}
+        onBackPress={onGoBack}
+        rightContent={
           <div className="hidden md:flex items-center space-x-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-white">{doctors.length}</div>
@@ -192,13 +175,14 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
               <div className="text-blue-100 text-xs">Available Now</div>
             </div>
           </div>
-        </div>
+        }
+      />
 
-        {/* Enhanced Search Bar */}
-        <div className="mt-6">
-          <div className="max-w-4xl mx-auto">
-            <div className="relative">
-              <div className="flex bg-white/95 backdrop-blur-sm rounded-2xl px-4 py-3 items-center shadow-lg border border-white/20">
+      {/* Search and Filters Section */}
+      <div className="px-4 md:px-6 py-6 bg-white shadow-sm">
+        <div className="max-w-4xl mx-auto">
+          <div className="relative">
+            <div className="flex bg-white rounded-2xl px-4 py-3 items-center shadow-sm border border-gray-200">
                 <Icon name="search" size="small" color="#0E3293" className="mr-3" />
                 <input
                   type="text"
@@ -229,7 +213,6 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
                     color={showFilters ? "white" : "#6B7280"}
                   />
                 </button>
-              </div>
             </div>
           </div>
         </div>
@@ -592,9 +575,9 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onPress, getFullImageUr
           </div>
 
           {/* Consultation Fee */}
-          <div className="bg-gradient-to-r from-[#0E3293] to-blue-600 text-white rounded-2xl p-4 group-hover:from-[#0A2470] group-hover:to-blue-700 transition-all duration-300">
-            <div className="text-sm opacity-90 mb-1">Consultation Fee</div>
-            <div className="text-2xl font-bold">₹{doctor.consultationFee || 0}</div>
+          <div className="bg-gradient-to-r from-[#0E3293] to-blue-600 text-white rounded-2xl p-3 group-hover:from-[#0A2470] group-hover:to-blue-700 transition-all duration-300">
+            <div className="text-xs opacity-90 mb-1">Consultation Fee</div>
+            <div className="text-lg font-bold">₹{doctor.consultationFee || 0}</div>
           </div>
         </div>
       </div>

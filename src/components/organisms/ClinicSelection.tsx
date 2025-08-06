@@ -26,10 +26,13 @@ const ClinicSelection: React.FC = () => {
       
       if (state.bookingFlow === 'doctor' && state.selectedDoctor) {
         // If coming from doctor selection, show only clinics where this doctor is available
-        clinicsData = await mockAPI.getClinicsByDoctor(state.selectedDoctor._id);
+        const { clinicService } = await import('../../services/apiServices');
+        clinicsData = await clinicService.getClinicsByDoctor(state.selectedDoctor._id);
       } else {
         // If booking by clinic, show all clinics
-        clinicsData = await mockAPI.getClinics();
+        // Replace mockAPI.getClinics with clinicService.getAllClinics
+        const { clinicService } = await import('../../services/apiServices');
+        clinicsData = await clinicService.getAllClinics();
       }
       
       setClinics(clinicsData);
@@ -65,11 +68,42 @@ const ClinicSelection: React.FC = () => {
     });
   }, [clinics, searchQuery, selectedType]);
 
-  const handleClinicSelect = (clinic: Clinic) => {
+  const handleClinicSelect = async (clinic: Clinic) => {
     selectClinic(clinic);
+    
     if (state.bookingFlow === 'clinic') {
-      // In clinic flow, go to doctor selection after selecting clinic
-      setStep('doctor');
+      // In clinic flow, fetch doctors for the selected clinic
+      try {
+        setLoading(true);
+        const { clinicService } = await import('../../services/apiServices');
+        const clinicDoctors = await clinicService.getdoctorbyclinicid(clinic._id);
+        
+        // Update the clinic object with the fetched doctors
+        const updatedClinic = {
+          ...clinic,
+          doctors: clinicDoctors || []
+        };
+        
+        selectClinic(updatedClinic);
+        setStep('clinic-doctor');
+        
+        showToast({
+          type: 'success',
+          title: 'Clinic selected',
+          message: `Found ${clinicDoctors?.length || 0} doctors available at ${clinic.clinicName}`
+        });
+      } catch (error) {
+        console.error('Error fetching doctors for clinic:', error);
+        showToast({
+          type: 'error',
+          title: 'Failed to load doctors',
+          message: 'Unable to fetch doctors for this clinic. Please try again.'
+        });
+        // Still proceed to clinic-doctor step even if API fails
+        setStep('clinic-doctor');
+      } finally {
+        setLoading(false);
+      }
     } else {
       // In doctor flow, go to date selection after selecting clinic
       setStep('date');
@@ -84,7 +118,7 @@ const ClinicSelection: React.FC = () => {
       {/* Clinic Image */}
       <div className="h-48 bg-gray-100 overflow-hidden">
         <img
-          src={clinic.images[0] || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
+          src={clinic.clinicImage || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
           alt={clinic.clinicName}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
         />
@@ -100,7 +134,7 @@ const ClinicSelection: React.FC = () => {
             <div className="flex items-center text-gray-600 mb-2">
               <Icon name="location" size="small" color="#6b7280" className="mr-2" />
               <Typography variant="body2">
-                {clinic.clinicAddress.city}, {clinic.clinicAddress.state}
+                {(clinic.clinicAddress?.city || clinic.address?.city || 'Unknown City')}, {(clinic.clinicAddress?.state || clinic.address?.state || 'Unknown State')}
               </Typography>
             </div>
           </div>
@@ -132,7 +166,7 @@ const ClinicSelection: React.FC = () => {
             Services Available:
           </Typography>
           <div className="flex flex-wrap gap-1">
-            {clinic.services.slice(0, 3).map((service, index) => (
+            {(clinic.services ?? []).slice(0, 3).map((service, index) => (
               <span
                 key={index}
                 className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
@@ -140,7 +174,7 @@ const ClinicSelection: React.FC = () => {
                 {service}
               </span>
             ))}
-            {clinic.services.length > 3 && (
+            {(clinic.services?.length ?? 0) > 3 && (
               <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
                 +{clinic.services.length - 3} more
               </span>
@@ -172,7 +206,7 @@ const ClinicSelection: React.FC = () => {
   );
 
   return (
-    <div className="flex-1 bg-gray-50">
+    <div className="flex-1 bg-gray-50 overflow-auto">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
         <div className="mb-6">
@@ -259,7 +293,7 @@ const ClinicSelection: React.FC = () => {
         ) : filteredClinics.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredClinics.map((clinic) => (
-              <ClinicCard key={clinic._id} clinic={clinic} />
+              <ClinicCard key={clinic._id || clinic.clinicId} clinic={clinic} />
             ))}
           </div>
         ) : (

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Icon, Typography, BackButton } from '../atoms';
-import { FileItem, UploadModal } from '../molecules';
+import { FileItem, UploadModal, FilePreviewModal } from '../molecules';
 import SearchBar from '../atoms/SearchBar';
 import { getAllFileFromFolder, deleteFileFromFolder, FileItem as FileItemType, FolderInfo } from '../../lib/api';
 
@@ -26,6 +26,15 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
   const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
   const [sortBy, setSortBy] = useState<'name' | 'date' | 'size' | 'type'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [filePreviewModal, setFilePreviewModal] = useState<{
+    isOpen: boolean;
+    fileId: string;
+    fileName: string;
+  }>({
+    isOpen: false,
+    fileId: '',
+    fileName: ''
+  });
 
   useEffect(() => {
     fetchFiles();
@@ -76,6 +85,23 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
     if (file?.fileUrl) {
       window.open(file.fileUrl, '_blank');
     }
+  };
+
+  const handleFileClick = (fileId: string, fileName: string) => {
+    // Open file preview modal (includes both preview and details tabs)
+    setFilePreviewModal({
+      isOpen: true,
+      fileId,
+      fileName
+    });
+  };
+
+  const closeFilePreviewModal = () => {
+    setFilePreviewModal({
+      isOpen: false,
+      fileId: '',
+      fileName: ''
+    });
   };
 
   const handleSort = (field: typeof sortBy) => {
@@ -248,6 +274,7 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
                 onDelete={handleDelete}
                 onDownload={handleDownload}
                 onView={handleView}
+                onFileClick={handleFileClick}
                 className={viewMode === 'grid' ? 'h-full' : 'w-full'}
               />
             ))}
@@ -262,6 +289,15 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
         folderId={folderId}
         userId={userId}
         onUploadSuccess={fetchFiles}
+      />
+
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        isOpen={filePreviewModal.isOpen}
+        onClose={closeFilePreviewModal}
+        folderId={folderId}
+        fileId={filePreviewModal.fileId}
+        fileName={filePreviewModal.fileName}
       />
     </div>
   );

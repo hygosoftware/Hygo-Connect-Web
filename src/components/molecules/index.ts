@@ -8,3 +8,5 @@ export { default as MedicationPanel } from './MedicationPanel';
 export { default as MedicationSidebar } from './MedicationSidebar';
 export { default as FileItem } from './FileItem';
 export { default as UploadModal } from './UploadModal';
+export { default as FileDetailsModal } from './FileDetailsModal';
+export { default as FilePreviewModal } from './FilePreviewModal';

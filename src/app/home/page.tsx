@@ -1,11 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Header, FeatureCard, Icon, AppointmentCard, Typography, DailyTips, AutoScrollBanner, DoctorCard } from '../../components/atoms';
+import { UniversalHeader, FeatureCard, Icon, AppointmentCard, Typography, DailyTips, AutoScrollBanner, DoctorCard } from '../../components/atoms';
+import { doctorService, Doctor as ApiDoctor, doctorHelpers, appointmentService, Appointment } from '../../services/apiServices';
+import { useAuth } from '../../hooks/useAuth';
 
 const HomePage: React.FC = () => {
   const router = useRouter();
+  const { user } = useAuth();
+  const [doctors, setDoctors] = useState<ApiDoctor[]>([]);
+  const [loadingDoctors, setLoadingDoctors] = useState(true);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [loadingAppointments, setLoadingAppointments] = useState(true);
 
   const handleScanPress = () => {
     console.log('Scan pressed');
@@ -15,8 +22,57 @@ const HomePage: React.FC = () => {
     console.log(`Feature pressed: ${feature}`);
     if (feature === 'PillPal') {
       router.push('/pillpal');
+    } else if (feature === 'Book Appointment' || feature === 'Appointment') {
+      router.push('/booking');
     }
   };
+
+  // Load doctors from API
+  const loadDoctors = async () => {
+    try {
+      setLoadingDoctors(true);
+      const apiDoctors = await doctorService.getAllDoctors();
+      // Get only first 5 doctors for home page display
+      setDoctors(apiDoctors.slice(0, 5));
+    } catch (error) {
+      console.error('Failed to load doctors:', error);
+      // Keep empty array on error, don't show error on home page
+      setDoctors([]);
+    } finally {
+      setLoadingDoctors(false);
+    }
+  };
+
+  // Load appointments from API
+  const loadAppointments = async () => {
+    if (!user?._id) {
+      setLoadingAppointments(false);
+      return;
+    }
+
+    try {
+      setLoadingAppointments(true);
+      const userAppointments = await appointmentService.getAppointmentsByUserId(user._id);
+      // Get only upcoming appointments (first 3 for home page display)
+      const upcomingAppointments = userAppointments
+        .filter(apt => new Date(apt.appointmentDate) >= new Date())
+        .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
+        .slice(0, 3);
+      setAppointments(upcomingAppointments);
+    } catch (error) {
+      console.error('Failed to load appointments:', error);
+      // Keep empty array on error, don't show error on home page
+      setAppointments([]);
+    } finally {
+      setLoadingAppointments(false);
+    }
+  };
+
+  // Load doctors and appointments on component mount
+  useEffect(() => {
+    loadDoctors();
+    loadAppointments();
+  }, [user?._id]);
 
   // Feature items with icon names
   const featureItems = [
@@ -61,7 +117,53 @@ const HomePage: React.FC = () => {
       title: 'Laboratory',
       onPress: () => handleFeaturePress('Laboratory'),
     },
+  ]; 
+
+  // Banner data for health promotions
+  const bannerData = [
+    {
+      id: '1',
+      title: 'Vaccination',
+      description: 'Schedule your COVID-19 vaccination or booster today',
+      imageUri: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      actionText: 'Book Now',
+      onPress: () => handleFeaturePress('Vaccination'),
+    },
+    {
+      id: '2',
+      title: 'Health Check-up',
+      description: 'Complete health packages at special prices',
+      imageUri: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      actionText: 'Check Offers',
+      onPress: () => handleFeaturePress('Health Check-up'),
+    },
+    {
+      id: '3',
+      title: 'Mental Wellness',
+      description: 'Talk to professional therapists and counselors',
+      imageUri: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      actionText: 'Consult Now',
+      onPress: () => handleFeaturePress('Mental Wellness'),
+    },
+    {
+      id: '4',
+      title: 'Medicine Delivery',
+      description: 'Get medicines delivered at your doorstep',
+      imageUri: 'https://images.unsplash.com/photo-1585435557343-3b092031d4c1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      actionText: 'Order Now',
+      onPress: () => handleFeaturePress('Medicine Delivery'),
+    },
   ];
+
+  // Convert API doctors to format expected by DoctorCard component
+  const convertedDoctors = doctors.map(doctor => ({
+    doctorId: doctor._id,
+    fullName: doctor.fullName,
+    rating: doctor.ratings.average,
+    imageSrc: doctorHelpers.getFullImageUrl(doctor.profileImage),
+    qualifications: doctorHelpers.formatQualifications(doctor.qualifications),
+    specializations: doctor.specializations
+  }));
 
   // Sample appointment data
   const sampleAppointments = [
@@ -100,77 +202,41 @@ const HomePage: React.FC = () => {
     }
   ];
 
-  // Banner data for health promotions
-  const bannerData = [
-    {
-      id: '1',
-      title: 'Vaccination',
-      description: 'Schedule your COVID-19 vaccination or booster today',
-      imageUri: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      actionText: 'Book Now',
-      onPress: () => handleFeaturePress('Vaccination'),
-    },
-    {
-      id: '2',
-      title: 'Health Check-up',
-      description: 'Complete health packages at special prices',
-      imageUri: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      actionText: 'Check Offers',
-      onPress: () => handleFeaturePress('Health Check-up'),
-    },
-    {
-      id: '3',
-      title: 'Mental Wellness',
-      description: 'Talk to professional therapists and counselors',
-      imageUri: 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      actionText: 'Consult Now',
-      onPress: () => handleFeaturePress('Mental Wellness'),
-    },
-    {
-      id: '4',
-      title: 'Medicine Delivery',
-      description: 'Get medicines delivered at your doorstep',
-      imageUri: 'https://images.unsplash.com/photo-1585435557343-3b092031d4c1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-      actionText: 'Order Now',
-      onPress: () => handleFeaturePress('Medicine Delivery'),
-    },
-  ];
-
-  // Sample doctor data
-  const sampleDoctors = [
-    {
-      doctorId: '1',
-      fullName: 'Dr. Sarah Johnson',
-      rating: 4.8,
-      imageSrc: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      qualifications: ['MBBS', 'MD Cardiology'],
-      specializations: ['Cardiology', 'Heart Surgery']
-    },
-    {
-      doctorId: '2',
-      fullName: 'Dr. Michael Chen',
-      rating: 4.9,
-      imageSrc: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      qualifications: ['MBBS', 'MD Dermatology'],
-      specializations: ['Dermatology', 'Cosmetic Surgery']
-    },
-    {
-      doctorId: '3',
-      fullName: 'Dr. Emily Rodriguez',
-      rating: 4.7,
-      imageSrc: 'https://images.unsplash.com/photo-1594824475317-d8b0b4b5b8b8?ixlib=rb-4.0.3&auto=format&fit=crop&w=400&q=80',
-      qualifications: ['MBBS', 'MD Pediatrics'],
-      specializations: ['Pediatrics', 'Child Care']
-    }
-  ];
-
   return (
     <div className="min-h-screen bg-blue-50">
       {/* Header */}
-      <Header
-        userName="John Doe"
-        onMenuPress={() => {}} // No longer needed since navigation is handled by AppLayout
-        onScanPress={handleScanPress}
+      <UniversalHeader
+        title={`Hi, ${user?.FullName?.split(' ')[0] || user?.fullName?.split(' ')[0] || 'User'}!`}
+        subtitle="Good Morning"
+        variant="home"
+        showBackButton={false}
+        rightContent={
+          <div className="flex items-center space-x-2">
+            {/* Location */}
+            <button className="hidden sm:flex items-center bg-white/15 px-3 py-1.5 rounded-lg hover:bg-white/25 transition-colors duration-200">
+              <Icon name="location" size="small" color="white" className="mr-1" />
+              <Typography variant="caption" className="text-white text-xs">
+                New York, NY
+              </Typography>
+            </button>
+
+            {/* Notifications */}
+            <button className="relative w-10 h-10 bg-white/15 rounded-lg flex items-center justify-center hover:bg-white/25 transition-colors duration-200">
+              <Icon name="bell" size="small" color="white" />
+              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                <Typography variant="caption" className="text-white text-xs font-bold">3</Typography>
+              </span>
+            </button>
+
+            {/* Book Appointment */}
+            <button
+              onClick={() => handleFeaturePress('Book Appointment')}
+              className="bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition-colors duration-200"
+            >
+              <Typography variant="body2" className="text-white font-semibold">Book</Typography>
+            </button>
+          </div>
+        }
       />
 
       <main>
@@ -248,23 +314,58 @@ const HomePage: React.FC = () => {
         </div>
 
         <div className="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide">
-          {sampleAppointments.map((appointment) => (
-            <AppointmentCard
-              key={appointment.appointmentId}
-              doctor={appointment.doctor}
-              date={appointment.date}
-              actualStartTime={appointment.actualStartTime}
-              actualEndTime={appointment.actualEndTime}
-              mode={appointment.mode}
-              status={appointment.status}
-              clinic={appointment.clinic}
-              clinicName={appointment.clinicName}
-              clinicCity={appointment.clinicCity}
-              qrCode={appointment.qrCode}
-              appointmentId={appointment.appointmentId}
-              onPress={() => console.log(`Appointment ${appointment.appointmentId} clicked`)}
-            />
-          ))}
+          {loadingAppointments ? (
+            // Loading skeleton for appointments
+            Array.from({ length: 2 }).map((_, index) => (
+              <div key={index} className="flex-shrink-0 w-80 h-40 bg-gray-200 rounded-xl animate-pulse"></div>
+            ))
+          ) : appointments.length > 0 ? (
+            appointments.map((appointment) => (
+              <AppointmentCard
+                key={appointment._id}
+                doctor={{
+                  fullName: appointment.doctor.fullName,
+                  specializations: appointment.doctor.specializations,
+                  avatar: appointment.doctor.profileImage
+                }}
+                date={new Date(appointment.appointmentDate).toLocaleDateString('en-US', {
+                  weekday: 'short',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+                actualStartTime={appointment.appointmentTime.from}
+                actualEndTime={appointment.appointmentTime.to}
+                mode="InPerson" // Default mode, can be enhanced later
+                status={appointment.status === 'scheduled' ? 'upcoming' : appointment.status as any}
+                clinic={{
+                  _id: appointment.clinic._id,
+                  clinicName: appointment.clinic.clinicName,
+                  clinicAddress: {
+                    addressLine: appointment.clinic.clinicAddress || 'N/A'
+                  }
+                }}
+                clinicName={appointment.clinic.clinicName}
+                clinicCity={appointment.clinic.clinicAddress || 'N/A'}
+                qrCode={`appointment-${appointment._id}`}
+                appointmentId={appointment._id}
+                onPress={() => console.log(`Appointment ${appointment._id} clicked`)}
+              />
+            ))
+          ) : (
+            <div className="flex-shrink-0 w-full text-center py-8">
+              <Typography variant="body2" className="text-gray-500">
+                No upcoming appointments
+              </Typography>
+              <button
+                onClick={() => handleFeaturePress('Book Appointment')}
+                className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Typography variant="body2" className="text-white">
+                  Book Your First Appointment
+                </Typography>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -299,18 +400,35 @@ const HomePage: React.FC = () => {
         </div>
 
         <div className="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide">
-          {sampleDoctors.map((doctor) => (
-            <DoctorCard
-              key={doctor.doctorId}
-              doctorId={doctor.doctorId}
-              fullName={doctor.fullName}
-              rating={doctor.rating}
-              imageSrc={doctor.imageSrc}
-              qualifications={doctor.qualifications}
-              specializations={doctor.specializations}
-              onPress={() => console.log(`Doctor ${doctor.doctorId} clicked`)}
-            />
-          ))}
+          {loadingDoctors ? (
+            // Loading skeleton - match the new card width (w-52 = 208px)
+            Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="flex-shrink-0 w-52 h-56 bg-gray-200 rounded-xl animate-pulse"></div>
+            ))
+          ) : convertedDoctors.length > 0 ? (
+            convertedDoctors.map((doctor) => (
+              <DoctorCard
+                key={doctor.doctorId}
+                doctorId={doctor.doctorId}
+                fullName={doctor.fullName}
+                rating={doctor.rating}
+                imageSrc={doctor.imageSrc}
+                qualifications={doctor.qualifications}
+                specializations={doctor.specializations}
+                onPress={() => {
+                  console.log('🏠 Home: Doctor card clicked:', doctor);
+                  console.log('🔗 Navigating to doctor ID:', doctor.doctorId);
+                  router.push(`/doctors/${doctor.doctorId}`);
+                }}
+              />
+            ))
+          ) : (
+            <div className="flex-shrink-0 w-full text-center py-8">
+              <Typography variant="body2" className="text-gray-500">
+                No doctors available at the moment
+              </Typography>
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Typography, Icon } from './';
+import { useAuth } from '../../hooks/useAuth';
 
 interface BottomNavigationProps {
   userId: string;
@@ -10,15 +11,22 @@ interface BottomNavigationProps {
 const BottomNavigation: React.FC<BottomNavigationProps> = ({ userId, className = '' }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, isAuthenticated } = useAuth();
   const [userName, setUserName] = useState<string>('User');
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserInfo = () => {
       try {
-        // In a real app, you'd get this from localStorage or context
-        // For demo, using static data
-        setUserName('John');
+        // Use real user data from authentication if available
+        if (user) {
+          const fullName = user.FullName || user.fullName || 'User';
+          const firstName = fullName.split(' ')[0];
+          setUserName(firstName);
+        } else {
+          // Fallback to demo data
+          setUserName('John');
+        }
         setProfilePhoto(null); // No profile photo for demo
       } catch {
         setUserName('User');
@@ -26,7 +34,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userId, className =
       }
     };
     fetchUserInfo();
-  }, []);
+  }, [user]);
 
   // Function to determine the color of the icon and text based on active tab
   const getTabColor = (tabPath: string) => {
@@ -66,7 +74,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userId, className =
   ];
 
   return (
-    <div className={`fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 shadow-lg z-40 ${className}`}>
+    <div className={`md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-2 py-2 shadow-lg z-40 ${className}`}>
       <div className="flex justify-around items-center max-w-md mx-auto">
         {navigationItems.map((item) => (
           <button
@@ -85,15 +93,15 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userId, className =
                 }}
               />
             ) : (
-              <Icon 
-                name={item.icon as any} 
-                size="medium" 
+              <Icon
+                name={item.icon as any}
+                size="medium"
                 color={getTabColor(item.path)}
                 className="mb-1"
               />
             )}
-            <Typography 
-              variant="caption" 
+            <Typography
+              variant="caption"
               className="text-xs truncate max-w-full"
               style={{ color: getTabColor(item.path) }}
             >
@@ -102,7 +110,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userId, className =
           </button>
         ))}
       </div>
-      
+
       {/* Safe area padding for mobile devices */}
       <div className="h-2 sm:h-0"></div>
     </div>

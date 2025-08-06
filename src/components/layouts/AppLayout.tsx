@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { ResponsiveNavigation, BottomNavigation } from '../atoms';
 import { HeaderProvider } from '../atoms/HeaderWrapper';
+import { useAuth } from '../../hooks/useAuth';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -12,6 +13,7 @@ interface AppLayoutProps {
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
+  const { user, isAuthenticated } = useAuth();
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -49,6 +51,38 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   // Close mobile menu
   const handleCloseMobileMenu = () => {
     setIsMobileMenuOpen(false);
+  };
+
+  // Helper functions for user profile display
+  const getUserDisplayName = () => {
+    if (user?.FullName && user.FullName.trim().length > 0) {
+      return user.FullName;
+    }
+    if (user?.fullName && user.fullName.trim().length > 0) {
+      return user.fullName;
+    }
+    return 'User';
+  };
+
+  const getUserEmail = () => {
+    if (user?.Email && user.Email.trim().length > 0) {
+      return user.Email;
+    }
+    if (user?.email && user.email.trim().length > 0) {
+      return user.email;
+    }
+    return 'user@example.com';
+  };
+
+  const getUserInitials = () => {
+    const displayName = getUserDisplayName();
+    if (displayName === 'User') return 'U';
+
+    const names = displayName.split(' ');
+    if (names.length >= 2) {
+      return (names[0].charAt(0) + names[names.length - 1].charAt(0)).toUpperCase();
+    }
+    return displayName.charAt(0).toUpperCase();
   };
 
   // Navigation items with proper routing
@@ -108,11 +142,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               className="w-full flex items-center space-x-3 hover:bg-blue-700/30 rounded-lg p-2 transition-colors duration-200"
             >
               <div className="h-12 w-12 rounded-full bg-white flex items-center justify-center hover:scale-105 transition-transform duration-200">
-                <span className="text-blue-800 font-bold text-lg">JD</span>
+                <span className="text-blue-800 font-bold text-lg">{getUserInitials()}</span>
               </div>
-              <div className="text-left">
-                <h3 className="text-white font-semibold">John Doe</h3>
-                <p className="text-blue-200 text-sm">Click to collapse</p>
+              <div className="text-left flex-1 min-w-0">
+                <h3 className="text-white font-semibold truncate">{getUserDisplayName()}</h3>
+                <p className="text-blue-200 text-sm truncate">{getUserEmail()}</p>
               </div>
             </button>
           </div>
@@ -121,9 +155,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <button
               onClick={handleSidebarToggle}
               className="h-10 w-10 rounded-full bg-white flex items-center justify-center hover:scale-110 transition-all duration-200 hover:shadow-lg"
-              title="Click to expand"
+              title={`${getUserDisplayName()} - Click to expand`}
             >
-              <span className="text-blue-800 font-bold">JD</span>
+              <span className="text-blue-800 font-bold">{getUserInitials()}</span>
             </button>
           </div>
         )}
@@ -222,11 +256,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
               <div className="p-4 bg-blue-50 border-b border-gray-200">
                 <div className="flex items-center space-x-3">
                   <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center border-2 border-blue-300">
-                    <span className="text-blue-800 font-bold text-xl">JD</span>
+                    <span className="text-blue-800 font-bold text-xl">{getUserInitials()}</span>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800">John Doe</h3>
-                    <p className="text-gray-500 text-sm">View and edit profile</p>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-gray-800 truncate">{getUserDisplayName()}</h3>
+                    <p className="text-gray-500 text-sm truncate">{getUserEmail()}</p>
                   </div>
                 </div>
               </div>

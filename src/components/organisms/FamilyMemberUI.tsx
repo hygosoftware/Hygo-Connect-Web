@@ -109,20 +109,20 @@ const FamilyMemberCard: React.FC<{
   >
     <div className="flex flex-col items-center">
       <div className="w-16 h-16 rounded-full mb-3 bg-gray-100 flex items-center justify-center overflow-hidden">
-        {member.profileImage ? (
+        {member?.profileImage ? (
           <img
             src={member.profileImage}
-            alt={member.name}
+            alt={member?.name || 'Family member'}
             className="w-full h-full object-cover"
           />
         ) : (
-          <Icon name={member.id === 'self' ? 'user' : 'family'} size="medium" color="#9CA3AF" />
+          <Icon name={member?.id === 'self' ? 'user' : 'family'} size="medium" color="#9CA3AF" />
         )}
       </div>
       <h3 className="text-base font-semibold text-gray-800 mb-1 text-center">
-        {member.name}
+        {member?.name || 'Unknown'}
       </h3>
-      <p className="text-xs text-gray-500 mb-2 text-center">{member.relation}</p>
+      <p className="text-xs text-gray-500 mb-2 text-center">{member?.relation || 'Family Member'}</p>
       <div className="flex justify-between w-full mt-1 gap-1">
         <button
           onClick={(e) => {
@@ -133,7 +133,7 @@ const FamilyMemberCard: React.FC<{
         >
           <Icon name="edit" size="small" color="#2563EB" />
         </button>
-        {member.id !== 'self' && (
+        {member?.id !== 'self' && (
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -161,20 +161,20 @@ const FamilyMemberListItem: React.FC<{
     className="flex items-center justify-between bg-white py-4 px-4 mb-3 rounded-xl shadow-sm cursor-pointer hover:shadow-md transition-shadow"
   >
     <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center overflow-hidden">
-      {member.profileImage ? (
+      {member?.profileImage ? (
         <img
           src={member.profileImage}
-          alt={member.name}
+          alt={member?.name || 'Family member'}
           className="w-full h-full object-cover"
         />
       ) : (
-        <Icon name={member.id === 'self' ? 'user' : 'family'} size="small" color="#9CA3AF" />
+        <Icon name={member?.id === 'self' ? 'user' : 'family'} size="small" color="#9CA3AF" />
       )}
     </div>
     <div className="flex-1 mx-4">
-      <h3 className="text-base font-semibold text-gray-800">{member.name}</h3>
+      <h3 className="text-base font-semibold text-gray-800">{member?.name || 'Unknown'}</h3>
       <p className="text-xs text-gray-500 mt-1">
-        {member.mobileNumber ? `+91 ${member.mobileNumber}` : member.relation}
+        {member?.mobileNumber ? `+91 ${member.mobileNumber}` : (member?.relation || 'Family Member')}
       </p>
     </div>
     <div className="flex gap-2">
@@ -187,7 +187,7 @@ const FamilyMemberListItem: React.FC<{
       >
         <Icon name="edit" size="small" color="#2563EB" />
       </button>
-      {member.id !== 'self' && (
+      {member?.id !== 'self' && (
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -247,7 +247,9 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
 
   // Filter members based on search
   const filteredMembers = familyMembers.filter(member =>
-    member.name.toLowerCase().includes(searchText.toLowerCase())
+    member?.name?.toLowerCase()?.includes(searchText.toLowerCase()) ||
+    member?.relation?.toLowerCase()?.includes(searchText.toLowerCase()) ||
+    member?.email?.toLowerCase()?.includes(searchText.toLowerCase())
   );
 
   // Show toast message
@@ -266,12 +268,12 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
   };
 
   const handleEditPress = (member: FamilyMember) => {
-    setEditingMemberId(member.id);
-    onNewMemberNameChange(member.name);
-    onNewMemberAgeChange(member.age);
-    onNewMemberRelationChange(member.relation);
-    onNewMemberEmailChange(member.email || '');
-    onNewMemberMobileChange(member.mobileNumber || '');
+    setEditingMemberId(member?.id || '');
+    onNewMemberNameChange(member?.name || '');
+    onNewMemberAgeChange(member?.age || '');
+    onNewMemberRelationChange(member?.relation || '');
+    onNewMemberEmailChange(member?.email || '');
+    onNewMemberMobileChange(member?.mobileNumber || '');
     onShowAddMember();
   };
 
@@ -357,7 +359,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
         {filteredMembers.length > 0 ? (
           viewMode === 'grid' ? (
             <div className="flex flex-wrap gap-4 justify-start md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
-              {filteredMembers.map((member) => (
+              {filteredMembers.filter(member => member && member.id).map((member) => (
                 <FamilyMemberCard
                   key={member.id}
                   member={member}
@@ -369,7 +371,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
             </div>
           ) : (
             <div className="space-y-3 md:grid md:grid-cols-1 lg:grid-cols-2 md:gap-4">
-              {filteredMembers.map((member) => (
+              {filteredMembers.filter(member => member && member.id).map((member) => (
                 <FamilyMemberListItem
                   key={member.id}
                   member={member}

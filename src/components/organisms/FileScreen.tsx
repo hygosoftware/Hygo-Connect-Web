@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Icon, Typography, BottomNavigation, SearchBar, FloatingButton } from '../atoms'
-import { FileItem, UploadModal } from '../molecules'
+import { Icon, Typography, SearchBar, FloatingButton } from '../atoms'
+import { FileItem, UploadModal, FilePreviewModal } from '../molecules'
 import { getAllFileFromFolder, deleteFileFromFolder, FileItem as FileItemType, FolderInfo } from '../../lib/api'
 
 export default function FileScreen() {
@@ -18,6 +18,15 @@ export default function FileScreen() {
   const [searchText, setSearchText] = useState("")
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const [filePreviewModal, setFilePreviewModal] = useState<{
+    isOpen: boolean;
+    fileId: string;
+    fileName: string;
+  }>({
+    isOpen: false,
+    fileId: '',
+    fileName: ''
+  })
 
   useEffect(() => {
     fetchFiles()
@@ -69,6 +78,23 @@ export default function FileScreen() {
     if (file?.fileUrl) {
       window.open(file.fileUrl, '_blank')
     }
+  }
+
+  const handleFileClick = (fileId: string, fileName: string) => {
+    // Open file preview modal (includes both preview and details tabs)
+    setFilePreviewModal({
+      isOpen: true,
+      fileId,
+      fileName
+    });
+  }
+
+  const closeFilePreviewModal = () => {
+    setFilePreviewModal({
+      isOpen: false,
+      fileId: '',
+      fileName: ''
+    })
   }
 
   const filteredFiles = files.filter((file: any) =>
@@ -130,6 +156,7 @@ export default function FileScreen() {
                 onDelete={handleDelete}
                 onDownload={handleDownload}
                 onView={handleView}
+                onFileClick={handleFileClick}
               />
             ))}
           </div>
@@ -148,8 +175,14 @@ export default function FileScreen() {
         onUploadSuccess={fetchFiles}
       />
 
-      {/* Bottom Navigation */}
-      <BottomNavigation userId={userId} />
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        isOpen={filePreviewModal.isOpen}
+        onClose={closeFilePreviewModal}
+        folderId={folderId}
+        fileId={filePreviewModal.fileId}
+        fileName={filePreviewModal.fileName}
+      />
     </div>
   )
 }

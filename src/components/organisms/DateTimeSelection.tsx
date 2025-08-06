@@ -111,7 +111,7 @@ const DateTimeSelection: React.FC = () => {
   );
 
   return (
-    <div className="flex-1 bg-gray-50">
+    <div className="flex-1 bg-gray-50 overflow-auto">
       <div className="max-w-4xl mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
@@ -156,7 +156,7 @@ const DateTimeSelection: React.FC = () => {
                 </div>
               </div>
               <div className="text-right">
-                <Typography variant="h6" className="text-[#0e3293] font-bold">
+                <Typography variant="body1" className="text-[#0e3293] font-bold">
                   ₹{state.selectedDoctor.consultationFee}
                 </Typography>
                 <Typography variant="caption" className="text-gray-600">

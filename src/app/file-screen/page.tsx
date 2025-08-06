@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Icon, Typography, BottomNavigation, SearchBar, FloatingButton } from '../../components/atoms'
-import { FileItem } from '../../components/molecules'
+import { Icon, Typography, SearchBar, FloatingButton, UniversalHeader } from '../../components/atoms'
+import { FileItem, FilePreviewModal } from '../../components/molecules'
 import { getAllFileFromFolder, deleteFileFromFolder } from "../../lib/api"
 
 export default function FileScreen() {
@@ -17,6 +17,15 @@ export default function FileScreen() {
   const [searchText, setSearchText] = useState("")
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
+  const [filePreviewModal, setFilePreviewModal] = useState<{
+    isOpen: boolean;
+    fileId: string;
+    fileName: string;
+  }>({
+    isOpen: false,
+    fileId: '',
+    fileName: ''
+  })
 
   useEffect(() => {
     fetchFiles()
@@ -44,6 +53,28 @@ export default function FileScreen() {
     }
   }
 
+  const handleFileClick = (fileId: string, fileName: string) => {
+    console.log('🔄 File clicked:', { fileId, fileName });
+    console.log('🔄 Current folderId:', folderId);
+
+    // Open file preview modal (includes both preview and details tabs)
+    setFilePreviewModal({
+      isOpen: true,
+      fileId,
+      fileName
+    });
+
+    console.log('✅ File preview modal state updated');
+  }
+
+  const closeFilePreviewModal = () => {
+    setFilePreviewModal({
+      isOpen: false,
+      fileId: '',
+      fileName: ''
+    })
+  }
+
   const filteredFiles = files.filter((file: any) =>
     file.fileName?.toLowerCase().includes(searchText.toLowerCase())
   )
@@ -51,27 +82,19 @@ export default function FileScreen() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-[#0e3293] text-white p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()}>
-            <Icon name="arrow-left" size="medium" color="white" />
-          </button>
-          <Icon name="records" size="small" color="white" className="opacity-60" />
-          <Icon name="chevron-right" size="small" color="white" className="opacity-60" />
-          <Icon name="folder" size="small" color="white" className="opacity-60" />
-          <Icon name="chevron-right" size="small" color="white" className="opacity-60" />
-          <div>
-            <Typography variant="h6" className="font-bold text-white">
-              {folderInfo?.folderName || "Files"}
-            </Typography>
-            <Typography variant="caption" className="text-blue-200">
-              {filteredFiles.length} file(s)
-              {folderInfo?.folderAccess?.length > 0 &&
-                ` • Shared with ${folderInfo.folderAccess.length}`}
-            </Typography>
+      <UniversalHeader
+        title={folderInfo?.folderName || "Files"}
+        subtitle={`${filteredFiles.length} file(s)${folderInfo?.folderAccess?.length > 0 ? ` • Shared with ${folderInfo.folderAccess.length}` : ''}`}
+        variant="gradient"
+        showBackButton={true}
+        rightContent={
+          <div className="flex items-center gap-2 text-white/70">
+            <Icon name="records" size="small" color="white" className="opacity-60" />
+            <Icon name="chevron-right" size="small" color="white" className="opacity-60" />
+            <Icon name="folder" size="small" color="white" className="opacity-60" />
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Search */}
       <div className="p-4">
@@ -101,7 +124,12 @@ export default function FileScreen() {
         ) : (
           <div className="space-y-4">
             {filteredFiles.map((file: any) => (
-              <FileItem key={file._id} file={file} onDelete={handleDelete} />
+              <FileItem
+                key={file._id}
+                file={file}
+                onDelete={handleDelete}
+                onFileClick={handleFileClick}
+              />
             ))}
           </div>
         )}
@@ -110,8 +138,14 @@ export default function FileScreen() {
       {/* Floating Button */}
       <FloatingButton onClick={() => alert('Upload functionality coming soon!')} />
 
-      {/* Bottom Navigation */}
-      <BottomNavigation userId={userId} />
+      {/* File Preview Modal */}
+      <FilePreviewModal
+        isOpen={filePreviewModal.isOpen}
+        onClose={closeFilePreviewModal}
+        folderId={folderId}
+        fileId={filePreviewModal.fileId}
+        fileName={filePreviewModal.fileName}
+      />
     </div>
   )
 }

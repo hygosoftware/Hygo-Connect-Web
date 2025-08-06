@@ -198,7 +198,7 @@ const BookingProgressStepper: React.FC = () => {
                             {state.selectedClinic.clinicName}
                           </Typography>
                           <Typography variant="caption" className="text-gray-600">
-                            {state.selectedClinic.clinicAddress.city}
+                            {state.selectedClinic.clinicAddress?.city || state.selectedClinic.address?.city || 'Unknown City'}
                           </Typography>
                         </div>
                       )}
