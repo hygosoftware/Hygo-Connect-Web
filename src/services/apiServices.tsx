@@ -1276,6 +1276,7 @@ export const familyMemberService = {
   addFamilyMember: async (userId: string, memberData: CreateFamilyMemberRequest): Promise<FamilyMember | null> => {
     try {
       const response = await apiClient.post<FamilyMember>(`${API_BASE_URL}/add/${userId}`, memberData);
+      console.log("Hii")
       return response.data;
     } catch (error: any) {
       return null;
