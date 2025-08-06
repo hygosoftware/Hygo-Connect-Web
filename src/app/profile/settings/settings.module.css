@@ -1,0 +1,1058 @@
+/* Modern Profile Settings Styles */
+
+.container {
+  min-height: 100vh;
+  background-color: #f8fafc;
+}
+
+.content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 0;
+  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 2rem;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: white;
+  color: #64748b;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.backButton:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
+}
+
+.headerContent {
+  flex: 1;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.25rem 0;
+}
+
+.subtitle {
+  font-size: 1rem;
+  color: #64748b;
+  margin: 0;
+}
+
+/* Layout */
+.layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Sidebar Navigation */
+.sidebar {
+  background: white;
+  border-top-right-radius: 48px;
+  border-bottom-right-radius: 48px;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  position: sticky;
+  top: 2rem;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.navItem:last-child {
+  border-bottom: none;
+}
+
+.navItem:hover {
+  background: #f8fafc;
+}
+
+.navItemActive {
+  background: #eff6ff;
+  border-right: 3px solid #0E3293;
+}
+
+.navItemIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: #f1f5f9;
+  color: #64748b;
+  transition: all 0.2s ease;
+}
+
+.navItemActive .navItemIcon {
+  background: #0E3293;
+  color: white;
+}
+
+.navItemContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.navItemTitle {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.125rem;
+}
+
+.navItemDescription {
+  display: block;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.3;
+}
+
+/* Main Content */
+.main {
+  background: white;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  /* Scroll fix: allow vertical scroll if content is too tall */
+  max-height: calc(100vh - 4rem);
+  overflow-y: auto;
+  min-height: 400px;
+  transition: max-height 0.2s;
+}
+
+@media (max-width: 1024px) {
+  .main {
+    max-height: none;
+    min-height: 300px;
+  }
+}
+
+@media (max-width: 640px) {
+  .main {
+    padding-bottom: 2rem;
+    max-height: none;
+    min-height: 200px;
+  }
+}
+
+.section {
+  padding: 2rem;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.sectionIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0E3293 0%, #1e40af 100%);
+  color: white;
+}
+
+.sectionTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 0.25rem 0;
+}
+
+.sectionDescription {
+  font-size: 0.875rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.sectionContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Setting Items */
+.settingItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid #f1f5f9;
+  gap: 1rem;
+}
+
+.settingItem:last-child {
+  border-bottom: none;
+}
+
+.settingInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.settingLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.25rem;
+}
+
+.settingDescription {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.settingControl {
+  flex-shrink: 0;
+}
+
+/* Toggle Switch */
+.toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  border: none;
+  background: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.toggle:hover {
+  background: #94a3b8;
+}
+
+.toggleActive {
+  background: #0E3293;
+}
+
+.toggleActive:hover {
+  background: #1e40af;
+}
+
+.toggleSlider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: white;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.toggleActive .toggleSlider {
+  transform: translateX(20px);
+}
+
+/* Select Dropdown */
+.select {
+  min-width: 140px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.select:hover {
+  border-color: #9ca3af;
+}
+
+.select:focus {
+  outline: none;
+  border-color: #0E3293;
+  box-shadow: 0 0 0 3px rgba(14, 50, 147, 0.1);
+}
+
+/* Input Field */
+.input {
+  min-width: 200px;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white;
+  font-size: 0.875rem;
+  color: #374151;
+  transition: all 0.2s ease;
+}
+
+.input:hover {
+  border-color: #9ca3af;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #0E3293;
+  box-shadow: 0 0 0 3px rgba(14, 50, 147, 0.1);
+}
+
+/* Button */
+.button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #0E3293;
+  border-radius: 8px;
+  background: transparent;
+  color: #0E3293;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.button:hover {
+  background: #0E3293;
+  color: white;
+  transform: translateY(-1px);
+}
+
+/* Danger button for delete actions */
+.settingItem:has(.button:contains("Delete")) .button {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.settingItem:has(.button:contains("Delete")) .button:hover {
+  background: #dc2626;
+  color: white;
+}
+
+/* Loading State */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  gap: 1rem;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #f3f4f6;
+  border-top: 3px solid #0E3293;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .content {
+    padding: 0 0.5rem;
+  }
+  
+  .header {
+    padding: 1rem 0;
+  }
+  
+  .title {
+    font-size: 1.5rem;
+  }
+  
+  .sidebar {
+    position: static;
+  }
+  
+  .section {
+    padding: 1.5rem;
+  }
+  
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .settingItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .settingControl {
+    width: 100%;
+  }
+  
+  .input,
+  .select {
+    width: 100%;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .navItem {
+    padding: 0.75rem;
+  }
+  
+  .navItemDescription {
+    display: none;
+  }
+  
+  .section {
+    padding: 1rem;
+  }
+}
+
+/* Smooth transitions and animations */
+* {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Focus styles for accessibility */
+.navItem:focus,
+.toggle:focus,
+.select:focus,
+.input:focus,
+.button:focus,
+.backButton:focus {
+  outline: 2px solid #0E3293;
+  outline-offset: 2px;
+}
+
+/* Hover effects */
+.settingItem:hover {
+  background: rgba(248, 250, 252, 0.5);
+  margin: 0 -1rem;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  border-radius: 8px;
+}
+
+/* Personal Information Section */
+.personalInfoSection {
+  padding: 2rem;
+}
+
+/* Ensure scrollability for long forms in edit mode */
+.personalInfoSection {
+  max-height: 80vh;
+  overflow-y: auto;
+  padding-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .personalInfoSection {
+    max-height: none;
+    min-height: 300px;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .personalInfoSection {
+    min-height: 200px;
+    padding: 0.5rem;
+  }
+}
+
+.sectionHeaderContent {
+  flex: 1;
+}
+
+.sectionActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.editButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid #0E3293;
+  border-radius: 8px;
+  background: transparent;
+  color: #0E3293;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.editButton:hover {
+  background: #0E3293;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 50, 147, 0.2);
+}
+
+.editActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.cancelButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid #6b7280;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancelButton:hover {
+  background: #6b7280;
+  color: white;
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saveButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1rem;
+  border: 1px solid #0E3293;
+  border-radius: 8px;
+  background: #0E3293;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.saveButton:hover {
+  background: #1e40af;
+  border-color: #1e40af;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(14, 50, 147, 0.3);
+}
+
+.saveButton:disabled,
+.saveButtonDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.saveButton:disabled:hover,
+.saveButtonDisabled:hover {
+  background: #0E3293;
+  border-color: #0E3293;
+  transform: none;
+}
+
+/* Personal Info Grid */
+.personalInfoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .personalInfoGrid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+}
+
+/* Modern TextField Styles */
+.textFieldContainer {
+  position: relative;
+  width: 100%;
+}
+
+.textField {
+  position: relative;
+  width: 100%;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.textField:hover {
+  border-color: #d1d5db;
+}
+
+.textFieldFocused {
+  border-color: #0E3293;
+  box-shadow: 0 0 0 3px rgba(14, 50, 147, 0.1);
+}
+
+.textFieldDisabled {
+  background: #f9fafb;
+  border-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+.textFieldInput {
+  width: 100%;
+  padding: 1rem 1rem 0.5rem 1rem;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 1rem;
+  color: #1f2937 !important;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+/* Stronger specificity for text field inputs */
+.textField .textFieldInput,
+.textFieldContainer .textField .textFieldInput {
+  color: #1f2937 !important;
+  background: transparent !important;
+}
+
+.textFieldInput:disabled {
+  color: #6b7280 !important;
+  cursor: not-allowed;
+}
+
+.textFieldInput::placeholder {
+  color: #6b7280 !important;
+  font-weight: 400;
+  opacity: 1 !important;
+}
+
+/* Additional placeholder specificity */
+.textField .textFieldInput::placeholder,
+.textFieldContainer .textField .textFieldInput::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+.textFieldLabel {
+  position: absolute;
+  left: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 400;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  background: white;
+  padding: 0 0.25rem;
+}
+
+.textFieldLabelFloating {
+  top: 0;
+  transform: translateY(-50%);
+  font-size: 0.75rem;
+  color: #0E3293;
+  font-weight: 500;
+}
+
+.textFieldDisabled .textFieldLabel {
+  color: #9ca3af;
+}
+
+/* Medical Section */
+.medicalSection {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.subsectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 1.5rem;
+}
+
+.medicalGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .medicalGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.arrayFieldLabel {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.75rem;
+}
+
+.arrayField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.arrayItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.arrayInput {
+  flex: 1;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: white !important;
+  font-size: 0.875rem;
+  color: #1f2937 !important;
+  transition: all 0.2s ease;
+}
+
+/* Stronger specificity for array inputs */
+.arrayField .arrayInput,
+.medicalGrid .arrayField .arrayInput {
+  color: #1f2937 !important;
+  background: white !important;
+}
+
+.arrayInput:hover {
+  border-color: #9ca3af;
+}
+
+.arrayInput:focus {
+  outline: none;
+  border-color: #0E3293;
+  box-shadow: 0 0 0 3px rgba(14, 50, 147, 0.1);
+}
+
+.arrayInput:disabled {
+  background: #f9fafb !important;
+  color: #6b7280 !important;
+  cursor: not-allowed;
+}
+
+.arrayInput::placeholder {
+  color: #6b7280 !important;
+  font-weight: 400;
+  opacity: 1 !important;
+}
+
+/* Additional array input placeholder specificity */
+.arrayField .arrayInput::placeholder,
+.medicalGrid .arrayField .arrayInput::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+.removeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid #dc2626;
+  border-radius: 6px;
+  background: transparent;
+  color: #dc2626;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.removeButton:hover {
+  background: #dc2626;
+  color: white;
+}
+
+.addButton {
+  padding: 0.5rem 0.75rem;
+  border: 1px dashed #9ca3af;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-top: 0.25rem;
+}
+
+.addButton:hover {
+  border-color: #0E3293;
+  color: #0E3293;
+  background: rgba(14, 50, 147, 0.05);
+}
+
+/* Enhanced Spinner */
+.spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive Design Enhancements */
+@media (max-width: 1024px) {
+  .personalInfoSection {
+    padding: 1.5rem;
+  }
+  
+  .sectionHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+  
+  .sectionActions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+@media (max-width: 768px) {
+  .personalInfoSection {
+    padding: 1rem;
+  }
+  
+  .editActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  
+  .editButton,
+  .cancelButton,
+  .saveButton {
+    flex: 1;
+    justify-content: center;
+  }
+  
+  .textFieldInput {
+    padding: 0.875rem 0.875rem 0.375rem 0.875rem;
+  }
+  
+  .textFieldLabel {
+    left: 0.875rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .personalInfoGrid {
+    gap: 0.75rem;
+  }
+  
+  .medicalGrid {
+    gap: 1rem;
+  }
+  
+  .textField {
+    border-radius: 8px;
+  }
+  
+  .textFieldInput {
+    font-size: 0.875rem;
+  }
+}
+
+/* Focus and Accessibility */
+.editButton:focus,
+.cancelButton:focus,
+.saveButton:focus,
+.addButton:focus,
+.removeButton:focus {
+  outline: 2px solid #0E3293;
+  outline-offset: 2px;
+}
+
+.textFieldInput:focus + .textFieldLabel {
+  color: #0E3293;
+}
+
+/* Animation for smooth transitions */
+.textField,
+.textFieldInput,
+.textFieldLabel,
+.editButton,
+.cancelButton,
+.saveButton,
+.arrayInput,
+.addButton,
+.removeButton {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .textField {
+    border-width: 3px;
+  }
+  
+  .textFieldFocused {
+    border-width: 3px;
+  }
+  
+  .textFieldLabel {
+    font-weight: 600;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .textField,
+  .textFieldInput,
+  .textFieldLabel,
+  .editButton,
+  .cancelButton,
+  .saveButton,
+  .arrayInput,
+  .addButton,
+  .removeButton,
+  .spinner {
+    transition: none;
+    animation: none;
+  }
+}
+
+/* Custom scrollbar for sidebar */
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+/* Universal input visibility fixes - highest specificity */
+.personalInfoSection input,
+.personalInfoSection input[type="text"],
+.personalInfoSection input[type="email"],
+.personalInfoSection input[type="tel"],
+.personalInfoSection input[type="date"] {
+  color: #1f2937 !important;
+  background: transparent !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  opacity: 1 !important;
+  -webkit-opacity: 1 !important;
+}
+
+.personalInfoSection input::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+}
+
+.personalInfoSection input:disabled {
+  color: #6b7280 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+  opacity: 1 !important;
+}
+
+.medicalSection input,
+.medicalSection input[type="text"] {
+  color: #1f2937 !important;
+  background: white !important;
+  -webkit-text-fill-color: #1f2937 !important;
+  opacity: 1 !important;
+  -webkit-opacity: 1 !important;
+}
+
+.medicalSection input::placeholder {
+  color: #6b7280 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+}
+
+.medicalSection input:disabled {
+  color: #6b7280 !important;
+  -webkit-text-fill-color: #6b7280 !important;
+  background: #f9fafb !important;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 2px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
