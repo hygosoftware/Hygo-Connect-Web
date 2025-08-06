@@ -2047,6 +2047,7 @@ export const appointmentService = {
     try{
       const response = await apiClient.get(`/Subscription/all`)
       console.log("response.data",response.data)
+      console.log("response.data",response.data)
       return response.data
     }
     catch(error: any){
