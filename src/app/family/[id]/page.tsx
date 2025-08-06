@@ -57,9 +57,7 @@ const FamilyMemberDetailPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const memberId = params.id as string;
-
-  // Sample user ID - in real app, get from auth context
-  const userId = '685e823b3ec68e8bb8dae392';
+  const userId = useAuthStore((state) => state.userId);
 
   const [memberData, setMemberData] = useState<FamilyMember | null>(null);
   const [loading, setLoading] = useState(true);
@@ -558,3 +556,7 @@ const FamilyMemberDetailPage: React.FC = () => {
 };
 
 export default FamilyMemberDetailPage;
+function useAuthStore(arg0: (state: any) => any) {
+  throw new Error('Function not implemented.');
+}
+

@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FamilyMemberUI } from '../../components/organisms';
+import { TokenManager } from '../../services/auth';
 import { familyMemberService, FamilyMember as ApiFamilyMember, CreateFamilyMemberRequest } from '../../services/apiServices';
-
 // UI Types (for compatibility with existing components)
 interface FamilyMember {
   id: string;
@@ -59,6 +59,8 @@ const FamilyPage: React.FC = () => {
 
   // State
   const [selectedMember, setSelectedMember] = useState('self');
+const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember | null>(null);
+const [detailsLoading, setDetailsLoading] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberAge, setNewMemberAge] = useState('');
@@ -69,8 +71,7 @@ const FamilyPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Sample user ID - in real app, get from auth context
-  const userId = '685e823b3ec68e8bb8dae392';
+  const { userId } = TokenManager.getTokens();
 
   // Load family members on component mount
   useEffect(() => {
@@ -149,8 +150,18 @@ const FamilyPage: React.FC = () => {
     router.back();
   };
 
-  const handleMemberSelect = (memberId: string) => {
+  const handleMemberSelect = async (memberId: string) => {
     setSelectedMember(memberId);
+    setDetailsLoading(true);
+    setSelectedMemberDetails(null);
+    try {
+      const apiDetail = await familyMemberService.getFamilyMemberDetails(userId, memberId);
+      if (apiDetail) {
+        setSelectedMemberDetails(convertApiToUiMember(apiDetail));
+      }
+    } finally {
+      setDetailsLoading(false);
+    }
   };
 
   const handleAddMember = async () => {
@@ -247,11 +258,22 @@ const FamilyPage: React.FC = () => {
     setNewMemberMobile('');
   };
 
-  const handleMemberDetails = (memberId: string) => {
-    router.push(`/family/${memberId}`);
+  const handleMemberDetails = async (memberId: string) => {
+    setSelectedMember(memberId);
+    setDetailsLoading(true);
+    setSelectedMemberDetails(null);
+    try {
+      const apiDetail = await familyMemberService.getFamilyMemberDetails(userId, memberId);
+      if (apiDetail) {
+        setSelectedMemberDetails(convertApiToUiMember(apiDetail));
+      }
+    } finally {
+      setDetailsLoading(false);
+    }
   };
 
-  const selectedMemberData = familyMembers.find(member => member.id === selectedMember);
+  // Show fetched details if available, else fallback to local
+  const selectedMemberData = selectedMemberDetails || familyMembers.find(member => member.id === selectedMember);
 
   if (loading) {
     return (
@@ -323,3 +345,4 @@ const FamilyPage: React.FC = () => {
 };
 
 export default FamilyPage;
+

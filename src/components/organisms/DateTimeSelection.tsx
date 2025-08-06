@@ -15,48 +15,129 @@ const DateTimeSelection: React.FC = () => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
-  useEffect(() => {
-    // Load available dates
-    const dates = getAvailableDates();
-    setAvailableDates(dates);
-    
-    // If no date is selected, select the first available date
-    if (!selectedDate && dates.length > 0) {
-      setSelectedDate(dates[0]);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (selectedDate && state.selectedDoctor && state.selectedClinic) {
-      loadTimeSlots();
-    }
-  }, [selectedDate, state.selectedDoctor, state.selectedClinic]);
-
-  const loadTimeSlots = async () => {
-    if (!selectedDate || !state.selectedDoctor || !state.selectedClinic) return;
-
-    try {
-      setLoadingSlots(true);
-      const slots = await mockAPI.getAvailableSlots(
-        state.selectedDoctor._id,
-        state.selectedClinic._id,
-        selectedDate
-      );
-      setTimeSlots(slots);
-    } catch (error) {
-      showToast({
-        type: 'error',
-        title: 'Failed to load time slots',
-        message: 'Please try again or select a different date.'
-      });
-    } finally {
-      setLoadingSlots(false);
-    }
+  // Helper: Map weekday string to JS day index
+  const weekdayToIndex: Record<string, number> = {
+    'Sunday': 0,
+    'Monday': 1,
+    'Tuesday': 2,
+    'Wednesday': 3,
+    'Thursday': 4,
+    'Friday': 5,
+    'Saturday': 6
   };
+
+  // Helper: Get next N dates for a given weekday
+  function getNextDatesForWeekday(weekday: string, count = 4): Date[] {
+    const results: Date[] = [];
+    const today = new Date();
+    let day = new Date(today);
+    const targetDay = weekdayToIndex[weekday];
+    let added = 0;
+    let i = 0;
+    while (added < count && i < 30) { // max 30 days lookahead
+      if (day.getDay() === targetDay) {
+        results.push(new Date(day));
+        added++;
+      }
+      day.setDate(day.getDate() + 1);
+      i++;
+    }
+    return results;
+  }
+
+  useEffect(() => {
+    // Build available dates based on doctor availability for selected clinic
+    if (state.selectedDoctor && state.selectedClinic) {
+      // Access the availability array from the doctor object
+      const availability = state.selectedDoctor.availability || [];
+      
+      // Filter availability by the selected clinic ID
+      const clinicAvailability = availability.filter((a: any) => a.clinic === state.selectedClinic._id);
+      
+      let dates: Date[] = [];
+      clinicAvailability.forEach((a: any) => {
+        // For each available day, get next 4 dates (or more/less as needed)
+        dates = dates.concat(getNextDatesForWeekday(a.day, 4));
+      });
+      
+      // Remove duplicates and sort
+      const dateStrSet = new Set(dates.map(d => d.toDateString()));
+      const uniqueDates = Array.from(dateStrSet).map(ds => new Date(ds));
+      uniqueDates.sort((a, b) => a.getTime() - b.getTime());
+      
+      setAvailableDates(uniqueDates);
+      
+      // Auto-select first available date if none selected
+      if ((!selectedDate || !uniqueDates.some(d => d.toDateString() === selectedDate.toDateString())) && uniqueDates.length > 0) {
+        setSelectedDate(uniqueDates[0]);
+      }
+    } else {
+      setAvailableDates([]);
+    }
+
+    // ---- LOGGING SELECTED DOCTOR DATA ----
+    if (state.selectedDoctor) {
+      console.log('Selected doctor data:', state.selectedDoctor);
+    }
+    // ---- END LOGGING ----
+
+    // ---- LOGGING DOCTOR AVAILABILITY FOR SELECTED CLINIC ----
+    if (state.selectedDoctor && state.selectedClinic) {
+      const availability = state.selectedDoctor.availability || [];
+      const clinicAvailability = availability.filter((a: any) => a.clinic === state.selectedClinic._id);
+      if (clinicAvailability.length === 0) {
+        console.log('No availability for this doctor at selected clinic:', state.selectedClinic.clinicName);
+      } else {
+        console.log(`Doctor ${state.selectedDoctor.fullName} availability at clinic ${state.selectedClinic.clinicName}:`, clinicAvailability);
+      }
+    }
+    // ---- END LOGGING ----
+  }, [state.selectedDoctor, state.selectedClinic]);
+
+  useEffect(() => {
+    // Update slots for selected date
+    const fetchTimeSlots = async () => {
+      if (selectedDate && state.selectedDoctor && state.selectedClinic) {
+        setLoadingSlots(true);
+        
+        try {
+          // Use mockAPI to get available slots
+          const slots = await mockAPI.getAvailableSlots(
+            state.selectedDoctor._id,
+            state.selectedClinic._id,
+            selectedDate
+          );
+          
+          console.log('[DEBUG] Slots from API:', slots);
+          setTimeSlots(slots);
+        } catch (error) {
+          console.error('Error fetching time slots:', error);
+          showToast({
+            type: 'error',
+            title: 'Failed to load time slots',
+            message: 'Please try again or select a different date.'
+          });
+          setTimeSlots([]);
+        } finally {
+          setLoadingSlots(false);
+        }
+      } else {
+        setTimeSlots([]);
+      }
+    };
+    
+    fetchTimeSlots();
+  }, [selectedDate, state.selectedDoctor, state.selectedClinic, showToast]);
+
+  // Remove mockAPI usage entirely
+
 
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     selectDate(date);
+    
+    console.log(`Selected date: ${date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`);
+    // The time slots will be fetched automatically by the useEffect hook
   };
 
   const handleSlotSelect = (slot: TimeSlot) => {
@@ -97,12 +178,12 @@ const DateTimeSelection: React.FC = () => {
           {slot.available ? (
             <span className="flex items-center justify-center">
               <div className="w-2 h-2 bg-green-500 rounded-full mr-1" />
-              {slot.maxBookings - slot.bookedCount} of {slot.maxBookings} spots left
+              <strong>{slot.maxBookings - slot.bookedCount}</strong> of {slot.maxBookings} spots available
             </span>
           ) : (
             <span className="flex items-center justify-center">
               <div className="w-2 h-2 bg-red-500 rounded-full mr-1" />
-              Fully booked
+              <strong>Fully booked</strong>
             </span>
           )}
         </div>
@@ -186,7 +267,7 @@ const DateTimeSelection: React.FC = () => {
                 Note:
               </Typography>
               <Typography variant="caption" className="text-blue-600">
-                Highlighted dates are available for booking. Sundays are closed.
+                Highlighted dates show doctor availability at this clinic. Availability is based on the doctor's schedule.
               </Typography>
             </div>
           </div>
@@ -263,7 +344,7 @@ const DateTimeSelection: React.FC = () => {
             <div className="flex items-center">
               <Icon name="info" size="small" color="#6b7280" className="mr-2" />
               <Typography variant="caption" className="text-gray-600">
-                Maximum 5 bookings per slot
+                Each slot has limited appointments
               </Typography>
             </div>
           </div>

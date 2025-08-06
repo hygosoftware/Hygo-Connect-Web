@@ -51,7 +51,7 @@ const BookingPayment: React.FC = () => {
       setLoading(true);
       setPaymentStatus('processing');
 
-      // Simulate payment processing
+      // Prepare booking data with doctor availability information
       const bookingData = {
         doctor: state.selectedDoctor,
         clinic: state.selectedClinic,
@@ -59,7 +59,13 @@ const BookingPayment: React.FC = () => {
         slot: state.selectedSlot,
         patientDetails: state.bookingDetails,
         paymentMethod: selectedMethod,
-        amount: totalAmount
+        amount: totalAmount,
+        // Include the specific availability information for this booking
+        availability: {
+          clinicId: state.selectedClinic._id,
+          day: state.selectedDate.toLocaleDateString('en-US', { weekday: 'long' }),
+          slotId: state.selectedSlot.id
+        }
       };
 
       const result = await mockAPI.bookAppointment(bookingData);

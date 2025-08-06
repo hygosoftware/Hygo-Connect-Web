@@ -355,48 +355,132 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
       </div>
 
       {/* Content Area */}
+      {/* Desktop: Split Layout | Mobile: Old Layout */}
       <div className="flex-1 px-4 pb-32">
-        {filteredMembers.length > 0 ? (
-          viewMode === 'grid' ? (
-            <div className="flex flex-wrap gap-4 justify-start md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6">
-              {filteredMembers.filter(member => member && member.id).map((member) => (
-                <FamilyMemberCard
-                  key={member.id}
-                  member={member}
-                  onPress={() => handleMemberPress(member)}
-                  onEdit={() => handleEditPress(member)}
-                  onDelete={() => handleDeletePress(member.id)}
-                />
-              ))}
+        <div className="hidden md:flex h-[70vh] bg-white rounded-2xl shadow-sm overflow-hidden">
+          {/* Left: Member List */}
+          <div className="w-1/3 border-r border-gray-200 bg-gray-50 overflow-y-auto">
+            <div className="flex flex-col h-full">
+              <div className="flex-1 overflow-y-auto">
+                {filteredMembers.length > 0 ? (
+                  filteredMembers.map((member) => (
+                    <div
+                      key={member.id}
+                      className={`px-5 py-4 cursor-pointer border-b border-gray-100 flex items-center gap-4 hover:bg-blue-50 transition-colors ${selectedMember === member.id ? 'bg-blue-100' : ''}`}
+                      onClick={() => handleMemberPress(member)}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                        {member.profileImage ? (
+                          <img src={member.profileImage} alt={member.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Icon name={member.id === 'self' ? 'user' : 'family'} size="small" color="#9CA3AF" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-800 truncate">{member.name}</div>
+                        <div className="text-xs text-gray-500 truncate">{member.relation}</div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <EmptyState />
+                )}
+              </div>
+              <div className="p-4">
+                <button
+                  onClick={() => {
+                    setEditingMemberId(null);
+                    onShowAddMember();
+                  }}
+                  className="w-full bg-[#0e3293] text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                >
+                  + Add Family Member
+                </button>
+              </div>
             </div>
+          </div>
+          {/* Right: Member Details */}
+          <div className="flex-1 overflow-y-auto p-8">
+            {selectedMemberData ? (
+              <div className="max-w-xl mx-auto">
+                {/* You can customize this detail view as needed */}
+                <div className="flex items-center gap-6 mb-6">
+                  <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    {selectedMemberData.profileImage ? (
+                      <img src={selectedMemberData.profileImage} alt={selectedMemberData.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <Icon name={selectedMemberData.id === 'self' ? 'user' : 'family'} size="large" color="#9CA3AF" />
+                    )}
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-gray-800">{selectedMemberData.name}</div>
+                    <div className="text-gray-500 text-sm">{selectedMemberData.relation}</div>
+                    <div className="text-gray-500 text-sm">Age: {selectedMemberData.age}</div>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {selectedMemberData.email && <div><span className="font-medium">Email:</span> {selectedMemberData.email}</div>}
+                  {selectedMemberData.mobileNumber && <div><span className="font-medium">Mobile:</span> {selectedMemberData.mobileNumber}</div>}
+                  {selectedMemberData.bloodGroup && <div><span className="font-medium">Blood Group:</span> {selectedMemberData.bloodGroup}</div>}
+                  {selectedMemberData.allergies && selectedMemberData.allergies.length > 0 && (
+                    <div><span className="font-medium">Allergies:</span> {selectedMemberData.allergies.join(', ')}</div>
+                  )}
+                  {selectedMemberData.medications && selectedMemberData.medications.length > 0 && (
+                    <div><span className="font-medium">Medications:</span> {selectedMemberData.medications.join(', ')}</div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-full text-gray-400">Select a member to view details</div>
+            )}
+          </div>
+        </div>
+        {/* Mobile: old layout (grid/list) */}
+        <div className="md:hidden">
+          {filteredMembers.length > 0 ? (
+            viewMode === 'grid' ? (
+              <div className="flex flex-wrap gap-4 justify-start">
+                {filteredMembers.filter(member => member && member.id).map((member) => (
+                  <FamilyMemberCard
+                    key={member.id}
+                    member={member}
+                    onPress={() => handleMemberPress(member)}
+                    onEdit={() => handleEditPress(member)}
+                    onDelete={() => handleDeletePress(member.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {filteredMembers.filter(member => member && member.id).map((member) => (
+                  <FamilyMemberListItem
+                    key={member.id}
+                    member={member}
+                    onPress={() => handleMemberPress(member)}
+                    onEdit={() => handleEditPress(member)}
+                    onDelete={() => handleDeletePress(member.id)}
+                  />
+                ))}
+              </div>
+            )
           ) : (
-            <div className="space-y-3 md:grid md:grid-cols-1 lg:grid-cols-2 md:gap-4">
-              {filteredMembers.filter(member => member && member.id).map((member) => (
-                <FamilyMemberListItem
-                  key={member.id}
-                  member={member}
-                  onPress={() => handleMemberPress(member)}
-                  onEdit={() => handleEditPress(member)}
-                  onDelete={() => handleDeletePress(member.id)}
-                />
-              ))}
-            </div>
-          )
-        ) : (
-          <EmptyState />
-        )}
+            <EmptyState />
+          )}
+          {/* Floating Action Button (mobile only) */}
+          <button
+            onClick={() => {
+              setEditingMemberId(null);
+              onShowAddMember();
+            }}
+            className="fixed bottom-32 right-6 bg-[#0e3293] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors z-40"
+          >
+            <Icon name="plus" size="medium" color="white" />
+          </button>
+        </div>
       </div>
 
       {/* Floating Action Button */}
-      <button
-        onClick={() => {
-          setEditingMemberId(null);
-          onShowAddMember();
-        }}
-        className="fixed bottom-32 right-6 bg-[#0e3293] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors z-40"
-      >
-        <Icon name="plus" size="medium" color="white" />
-      </button>
+      {/* (Now handled in desktop left pane and mobile as before) */}
 
       {/* Add/Edit Modal */}
       {showAddMember && (

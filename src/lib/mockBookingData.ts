@@ -400,23 +400,96 @@ export const mockAPI = {
   getAvailableSlots: async (doctorId: string, clinicId: string, date: Date): Promise<TimeSlot[]> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 600));
-    return generateTimeSlots(date);
+    
+    // Find the doctor
+    const doctor = mockDoctors.find(d => d._id === doctorId);
+    if (!doctor || !doctor.availability) return [];
+    
+    // Get the day of the week for the selected date
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    
+    // Filter availability by clinic and day
+    const clinicAvailability = doctor.availability.filter(a => a.clinic === clinicId);
+    const dayAvailability = clinicAvailability.find(a => a.day === dayName);
+    
+    if (!dayAvailability || !dayAvailability.slots) return [];
+    
+    // Convert to TimeSlot[] format for UI
+    return dayAvailability.slots.map((slot, idx) => ({
+      id: slot._id || `${dayName}-${idx}`,
+      time: slot.startTime,
+      available: (slot.bookedCount < slot.appointmentLimit),
+      bookedCount: slot.bookedCount,
+      maxBookings: slot.appointmentLimit
+    }));
   },
   
   bookAppointment: async (bookingData: any): Promise<{ success: boolean; appointmentId?: string; error?: string }> => {
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    // Simulate 90% success rate
-    if (Math.random() > 0.1) {
-      return {
-        success: true,
-        appointmentId: `APT-${Date.now()}`
-      };
-    } else {
+    try {
+      // Find the doctor
+      const doctor = mockDoctors.find(d => d._id === bookingData.doctor._id);
+      if (!doctor || !doctor.availability) {
+        return {
+          success: false,
+          error: 'Doctor not found or has no availability.'
+        };
+      }
+      
+      // Find the specific availability entry
+      const availabilityEntry = doctor.availability.find(a => 
+        a.clinic === bookingData.availability.clinicId && 
+        a.day === bookingData.availability.day
+      );
+      
+      if (!availabilityEntry) {
+        return {
+          success: false,
+          error: 'No availability found for this doctor at the selected clinic and day.'
+        };
+      }
+      
+      // Find the specific slot
+      const slotIndex = availabilityEntry.slots.findIndex(s => s._id === bookingData.slot.id);
+      
+      if (slotIndex === -1) {
+        return {
+          success: false,
+          error: 'Selected time slot not found.'
+        };
+      }
+      
+      // Check if slot is available
+      const slot = availabilityEntry.slots[slotIndex];
+      if (slot.bookedCount >= slot.appointmentLimit) {
+        return {
+          success: false,
+          error: 'This slot is fully booked. Please select another time.'
+        };
+      }
+      
+      // In a real implementation, we would update the bookedCount in the database
+      // For this mock, we'll just simulate a successful booking
+      
+      // Simulate 95% success rate
+      if (Math.random() > 0.05) {
+        return {
+          success: true,
+          appointmentId: `APT-${Date.now()}`
+        };
+      } else {
+        return {
+          success: false,
+          error: 'Booking failed due to a system error. Please try again.'
+        };
+      }
+    } catch (error) {
+      console.error('Error in bookAppointment:', error);
       return {
         success: false,
-        error: 'Booking failed. Please try again.'
+        error: 'An unexpected error occurred. Please try again.'
       };
     }
   }

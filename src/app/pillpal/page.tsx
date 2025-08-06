@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { PillPal, PillPalDesktop } from '../../components/organisms';
 import AddMedicineModal from '../../components/organisms/AddMedicineModal';
 import { pillReminderService, pillReminderHelpers, PillReminder, Medicine } from '../../services/apiServices';
+import { TokenManager } from '../../services/auth';
 
 // Helper function to get date strings
 const getDateString = (daysFromToday: number = 0) => {
@@ -36,7 +37,7 @@ const PillPalPage: React.FC = () => {
     try {
       setLoading(true);
       // Using the sample user ID from your API example
-      const userId = '685e823b3ec68e8bb8dae392';
+     const { userId } = TokenManager.getTokens();
       console.log('💊 Loading pill reminders for user:', userId);
 
       const apiReminders = await pillReminderService.getPillRemindersByUserId(userId);
@@ -177,7 +178,7 @@ const PillPalPage: React.FC = () => {
 
     try {
       // Using the sample user ID from your API example
-      const userId = '685e823b3ec68e8bb8dae392';
+    const { userId } = TokenManager.getTokens();
       console.log('💊 Adding medicines for user:', userId);
       console.log('📋 Medicines to add:', medicines);
 
@@ -340,3 +341,4 @@ const PillPalPage: React.FC = () => {
 };
 
 export default PillPalPage;
+

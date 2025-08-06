@@ -22,6 +22,19 @@ export interface Doctor {
   consultationFee: number;
   isAvailableNow: boolean;
   department?: string;
+  // Doctor availability structure
+  availability?: Array<{
+    _id: string;
+    clinic: string; // Clinic ID
+    day: string; // Day of the week (Monday, Tuesday, etc.)
+    slots: Array<{
+      _id: string;
+      startTime: string; // Format: "01:00 PM"
+      endTime: string; // Format: "02:00 PM"
+      appointmentLimit: number; // Maximum number of appointments per slot
+      bookedCount: number; // Current number of booked appointments
+    }>;
+  }>;
   clinic?: Array<{
     _id: string;
     clinicName: string;
@@ -70,10 +83,10 @@ export interface Clinic {
 
 export interface TimeSlot {
   id: string;
-  time: string;
-  available: boolean;
-  bookedCount: number;
-  maxBookings: number;
+  time: string; // Format: "01:00 PM"
+  available: boolean; // Calculated based on bookedCount < maxBookings
+  bookedCount: number; // Current number of booked appointments
+  maxBookings: number; // Maximum number of appointments per slot (appointmentLimit)
 }
 
 export interface BookingDetails {

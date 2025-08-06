@@ -45,6 +45,18 @@ interface Doctor {
     email?: string;
     description?: string;
   }>;
+  availability: Array<{
+    clinic: string;
+    day: string;
+    slots: Array<{
+      startTime: string;
+      endTime: string;
+      appointmentLimit: number;
+      bookedCount: number;
+      _id: string;
+    }>;
+    _id: string;
+  }>;
 }
 
 // Helper function to convert API doctor to UI doctor format
