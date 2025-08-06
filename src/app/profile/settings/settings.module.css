@@ -76,7 +76,10 @@
 /* Sidebar Navigation */
 .sidebar {
   background: white;
-  border-radius: 16px;
+  border-top-right-radius: 48px;
+  border-bottom-right-radius: 48px;
+  border-top-left-radius: 16px;
+  border-bottom-left-radius: 16px;
   border: 1px solid #e2e8f0;
   overflow: hidden;
   position: sticky;

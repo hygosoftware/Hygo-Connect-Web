@@ -67,6 +67,8 @@ const BookingContent: React.FC = () => {
     switch (state.currentStep) {
       case 'selection':
       case 'doctor':
+        // Doctor tab: show doctors, then clinics for selected doctor
+        // Clinic tab: show clinics, then doctors for selected clinic
         return (
           <div className="flex-1 flex flex-col">
             <BookingTabNavigation
@@ -78,9 +80,22 @@ const BookingContent: React.FC = () => {
           </div>
         );
       case 'clinic':
-        return <ClinicSelection />;
+        // In doctor flow, after doctor selection, show clinics for that doctor
+        // In clinic flow, this step should not be reachable
+        if (state.bookingFlow === 'doctor' && state.selectedDoctor) {
+          return <ClinicSelection />;
+        } else {
+          // Prevent skipping steps
+          return null;
+        }
       case 'clinic-doctor':
-        return <ClinicDoctorSelection />;
+        // Only valid in clinic flow after selecting a clinic
+        if (state.bookingFlow === 'clinic' && state.selectedClinic) {
+          return <ClinicDoctorSelection />;
+        } else {
+          // Prevent skipping steps
+          return null;
+        }
       case 'date':
       case 'slot':
         return <DateTimeSelection />;

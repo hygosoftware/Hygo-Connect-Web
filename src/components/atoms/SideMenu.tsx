@@ -228,7 +228,9 @@ const SideMenu: React.FC<SideMenuProps> = ({
           backgroundColor: '#0e3293',
           background: 'linear-gradient(135deg, #0e3293 0%, #1e40af 50%, #0e3293 100%)',
           boxShadow: '8px 0 32px rgba(0, 0, 0, 0.4), inset -2px 0 8px rgba(0, 0, 0, 0.2)',
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)'
+          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+          borderTopLeftRadius: '48px',
+          borderBottomLeftRadius: '48px'
         }}
       >
         <div className="flex flex-col h-full">

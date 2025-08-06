@@ -9,6 +9,8 @@ import { Doctor } from '../../contexts/BookingContext';
 
 const DoctorSelection: React.FC = () => {
   const { state, selectDoctor, setStep, setLoading } = useBooking();
+  // Only allow in 'doctor' bookingFlow
+  if (state.bookingFlow !== 'doctor') return null;
   const { showToast } = useToast();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
