@@ -17,6 +17,13 @@ export interface FolderInfo {
   createdAt: string;
   updatedAt: string;
 }
+export interface GetFolderInfo {
+  _id: string;
+  folderName: string;
+  folderAccess: string[];
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface GetFilesResponse {
   files: FileItem[];
