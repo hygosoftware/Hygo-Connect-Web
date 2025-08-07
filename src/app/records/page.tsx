@@ -106,29 +106,6 @@ const RecordsPage: React.FC = () => {
       } catch (err) {
         console.error('❌ Error fetching folders:', err);
         setError('Failed to load folders. Please try again.');
-
-        // Fallback to mock data if API fails
-        const mockFolders: RecordFolder[] = [
-          {
-            id: 'medical-reports',
-            name: 'Medical Reports',
-            usersWithAccess: 1,
-            sharedWith: [userId || 'user'],
-            sharedWithNames: ['You'],
-            lastUpdated: '2024-01-15',
-            fileCount: 5
-          },
-          {
-            id: 'prescriptions',
-            name: 'Prescriptions',
-            usersWithAccess: 1,
-            sharedWith: [userId || 'user'],
-            sharedWithNames: ['You'],
-            lastUpdated: '2024-01-10',
-            fileCount: 3
-          }
-        ];
-        setFolders(mockFolders);
       } finally {
         setLoading(false);
       }

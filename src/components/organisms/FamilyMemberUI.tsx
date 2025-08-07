@@ -7,7 +7,7 @@ interface FamilyMember {
   id: string;
   name: string;
   relation: string;
-  age: string;
+
   profileImage?: string;
   mobileNumber?: string;
   email?: string;
@@ -28,8 +28,7 @@ interface FamilyMemberUIProps {
   selectedMemberData?: FamilyMember;
   showAddMember: boolean;
   newMemberName: string;
-  newMemberAge: string;
-  newMemberRelation: string;
+
   newMemberEmail: string;
   newMemberMobile: string;
 
@@ -43,8 +42,7 @@ interface FamilyMemberUIProps {
   onMemberDetails: (memberId: string) => void;
   onShowAddMember: () => void;
   onNewMemberNameChange: (value: string) => void;
-  onNewMemberAgeChange: (value: string) => void;
-  onNewMemberRelationChange: (value: string) => void;
+
   onNewMemberEmailChange: (value: string) => void;
   onNewMemberMobileChange: (value: string) => void;
 }
@@ -122,7 +120,7 @@ const FamilyMemberCard: React.FC<{
       <h3 className="text-base font-semibold text-gray-800 mb-1 text-center">
         {member?.name || 'Unknown'}
       </h3>
-      <p className="text-xs text-gray-500 mb-2 text-center">{member?.relation || 'Family Member'}</p>
+
       <div className="flex justify-between w-full mt-1 gap-1">
         <button
           onClick={(e) => {
@@ -217,8 +215,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
   selectedMemberData,
   showAddMember,
   newMemberName,
-  newMemberAge,
-  newMemberRelation,
+
   newMemberEmail,
   newMemberMobile,
   onGoBack,
@@ -230,8 +227,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
   onMemberDetails,
   onShowAddMember,
   onNewMemberNameChange,
-  onNewMemberAgeChange,
-  onNewMemberRelationChange,
+  
   onNewMemberEmailChange,
   onNewMemberMobileChange,
 }) => {
@@ -240,10 +236,6 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
   const [toast, setToast] = useState<ToastProps>({ visible: false, message: '', type: 'info' });
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
 
-  const relationOptions = [
-    'Father', 'Mother', 'Son', 'Daughter', 'Brother', 'Sister',
-    'Grandfather', 'Grandmother', 'Uncle', 'Aunt', 'Cousin', 'Spouse', 'Other'
-  ];
 
   // Filter members based on search
   const filteredMembers = familyMembers.filter(member =>
@@ -270,8 +262,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
   const handleEditPress = (member: FamilyMember) => {
     setEditingMemberId(member?.id || '');
     onNewMemberNameChange(member?.name || '');
-    onNewMemberAgeChange(member?.age || '');
-    onNewMemberRelationChange(member?.relation || '');
+   
     onNewMemberEmailChange(member?.email || '');
     onNewMemberMobileChange(member?.mobileNumber || '');
     onShowAddMember();
@@ -293,8 +284,6 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
     if (editingMemberId) {
       onEditMember(editingMemberId, {
         name: newMemberName,
-        age: newMemberAge,
-        relation: newMemberRelation,
         email: newMemberEmail,
         mobileNumber: newMemberMobile,
       });
@@ -415,7 +404,6 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
                   <div>
                     <div className="text-2xl font-bold text-gray-800">{selectedMemberData.name}</div>
                     <div className="text-gray-500 text-sm">{selectedMemberData.relation}</div>
-                    <div className="text-gray-500 text-sm">Age: {selectedMemberData.age}</div>
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -513,25 +501,6 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
               type="tel"
             />
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <InputField
-                placeholder="Age"
-                value={newMemberAge}
-                onChange={onNewMemberAgeChange}
-                type="number"
-              />
-
-              <select
-                value={newMemberRelation}
-                onChange={(e) => onNewMemberRelationChange(e.target.value)}
-                className="border border-gray-200 rounded-xl px-4 py-3 bg-white text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select relation</option>
-                {relationOptions.map((relation) => (
-                  <option key={relation} value={relation}>{relation}</option>
-                ))}
-              </select>
-            </div>
 
             <div className="flex gap-2 mt-2">
               <button

@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Icon, Button, Input } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
-import { mockAPI } from '../../lib/mockBookingData';
 
 const BookingPayment: React.FC = () => {
   const { state, setPaymentMethod, setPaymentStatus, setStep, setLoading } = useBooking();
@@ -68,7 +67,6 @@ const BookingPayment: React.FC = () => {
         }
       };
 
-      const result = await mockAPI.bookAppointment(bookingData);
 
       if (result.success) {
         setPaymentStatus('success');

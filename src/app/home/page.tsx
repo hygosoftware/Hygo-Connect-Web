@@ -436,47 +436,7 @@ const HomePage: React.FC = () => {
       <div className="h-20"></div>
 
       {/* Status Section */}
-      <div className="p-6">
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Welcome to Hygo!</h2>
-          <p className="text-gray-600 mb-4">
-            ✅ Header component working with menu functionality
-          </p>
-          <p className="text-gray-600 mb-4">
-            ✅ SideMenu component working with profile and navigation
-          </p>
-          <p className="text-gray-600 mb-4">
-            ✅ FeatureCard component working with 8 health features
-          </p>
-          <p className="text-gray-600 mb-4">
-            ✅ AppointmentCard component with video/in-person appointments
-          </p>
-          <p className="text-gray-600 mb-4">
-            ✅ DailyTips component with rotating health tips
-          </p>
-          <p className="text-gray-600 mb-4">
-            ✅ AutoScrollBanner component with health promotions
-          </p>
-          <p className="text-gray-600 mb-4">
-            ✅ DoctorCard component with top rated doctors
-          </p>
-          <p className="text-gray-600 mb-4">
-            ✅ Persistent navigation with responsive design
-          </p>
-          <p className="text-gray-600 mb-4">
-            🎯 Click any feature card, appointment card, doctor card, or banner to test functionality!
-          </p>
-          <p className="text-gray-600 mb-4">
-            📱 Try clicking the QR code button on in-person appointments!
-          </p>
-          <p className="text-gray-600 mb-4">
-            🎥 Try clicking the video call button on video appointments!
-          </p>
-          <p className="text-gray-600">
-            Please provide the next atomic component to continue building the home screen.
-          </p>
-        </div>
-      </div>
+    
 
       </main>
     </div>

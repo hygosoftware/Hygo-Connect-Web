@@ -152,6 +152,7 @@ const initialState: BookingState = {
 function bookingReducer(state: BookingState, action: BookingAction): BookingState {
   switch (action.type) {
     case 'SET_BOOKING_FLOW':
+      console.log('BookingReducer: Setting booking flow to', action.payload, 'and resetting selections');
       return {
         ...state,
         bookingFlow: action.payload,
@@ -165,8 +166,11 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
     case 'SET_STEP':
       return { ...state, currentStep: action.payload };
     case 'SELECT_DOCTOR':
+      console.log('BookingReducer: Selecting doctor:', action.payload?.fullName);
       return { ...state, selectedDoctor: action.payload };
     case 'SELECT_CLINIC':
+      console.log('BookingReducer: Updating selectedClinic state with:', action.payload);
+      console.log('BookingReducer: New clinic ID:', action.payload?._id);
       return { ...state, selectedClinic: action.payload };
     case 'SELECT_DATE':
       return { ...state, selectedDate: action.payload };
@@ -183,6 +187,7 @@ function bookingReducer(state: BookingState, action: BookingAction): BookingStat
     case 'SET_ERROR':
       return { ...state, error: action.payload };
     case 'RESET_BOOKING':
+      console.log('BookingReducer: Resetting booking state to initial state');
       return initialState;
     default:
       return state;
@@ -240,6 +245,8 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
   };
 
   const selectClinic = (clinic: Clinic) => {
+    console.log('BookingContext: Selecting clinic:', clinic);
+    console.log('BookingContext: Clinic ID:', clinic?._id);
     dispatch({ type: 'SELECT_CLINIC', payload: clinic });
   };
 
