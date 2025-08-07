@@ -204,42 +204,45 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-blue-50">
-      {/* Header */}
-      <UniversalHeader
-        title={`Hi, ${user?.FullName?.split(' ')[0] || user?.fullName?.split(' ')[0] || 'User'}!`}
-        subtitle="Good Morning"
-        variant="home"
-        showBackButton={false}
-        rightContent={
-          <div className="flex items-center space-x-2">
-            {/* Location */}
-            <button className="hidden sm:flex items-center bg-white/15 px-3 py-1.5 rounded-lg hover:bg-white/25 transition-colors duration-200">
-              <Icon name="location" size="small" color="white" className="mr-1" />
-              <Typography variant="caption" className="text-white text-xs">
-                New York, NY
-              </Typography>
-            </button>
+      {/* Header - fixed and full width behind sidebar */}
+      <div className="fixed top-0 left-0  w-screen z-10" style={{right: 0}}>
+        <UniversalHeader
+          title={`Hi, ${user?.FullName?.split(' ')[0] || user?.fullName?.split(' ')[0] || 'User'}!`}
+          subtitle="Good Morning"
+          variant="home"
+          showBackButton={false}
+          rightContent={
+            <div className="flex items-center space-x-2">
+              {/* Location */}
+              <button className="hidden sm:flex items-center bg-white/15 px-3 py-1.5 rounded-lg hover:bg-white/25 transition-colors duration-200">
+                <Icon name="location" size="small" color="white" className="mr-1" />
+                <Typography variant="caption" className="text-white text-xs">
+                  New York, NY
+                </Typography>
+              </button>
 
-            {/* Notifications */}
-            <button className="relative w-10 h-10 bg-white/15 rounded-lg flex items-center justify-center hover:bg-white/25 transition-colors duration-200">
-              <Icon name="bell" size="small" color="white" />
-              <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                <Typography variant="caption" className="text-white text-xs font-bold">3</Typography>
-              </span>
-            </button>
+              {/* Notifications */}
+              <button className="relative w-10 h-10 bg-white/15 rounded-lg flex items-center justify-center hover:bg-white/25 transition-colors duration-200">
+                <Icon name="bell" size="small" color="white" />
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                  <Typography variant="caption" className="text-white text-xs font-bold">3</Typography>
+                </span>
+              </button>
 
-            {/* Book Appointment */}
-            <button
-              onClick={() => handleFeaturePress('Book Appointment')}
-              className="bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition-colors duration-200"
-            >
-              <Typography variant="body2" className="text-white font-semibold">Book</Typography>
-            </button>
-          </div>
-        }
-      />
+              {/* Book Appointment */}
+              <button
+                onClick={() => handleFeaturePress('Book Appointment')}
+                className="bg-white/20 px-4 py-2 rounded-lg hover:bg-white/30 transition-colors duration-200"
+              >
+                <Typography variant="body2" className="text-white font-semibold">Book</Typography>
+              </button>
+            </div>
+          }
+        />
+      </div>
 
-      <main>
+      {/* Add top padding to prevent content from being hidden behind the header */}
+      <main className="pt-20">
 
       {/* Daily Health Tips */}
       <DailyTips onPress={() => console.log('Daily tip clicked')} />

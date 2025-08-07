@@ -160,7 +160,7 @@ const HealthCardUpgradePage: React.FC = () => {
 
       // Step 3: Configure Razorpay options
       const options: RazorpayOptions = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_your_key_here',
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_9mOyRUi9azswI4',
         amount: paymentOrder.amount, // Amount already in paise from backend
         currency: paymentOrder.currency,
         name: 'Hygo Health',

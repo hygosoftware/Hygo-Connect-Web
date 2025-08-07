@@ -87,11 +87,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     },
   ];
 
+  const [isSidebarExpanded, setIsSidebarExpanded] = React.useState(true);
+
   if (!shouldShowNavigation()) {
     return <>{children}</>;
   }
-
-  const [isSidebarExpanded, setIsSidebarExpanded] = React.useState(true);
 
   return (
     <HeaderProvider onMobileMenuToggle={() => {}}>

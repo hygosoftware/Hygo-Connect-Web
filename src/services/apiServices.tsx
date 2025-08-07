@@ -1808,7 +1808,19 @@ export const pillReminderHelpers = {
   // Convert UI Medicine model to API PillReminder format
   convertMedicineToApiFormat: (medicine: Medicine, userId: string): Omit<PillReminder, '_id' | 'createdAt' | 'updatedAt'> => {
     // Extract times from timings object
-    const times = Object.values(medicine.timings).map(timing => timing.time);
+    // Helper to convert 24h time to 'HH:MM AM/PM' or passthrough for period strings
+function toAmPm(time24: string): string {
+  if (/^(morning|afternoon|evening|night)$/i.test(time24)) return time24;
+  if (/AM|PM/i.test(time24)) return time24;
+  const [hourStr, minStr] = time24.split(":");
+  let hour = parseInt(hourStr, 10);
+  const min = minStr.padStart(2, "0");
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12;
+  if (hour === 0) hour = 12;
+  return `${hour.toString().padStart(2, "0")}:${min} ${ampm}`;
+}
+const times = Object.values(medicine.timings).map(timing => toAmPm(timing.time));
 
     // Create API medicine object with proper type casting
     const apiMedicine: ApiMedicine = {

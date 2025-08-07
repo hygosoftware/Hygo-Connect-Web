@@ -304,7 +304,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-[#0e3293] px-4 pt-3 pb-4">
+      <div className="bg-[#0e3293] px-4 pt-3 pb-4 header">
         <div className="flex items-center">
           <button
             onClick={onGoBack}

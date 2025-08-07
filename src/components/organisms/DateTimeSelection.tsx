@@ -23,40 +23,9 @@ const DateTimeSelection: React.FC = () => {
 
   // Log initial state on component mount
   useEffect(() => {
-    //('DateTimeSelection component initialized with state:');
-    //('Initial selectedDoctor:', state.selectedDoctor);
-    //('Initial selectedClinic:', state.selectedClinic);
-    //('Initial selectedDate:', state.selectedDate);
-    
-    if (state.selectedDoctor) {
-      //('Doctor has clinics:', state.selectedDoctor.clinic);
-      //('Doctor has availability:', state.selectedDoctor.availability);
-      
-      // Check if the specific clinic ID from the user is in the doctor's availability
-      const availability = state.selectedDoctor.availability || [];
-      const hasSpecificClinic = availability.some((a: any) => (a.clinic === selectedClinicId) || (a.clinic?.toLowerCase?.() === selectedClinicId?.toLowerCase?.()));
-      //(`Doctor has availability for specific clinic ID (${specificClinicId}): ${hasSpecificClinic}`);
-      
-      // Log the clinic IDs in the doctor's availability for comparison
-      //('All clinic IDs in doctor\'s availability:', availability.map((a: any) => a.clinic));
-      
-      // Check if the specific clinic ID is in the doctor's clinic array
-      const clinicArray = state.selectedDoctor.clinic || [];
-      const clinicInArray = clinicArray.some((c: any) => c._id === selectedClinicId);
-      //(`Doctor has clinic with specific ID (${specificClinicId}) in clinic array: ${clinicInArray}`);
-      
-      // Log all clinic IDs in the doctor's clinic array
-      //('All clinic IDs in doctor\'s clinic array:', clinicArray.map((c: any) => c._id));
-      
-      // Check for case-insensitive matches
-      const caseInsensitiveMatches = availability.filter((a: any) => {
-        if (typeof a.clinic === 'string' && typeof selectedClinicId === 'string') {
-          return a.clinic.toLowerCase() === selectedClinicId.toLowerCase();
-        }
-        return false;
-      });
-      //(`Found ${caseInsensitiveMatches.length} case-insensitive matches for selected clinic ID`);
-    }
+    // Log only doctor and clinic data
+    console.log('Doctor data:', state.selectedDoctor);
+    console.log('Clinic data:', state.selectedClinic);
   }, []);
 
   // Helper: Map weekday string to JS day index
@@ -92,21 +61,45 @@ const DateTimeSelection: React.FC = () => {
   // Function to get slots for a specific date, with optional clinic parameter for testing
   function getSlotsForDate(date: Date | null, overrideClinic?: any): TimeSlot[] {
   if (!date) {
-    //('[getSlotsForDate] Provided date is null or undefined. Returning empty slot array.');
     return [];
   }
     if (!state.selectedDoctor) return [];
     
     // Use the override clinic if provided, otherwise use the selected clinic from state
     const clinicToUse = overrideClinic || state.selectedClinic;
+    let normalizedClinicId: string | undefined = undefined;
+    if (clinicToUse) {
+      if (clinicToUse._id) {
+        normalizedClinicId = String(clinicToUse._id);
+      } else if (clinicToUse.clinicId) {
+        normalizedClinicId = String(clinicToUse.clinicId);
+      }
+    }
+    // Always normalize clinic ID to string for comparison
     
     // Get the day of the week for the selected date
     const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
     
     // Access the availability array from the doctor object
     const availability = state.selectedDoctor.availability || [];
-    
-    // Detailed logging of selected clinic data in getSlotsForDate
+
+    // Debug logs
+    console.log('Normalized Clinic ID:', normalizedClinicId);
+    console.log('Day name:', dayName);
+    console.log('Doctor availability:', availability.map((a: any) => ({ clinic: a.clinic, day: a.day })));
+
+    // Filter availabilities for the selected clinic
+    const clinicAvailabilities = availability.filter((a: any) => String(a.clinic) === String(normalizedClinicId));
+
+    // Gather all slots for the selected clinic and day
+    const slotsForSelectedClinic = clinicAvailabilities
+      .filter((a: any) => a.day === dayName)
+      .flatMap((a: any) => a.slots);
+
+    // Log for verification
+    console.log('Filtered availabilities for clinic:', clinicAvailabilities);
+    console.log('Slots for selected clinic and day:', slotsForSelectedClinic);
+    return slotsForSelectedClinic;
     
     
     
@@ -134,69 +127,41 @@ const DateTimeSelection: React.FC = () => {
     // Only filter by clinic if one is selected
     if (clinicToUse) {
       clinicAvailability = availability.filter((a: any) => {
-        // Try both exact match and case-insensitive match
-        const exactMatch = a.clinic === clinicToUse?._id;
-        //(`Exact match check: '${a.clinic}' === '${clinicToUse?._id}' => ${exactMatch}`);
-        
-        // Check against the specific clinic ID from user (Madhuram Hospital)
-        const specificClinicId = "685d192933f7461084071b2f";
-        const specificClinicMatch = a.clinic === specificClinicId;
-        //(`Specific clinic ID match check: '${a.clinic}' === '${specificClinicId}' => ${specificClinicMatch}`);
-        
-        // Try case-insensitive match if both are strings
-        let caseInsensitiveMatch = false;
-        if (typeof a.clinic === 'string' && typeof clinicToUse?._id === 'string') {
-          caseInsensitiveMatch = a.clinic.toLowerCase() === clinicToUse._id.toLowerCase();
-          //(`Case-insensitive match check: '${a.clinic.toLowerCase()}' === '${clinicToUse._id.toLowerCase()}' => ${caseInsensitiveMatch}`);
-        }
-        
-        // Also try matching by name if clinic has a name property
+        // Always compare as strings
+        const availClinicId = a.clinic ? String(a.clinic) : undefined;
+        const exactMatch = availClinicId === normalizedClinicId;
+        const caseInsensitiveMatch = availClinicId && normalizedClinicId && availClinicId.toLowerCase() === normalizedClinicId.toLowerCase();
         let nameMatch = false;
         if (a.clinicName && clinicToUse?.clinicName) {
           nameMatch = a.clinicName.toLowerCase() === clinicToUse.clinicName.toLowerCase();
-          //(`Name match check: '${a.clinicName.toLowerCase()}' === '${clinicToUse.clinicName.toLowerCase()}' => ${nameMatch}`);
         }
-        
-        // Special case for HYGO clinic
         let hygoMatch = false;
-        if (isHygoClinic || (typeof a.clinic === 'string' && a.clinic.toUpperCase().includes('HYGO'))) {
+        if (isHygoClinic || (availClinicId && availClinicId.toUpperCase().includes('HYGO'))) {
           hygoMatch = true;
-          //('HYGO match found for clinic in getSlotsForDate:', a.clinic);
         }
-        
-        // Fallback: If we have no matches but this is the only clinic in the doctor's availability,
-        // we'll use it as a last resort
         let fallbackMatch = false;
         if (!exactMatch && !caseInsensitiveMatch && !nameMatch && !hygoMatch && availability.length === 1) {
           fallbackMatch = true;
-          //('Using fallback match in getSlotsForDate as this is the only clinic in doctor\'s availability');
         }
-        
         const match = exactMatch || caseInsensitiveMatch || nameMatch || hygoMatch || fallbackMatch;
-        //(`In getSlotsForDate - Comparing clinic IDs: ${a.clinic} === ${clinicToUse?._id} => ${match} (exact: ${exactMatch}, case-insensitive: ${caseInsensitiveMatch}, name: ${nameMatch}, hygo: ${hygoMatch}, fallback: ${fallbackMatch})`);
         return match;
       });
     }
     
     // Find availability for the selected day
-    const dayAvailability = clinicAvailability.find((a: any) => a.day === dayName);
-    
+    let dayAvailability = clinicAvailability.find((a: any) => a.day === dayName);
+    // Fallback: if no match, and only one availability exists, use it
+    if ((!dayAvailability || !dayAvailability.slots) && clinicAvailability.length === 1) {
+      dayAvailability = clinicAvailability[0];
+    }
     if (!dayAvailability || !dayAvailability.slots) {
-      if (clinicToUse) {
-        //(`No availability found for ${dayName} at clinic: ${clinicToUse.clinicName}`);
-      } else {
-        //(`No availability found for ${dayName} at any clinic`);
-      }
       return [];
     }
-    
-    //(`Found ${dayAvailability.slots.length} slots for ${dayName}:`, dayAvailability.slots);
-    
     // Convert to TimeSlot[] format for UI
     return dayAvailability.slots.map((slot: any, idx: number) => {
       // Ensure we have all required data
       if (!slot._id || !slot.startTime || slot.appointmentLimit === undefined || slot.bookedCount === undefined) {
-        //('Incomplete slot data:', slot);
+        
       }
       
       return {
@@ -212,7 +177,7 @@ const DateTimeSelection: React.FC = () => {
   useEffect(() => {
     // Build available dates based on doctor availability for selected clinic
     if (state.selectedDoctor) {
-      //('Building available dates for doctor:', state.selectedDoctor.fullName);
+      
       
       // Access the availability array from the doctor object
       const availability = state.selectedDoctor.availability || [];
@@ -234,7 +199,7 @@ const DateTimeSelection: React.FC = () => {
                           state.selectedClinic._id.toUpperCase().includes('HYGO');
       
       if (isHygoClinic) {
-        //('HYGO clinic detected, will attempt to match with all availabilities');
+        
       }
       
       // If no clinic is selected, use all availabilities
@@ -245,32 +210,32 @@ const DateTimeSelection: React.FC = () => {
         clinicAvailability = availability.filter((a: any) => {
           // Try both exact match and case-insensitive match
           const exactMatch = a.clinic === selectedClinicId;
-          //(`useEffect - Exact match check: '${a.clinic}' === '${selectedClinicId}' => ${exactMatch}`);
+          
           
           // Check against the specific clinic ID from user (Madhuram Hospital)
           const specificClinicId = "685d192933f7461084071b2f";
           const specificClinicMatch = a.clinic === specificClinicId;
-          //(`useEffect - Specific clinic ID match check: '${a.clinic}' === '${specificClinicId}' => ${specificClinicMatch}`);
+          
           
           // Try case-insensitive match if both are strings
           let caseInsensitiveMatch = false;
           if (typeof a.clinic === 'string' && typeof selectedClinicId === 'string') {
             caseInsensitiveMatch = a.clinic.toLowerCase() === selectedClinicId.toLowerCase();
-            //(`useEffect - Case-insensitive match check: '${a.clinic.toLowerCase()}' === '${selectedClinicId.toLowerCase()}' => ${caseInsensitiveMatch}`);
+            
           }
           
           // Also try matching by name if clinic has a name property
           let nameMatch = false;
           if (a.clinicName && state.selectedClinic?.clinicName) {
             nameMatch = a.clinicName.toLowerCase() === state.selectedClinic.clinicName.toLowerCase();
-            //(`useEffect - Name match check: '${a.clinicName.toLowerCase()}' === '${state.selectedClinic.clinicName.toLowerCase()}' => ${nameMatch}`);
+            
           }
           
           // Special case for HYGO clinic
           let hygoMatch = false;
           if (isHygoClinic || (typeof a.clinic === 'string' && a.clinic.toUpperCase().includes('HYGO'))) {
             hygoMatch = true;
-            //('HYGO match found for clinic:', a.clinic);
+            
           }
          
           // Fallback: If we have no matches but this is the only clinic in the doctor's availability,
@@ -278,39 +243,39 @@ const DateTimeSelection: React.FC = () => {
           let fallbackMatch = false;
           if (!exactMatch && !caseInsensitiveMatch && !nameMatch && !hygoMatch && availability.length === 1) {
             fallbackMatch = true;
-            //('Using fallback match as this is the only clinic in doctor\'s availability');
+            
           }
          
           const match = exactMatch || caseInsensitiveMatch || nameMatch || hygoMatch || fallbackMatch;
-          //(`Comparing clinic IDs: ${a.clinic} === ${selectedClinicId} => ${match} (exact: ${exactMatch}, case-insensitive: ${caseInsensitiveMatch}, name: ${nameMatch}, hygo: ${hygoMatch}, fallback: ${fallbackMatch})`);
+          
           return match;
         });
       }
       
       if (!clinicAvailability.length) {
         if (state.selectedClinic) {
-          //('No availability for this doctor at selected clinic:', state.selectedClinic.clinicName);
+          
         } else if (state.selectedDoctor.clinic && state.selectedDoctor.clinic.length > 0) {
-          //('No availability for this doctor at any clinic');
+          
         } else {
-          //('No availability data found for this doctor');
+          
         }
         setAvailableDates([]);
         return;
       }
       
-      //(`Found ${clinicAvailability.length} availability entries for clinic ${state.selectedClinic.clinicName}:`, clinicAvailability);
+      
       
       let dates: Date[] = [];
       clinicAvailability.forEach((a: any) => {
         if (!a.day) {
-          //('Missing day in availability entry:', a);
+          
           return;
         }
         
         // For each available day, get next 4 dates (or more/less as needed)
         const weekdayDates = getNextDatesForWeekday(a.day, 4);
-        //(`Generated ${weekdayDates.length} dates for ${a.day}:`, weekdayDates.map(d => d.toDateString()));
+        
         dates = dates.concat(weekdayDates);
       });
       
@@ -319,12 +284,12 @@ const DateTimeSelection: React.FC = () => {
       const uniqueDates = Array.from(dateStrSet).map(ds => new Date(ds));
       uniqueDates.sort((a, b) => a.getTime() - b.getTime());
       
-      //(`Final available dates (${uniqueDates.length}):`, uniqueDates.map(d => d.toDateString()));
+      
       setAvailableDates(uniqueDates);
       
       // Auto-select first available date if none selected
       if ((!selectedDate || !uniqueDates.some(d => d.toDateString() === selectedDate?.toDateString())) && uniqueDates.length > 0) {
-        //('Auto-selecting first available date:', uniqueDates[0].toDateString());
+        
         setSelectedDate(uniqueDates[0]);
       }
     } else {
@@ -339,19 +304,19 @@ const DateTimeSelection: React.FC = () => {
         setLoadingSlots(true);
         
         // Log clinic selection state when fetching time slots
-        //('[fetchTimeSlots] Current clinic selection state:');
-        //('[fetchTimeSlots] selectedClinic:', state.selectedClinic);
-        //('[fetchTimeSlots] selectedClinic ID:', selectedClinicId);
-        //('[fetchTimeSlots] selectedDoctor clinics:', state.selectedDoctor.clinic);
+        
+        
+        
+        
         
         try {
           // Use getSlotsForDate to get available slots directly from doctor availability
           const slots = getSlotsForDate(selectedDate);
           
-          //('[DEBUG] Available slots for selected date:', slots);
+          
           setTimeSlots(slots);
         } catch (error) {
-          //('Error fetching time slots:', error);
+          
           showToast({
             type: 'error',
             title: 'Failed to load time slots',
@@ -393,14 +358,14 @@ const DateTimeSelection: React.FC = () => {
       );
     }
     
-    //(`Rendering ${timeSlots.length} slots for UI`);
+    
     
     return (
       <div className="grid grid-cols-2 gap-3">
         {timeSlots.map((slot) => {
           // Validate slot data before rendering
           if (!slot || !slot.id || !slot.time) {
-            //('Invalid slot data:', slot);
+            
             return null;
           }
           return <TimeSlotCard key={slot.id} slot={slot} />;
@@ -413,24 +378,24 @@ const DateTimeSelection: React.FC = () => {
     setSelectedDate(date);
     selectDate(date);
     
-    //(`Selected date: ${date.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}`);
+    
     
     // Log complete clinic selection state
-    //('=== CLINIC SELECTION STATE WHEN DATE SELECTED ===');
-    //('selectedClinic:', state.selectedClinic);
-    //('selectedClinic ID:', state.selectedClinic?._id);
-    //('selectedClinic is null or undefined:', state.selectedClinic == null);
-    //('selectedDoctor:', state.selectedDoctor?.fullName);
-    //('selectedDoctor clinics:', state.selectedDoctor?.clinic);
-    //('selectedDoctor availability:', state.selectedDoctor?.availability);
-    //('=== END CLINIC SELECTION STATE ===');
+    
+    
+    
+    
+    
+    
+    
+    
     
     // Get slots for the selected date
     const slots = getSlotsForDate(date);
-    //(`Retrieved ${slots.length} slots for ${date.toDateString()}:`, slots);
+    
     
     if (slots.length === 0) {
-      //(`No slots available for ${date.toDateString()}`);
+      
     }
     
     setTimeSlots(slots);
@@ -441,14 +406,14 @@ const DateTimeSelection: React.FC = () => {
     if (!slot.available) return;
     
     // Log complete clinic selection state when slot is selected
-    //('=== CLINIC SELECTION STATE WHEN SLOT SELECTED ===');
-    //('selectedClinic:', state.selectedClinic);
-    //('selectedClinic ID:', state.selectedClinic?._id);
-    //('selectedClinic is null or undefined:', state.selectedClinic == null);
-    //('selectedDoctor:', state.selectedDoctor?.fullName);
-    //('selectedDate:', selectedDate);
-    //('selectedSlot:', slot);
-    //('=== END CLINIC SELECTION STATE ===');
+    
+    
+    
+    
+    
+    
+    
+    
     
     selectSlot(slot);
     setStep('details');
@@ -512,31 +477,31 @@ const DateTimeSelection: React.FC = () => {
 
   // Log complete state on each render
   const logCompleteState = () => {
-    //('=== COMPLETE STATE ON RENDER ===');
-    //('selectedDoctor:', state.selectedDoctor?.fullName);
-    //('selectedClinic:', state.selectedClinic);
-    //('selectedClinic ID:', state.selectedClinic?._id);
-    //('selectedDate:', selectedDate);
-    //('timeSlots:', timeSlots.length);
-    //('availableDates:', availableDates.length);
-    //('=== END COMPLETE STATE ===');
+    
+    
+    
+    
+    
+    
+    
+    
   };
   
   // Function to test what happens if we manually set the clinic ID
   const testWithSpecificClinic = () => {
     const specificClinicId = "685d192933f7461084071b2f";
-    //('\n--- TESTING WITH SPECIFIC CLINIC ID ---');
+    
     
     if (state.selectedDoctor && state.selectedDoctor.availability) {
       // Filter availability with the specific clinic ID
       const testAvailability = state.selectedDoctor.availability.filter((a: any) => {
         const match = a.clinic === specificClinicId;
-        //(`Test match for clinic '${a.clinic}' with '${specificClinicId}': ${match}`);
+        
         return match;
       });
       
-      //(`Found ${testAvailability.length} availabilities matching specific clinic ID`);
-      //('Test availabilities:', testAvailability);
+      
+      
       
       // Get available dates from these availabilities
       let testDates: Date[] = [];
@@ -552,8 +517,8 @@ const DateTimeSelection: React.FC = () => {
       const uniqueDates = Array.from(dateStrSet).map(ds => new Date(ds));
       uniqueDates.sort((a, b) => a.getTime() - b.getTime());
       
-      //(`This would result in ${uniqueDates.length} available dates`);
-      //('Test dates:', uniqueDates.map(d => d.toDateString()));
+      
+      
       
       // Create a mock clinic object with the specific ID
       const mockClinic = {
@@ -569,14 +534,14 @@ const DateTimeSelection: React.FC = () => {
         }
       };
       
-      //('Created mock clinic with specific ID:', mockClinic);
+      
       
       // Test what happens if we manually override the selected clinic
-      //('Testing with manual clinic override...');
+      
       const manuallyFilteredAvailability = getSlotsForDate(selectedDate, mockClinic);
-      //(`Manual override resulted in ${manuallyFilteredAvailability.length} time slots`);
+      
     }
-    //('--- END TEST ---\n');
+    
   };
   
   // Function for the UI button to manually test with Madhuram Hospital
@@ -595,8 +560,8 @@ const DateTimeSelection: React.FC = () => {
       }
     };
     
-    //('\n--- MANUALLY TESTING WITH MADHURAM HOSPITAL ---');
-    //('Mock clinic:', mockClinic);
+    
+    
     
     // Get available dates for this clinic
     if (state.selectedDoctor && state.selectedDoctor.availability) {
@@ -604,18 +569,18 @@ const DateTimeSelection: React.FC = () => {
         return a.clinic === specificClinicId;
       });
       
-      //(`Found ${testAvailability.length} availabilities matching Madhuram Hospital ID`);
+      
       
       if (testAvailability.length > 0) {
         // Get slots for today with this clinic
         const today = new Date();
         const slots = getSlotsForDate(today, mockClinic);
-        //(`Found ${slots.length} slots for today with Madhuram Hospital`);
+        
         
         // If we have a selected date, try that too
         if (selectedDate) {
           const slotsForSelectedDate = getSlotsForDate(selectedDate, mockClinic);
-          //(`Found ${slotsForSelectedDate.length} slots for selected date (${selectedDate.toDateString()}) with Madhuram Hospital`);
+          
         }
         
         // Try to find the clinic in the doctor's clinic array

@@ -45,14 +45,36 @@ const OTPInputGroup: React.FC<OTPInputGroupProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>, index: number) => {
-    // Handle backspace to move to previous input
-    if (e.key === 'Backspace' && index > 0 && value[index] === '') {
-      setTimeout(() => {
-        const prevInput = inputRefs.current[index - 1];
-        if (prevInput) {
-          prevInput.focus();
+    // Enhanced backspace logic
+    if (e.key === 'Backspace') {
+      if (value[index] === '') {
+        if (index > 0) {
+          // Move focus to previous input and clear it
+          setTimeout(() => {
+            const prevInput = inputRefs.current[index - 1];
+            if (prevInput) {
+              prevInput.focus();
+            }
+            // Clear previous input value
+            const newOtp = [...value];
+            newOtp[index - 1] = '';
+            onChange(newOtp);
+          }, 0);
         }
-      }, 0);
+      } else {
+        // If current box is not empty, clear it and move focus to previous
+        const newOtp = [...value];
+        newOtp[index] = '';
+        onChange(newOtp);
+        if (index > 0) {
+          setTimeout(() => {
+            const prevInput = inputRefs.current[index - 1];
+            if (prevInput) {
+              prevInput.focus();
+            }
+          }, 0);
+        }
+      }
     }
 
     // Handle arrow keys for navigation

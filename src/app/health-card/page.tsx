@@ -198,56 +198,51 @@ const HealthCardPage: React.FC = () => {
       <div className="px-4 md:px-6 py-8 space-y-8">
         {/* Virtual Health Card */}
         <div className="max-w-md mx-auto">
-          <div className="bg-gradient-to-br from-[#0E3293] to-blue-600 rounded-2xl p-6 text-white shadow-2xl transform hover:scale-105 transition-all duration-200">
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <Typography variant="h6" className="font-bold mb-1">
-                  HYGO Health Card
-                </Typography>
-                <Typography variant="body2" className="opacity-80">
-                  Digital Health ID
-                </Typography>
+          <div className="bg-gradient-to-br from-[#0E3293] to-blue-600 rounded-2xl p-8 text-white shadow-2xl relative overflow-visible">
+            {/* User avatar */}
+            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
+              <div className="w-20 h-20 rounded-full bg-white border-4 border-[#0E3293] flex items-center justify-center shadow-lg">
+                <Icon name="user" className="text-[#0E3293] w-12 h-12" />
               </div>
-              <Icon name="health-card" className="w-8 h-8" />
             </div>
-            
-            <div className="space-y-4">
+            <div className="flex flex-col items-center mt-12 mb-6">
+              <Typography variant="h6" className="font-bold mb-1 text-center text-white">
+                {userProfile?.name || 'Loading...'}
+              </Typography>
+              <Typography variant="body2" className="opacity-80 text-center text-white">
+                Digital Health ID
+              </Typography>
+            </div>
+            <div className="flex justify-between mb-4">
               <div>
-                <Typography variant="body2" className="opacity-80 mb-1">
-                  Cardholder Name
+                <Typography variant="body2" className="opacity-80 mb-1 text-white">
+                  Member ID
                 </Typography>
-                <Typography variant="h6" className="font-semibold">
-                  {userProfile?.name || 'Loading...'}
+                <Typography variant="body1" className="font-mono text-white">
+                  {userProfile?.id || 'HYGO001'}
                 </Typography>
               </div>
-              
-              <div className="flex justify-between">
-                <div>
-                  <Typography variant="body2" className="opacity-80 mb-1">
-                    Member ID
-                  </Typography>
-                  <Typography variant="body1" className="font-mono">
-                    {userProfile?.id || 'HYGO001'}
-                  </Typography>
-                </div>
-                <div className="text-right">
-                  <Typography variant="body2" className="opacity-80 mb-1">
-                    Member Since
-                  </Typography>
-                  <Typography variant="body1">
-                    {userProfile?.memberSince || '2024'}
-                  </Typography>
-                </div>
+              <div className="text-right">
+                <Typography variant="body2" className="opacity-80 mb-1 text-white">
+                  Member Since
+                </Typography>
+                <Typography variant="body1" className="text-white">
+                  {userProfile?.memberSince || '2024'}
+                </Typography>
               </div>
-              
-              <div className="pt-2 border-t border-white/20">
-                <Typography variant="body2" className="opacity-80 mb-1">
+            </div>
+            <div className="pt-4 border-t border-white/20 flex items-center justify-between">
+              <div>
+                <Typography variant="body2" className="opacity-80 mb-1 text-white">
                   Current Plan
                 </Typography>
-                <Typography variant="body1" className="font-semibold">
+                <Typography variant="body1" className="font-semibold text-white">
                   {userProfile?.plan || 'Basic'}
                 </Typography>
               </div>
+              <span className="ml-2 px-3 py-1 bg-white/20 rounded-full text-xs font-semibold uppercase tracking-wide">
+                Active
+              </span>
             </div>
           </div>
         </div>
@@ -257,12 +252,15 @@ const HealthCardPage: React.FC = () => {
           <Typography variant="h5" className="text-gray-900 font-bold mb-6 text-center">
             Recent Services
           </Typography>
-          
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
             {usedServices.length === 0 ? (
-              <div className="text-center py-8">
-                <Typography variant="body1" className="text-gray-600">
+              <div className="flex flex-col items-center py-8">
+                <Icon name="inbox" className="w-12 h-12 text-gray-300 mb-4" />
+                <Typography variant="body1" className="text-gray-600 mb-2">
                   No services used yet
+                </Typography>
+                <Typography variant="body2" className="text-gray-400">
+                  Your recent health services will appear here.
                 </Typography>
               </div>
             ) : (
@@ -271,7 +269,7 @@ const HealthCardPage: React.FC = () => {
                   <div key={service.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-[#0E3293] rounded-full flex items-center justify-center">
-                        <Icon name="heart" className="w-5 h-5 text-white" />
+                        <Icon name={service.type === 'Consultation' ? 'stethoscope' : 'heart'} className="w-5 h-5 text-white" />
                       </div>
                       <div>
                         <Typography variant="body1" className="font-semibold text-gray-900">
@@ -298,14 +296,66 @@ const HealthCardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Subscribe Button */}
-        <div className="text-center">
-          <Button
-            onClick={handleSubscribe}
-            className="px-8 py-4 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-          >
-            View Subscription Plans
-          </Button>
+        {/* Subscription Plans Preview */}
+        <div className="max-w-6xl mx-auto mt-12">
+          <Typography variant="h5" className="text-gray-900 font-bold mb-6 text-center">
+            Subscription Plan Options
+          </Typography>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {subscriptionPlans.slice(0,3).map((plan) => (
+              <div
+                key={plan._id}
+                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
+              >
+                <div className="text-center mb-6">
+                  <Typography variant="h6" className="text-gray-900 font-bold mb-2">
+                    {plan.subscriptionName || 'Subscription Plan'}
+                  </Typography>
+                  <div className="text-3xl font-bold text-[#0E3293] mb-2">
+                    ₹{plan.price || 0}
+                  </div>
+                  <Typography variant="body2" className="text-gray-600">
+                    {plan.duration ? 
+                      `${plan.duration.value} ${plan.duration.unit}${plan.duration.value > 1 ? 's' : ''}` : 
+                      'Duration not specified'
+                    }
+                  </Typography>
+                </div>
+                <div className="space-y-3 mb-6">
+                  <Typography variant="body2" className="text-gray-600 mb-3 font-medium">
+                    Available Services:
+                  </Typography>
+                  {plan.availableServices?.slice(0, 3).map((service) => (
+                    <div key={service._id} className="flex items-center space-x-3">
+                      <Icon name="check" className="text-green-500 w-4 h-4" />
+                      <Typography variant="body2" className="text-gray-700">
+                        {service.serviceName}
+                      </Typography>
+                    </div>
+                  ))}
+                  {plan.availableServices && plan.availableServices.length > 3 && (
+                    <Typography variant="body2" className="text-gray-400 ml-7">
+                      +{plan.availableServices.length - 3} more
+                    </Typography>
+                  )}
+                </div>
+                <Button
+                  onClick={() => handlePlanSelect(plan)}
+                  className="w-full py-3 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Select Plan
+                </Button>
+              </div>
+            ))}
+          </div>
+          <div className="text-center mt-8">
+            <Button
+              onClick={handleSubscribe}
+              className="px-8 py-4 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+            >
+              View All Plans
+            </Button>
+          </div>
         </div>
       </div>
     </div>

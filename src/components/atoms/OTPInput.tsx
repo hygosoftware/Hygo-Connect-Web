@@ -39,6 +39,9 @@ const OTPInput = forwardRef<HTMLInputElement, OTPInputProps>(({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Always call parent handler first
+    onKeyDown?.(e);
+
     // Allow backspace, delete, tab, escape, enter
     if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
         // Allow Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
@@ -52,8 +55,6 @@ const OTPInput = forwardRef<HTMLInputElement, OTPInputProps>(({
     if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
       e.preventDefault();
     }
-    
-    onKeyDown?.(e);
   };
 
   const baseClasses = 'w-12 h-14 border rounded-lg text-center text-xl font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500';
