@@ -1225,9 +1225,6 @@ export const familyMemberService = {
           // If it's a single user object, wrap it in an array
           familyMembers = [response.data as FamilyMember];
         }
-
-        console.log('📊 Number of family members:', familyMembers.length);
-
         // Log first member structure for debugging
         if (familyMembers.length > 0) {
           console.log('📋 First member structure:', JSON.stringify(familyMembers[0], null, 2));

@@ -179,8 +179,7 @@ const PillPalPage: React.FC = () => {
     try {
       // Using the sample user ID from your API example
     const { userId } = TokenManager.getTokens();
-      console.log('💊 Adding medicines for user:', userId);
-      console.log('📋 Medicines to add:', medicines);
+      
 
       // Show initial loading message
       showToast('Adding medicines... This may take a moment', 'info');

@@ -164,17 +164,24 @@ const [detailsLoading, setDetailsLoading] = useState(false);
     }
   };
 
+  // Utility to remove undefined fields from an object
+  function removeUndefined(obj: any) {
+    return Object.fromEntries(
+      Object.entries(obj).filter(([_, v]) => v !== undefined)
+    );
+  }
+
   const handleAddMember = async () => {
-    if (newMemberName.trim() && newMemberAge.trim() && newMemberRelation.trim()) {
+    if (newMemberName.trim()) {
       try {
-        const memberData = convertUiToApiMember({
+        const memberData = removeUndefined(convertUiToApiMember({
           name: newMemberName.trim(),
-          age: newMemberAge.trim(),
           email: newMemberEmail.trim() || undefined,
           mobileNumber: newMemberMobile.trim() || undefined,
-        }, userId);
+        }, userId));
 
-        const addedMember = await familyMemberService.addPatient(userId, memberData);
+        console.log('Payload being sent to addFamilyMember:', memberData);
+        const addedMember = await familyMemberService.addFamilyMember(userId, memberData);
 
         if (addedMember) {
           const uiMember = convertApiToUiMember(addedMember);
