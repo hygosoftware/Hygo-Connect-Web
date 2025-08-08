@@ -83,94 +83,8 @@ export interface Medicine {
 }
 
 // Types for Doctor API response
-export interface DoctorQualification {
-  _id: string;
-  degree: string;
-  institution: string;
-  year: number;
-  certificates: string[];
-}
+import { Doctor, DoctorClinic, DoctorQualification, DoctorAvailability, DoctorDepartment } from "../types/Doctor";
 
-export interface DoctorAvailabilitySlot {
-  _id: string;
-  startTime: string;
-  endTime: string;
-  appointmentLimit: number;
-  bookedCount: number;
-}
-
-export interface DoctorAvailability {
-  _id: string;
-  clinic: string;
-  day: string;
-  slots: DoctorAvailabilitySlot[];
-}
-
-export interface DoctorClinic {
-  _id: string;
-  clinicName: string;
-  clinicAddress?: {
-    location?: {
-      type: string;
-      coordinates: number[];
-    };
-    addressLine: string;
-    city: string;
-    state: string;
-    zipCode: string;
-    country: string;
-  };
-  clinicPhone?: string;
-  clinicEmail?: string;
-  clinicImage?: string | null;
-  clinicStatus?: string;
-  clinicType?: string;
-  clinicDescription?: string;
-  Department?: Array<{
-    _id: string;
-    departmentName: string;
-  }>;
-  OPD?: any[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface DoctorDepartment {
-  _id: string;
-  departmentName: string;
-}
-
-export interface Doctor {
-  _id: string;
-  fullName: string;
-  gender: string;
-  staffID: string;
-  email: string;
-  phone: string;
-  profileImage: string;
-  isSpecialized: boolean;
-  specializations: string[];
-  qualifications: DoctorQualification[];
-  experience: number;
-  languagesSpoken: string[];
-  bio: string;
-  consultationFee: number;
-  availability: DoctorAvailability[];
-  scheduleType: string;
-  isAvailableNow: boolean;
-  status: string;
-  staffRole: string;
-  department: DoctorDepartment[];
-  clinic: DoctorClinic[];
-  HomeService: {
-    offered: string;
-    fee: number;
-  };
-  ratings: {
-    average: number;
-    count: number;
-  };
-}
 
 export interface DoctorsApiResponse {
   success: boolean;
@@ -360,8 +274,12 @@ export const profileService = {
       }
 
       return null;
-    } catch (error: any) {
-      console.error('❌ Error fetching profile:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+  console.error('❌ Error fetching profile:', error.message);
+} else {
+  console.error('❌ Error fetching profile:', error);
+}
 
       // Log detailed error information
       if (error.response) {
@@ -396,8 +314,12 @@ export const profileService = {
       }
 
       return null;
-    } catch (error: any) {
-      console.error('❌ Error updating profile:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+  console.error('❌ Error updating profile:', error.message);
+} else {
+  console.error('❌ Error updating profile:', error);
+}
 
       // Log detailed error information
       if (error.response) {
@@ -423,8 +345,12 @@ export const doctorService = {
       console.log('📦 Number of doctors received:', response.data?.length || 0);
       console.log('📋 First doctor sample:', response.data?.[0]);
       return response.data;
-    } catch (error: any) {
-      console.error('❌ API Error fetching all doctors:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+  console.error('❌ API Error fetching all doctors:', error.message);
+} else {
+  console.error('❌ API Error fetching all doctors:', error);
+}
       console.log('🔍 Error details:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
@@ -449,8 +375,12 @@ export const doctorService = {
       console.log('📦 Raw API Response Data:', response.data);
       console.log('📊 Response Headers:', response.headers);
       return response.data;
-    } catch (error: any) {
-      console.error('❌ API Error fetching doctor:', error);
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+  console.error('❌ API Error fetching doctor:', error.message);
+} else {
+  console.error('❌ API Error fetching doctor:', error);
+}
       console.log('🔍 Error details:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
@@ -469,7 +399,7 @@ export const doctorService = {
     try {
       const response = await apiClient.get<Doctor[]>(`/Staff/d?search=${encodeURIComponent(query)}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error searching doctors:', error);
 
       return [];
@@ -481,7 +411,7 @@ export const doctorService = {
     try {
       const response = await apiClient.get<Doctor[]>(`/Staff/d?specialization=${encodeURIComponent(specialization)}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching doctors by specialization:', error);
 
       return [];
@@ -495,7 +425,7 @@ export const doctorService = {
       const response = await apiClient.get<DoctorClinic>(`/Clinic/${clinicId}`);
       console.log('✅ Clinic details fetched:', response.data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error fetching clinic:', error);
       // Return null if clinic not found, don't throw error
       return null;
@@ -515,7 +445,7 @@ export const clinicService = {
       console.log('📦 Number of clinics received:', response.data?.length || 0);
       console.log('📋 First clinic sample:', response.data?.[0]);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error fetching all clinics:', error);
       console.log('🔍 Error details:', {
         status: error.response?.status,
@@ -530,14 +460,14 @@ export const clinicService = {
   },
 
   // Fetch clinics by doctor ID
-  getClinicsByDoctor: async (doctorId: string): Promise<any[]> => {
+  getClinicsByDoctor: async (doctorId: string): Promise<unknown[]> => {
     console.log('🌐 API Call: Fetching clinics by doctor ID', doctorId);
     console.log('🔗 API URL:', `${API_BASE_URL}/Clinic/doctor/${doctorId}`);
     try {
-      const response = await apiClient.get<{ status: string; message: string; data: any[] }>(`/Clinic/doctor/${doctorId}`);
+      const response = await apiClient.get<{ status: string; message: string; data: unknown[] }>(`/Clinic/doctor/${doctorId}`);
       console.log('✅ API Response received for clinics by doctor:', response.status);
       return response.data.data || [];
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error fetching clinics by doctor:', error);
       console.log('🔍 Error details:', {
         status: error.response?.status,
@@ -551,11 +481,11 @@ export const clinicService = {
     }
   },
 
-  getdoctorbyclinicid: async (clinicId: string): Promise<any[]> => {
+  getdoctorbyclinicid: async (clinicId: string): Promise<unknown[]> => {
     try {
       const response = await apiClient.get(`/staff/c/${clinicId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("error fetching getdoctorbyclinicid", error);
       return [];
     }
@@ -600,7 +530,7 @@ export const pillReminderService = {
       }
 
       return pillReminders;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('API Error fetching pill reminders:', error);
       return [];
     }
@@ -650,7 +580,7 @@ export const pillReminderService = {
       })
       console.log("Success Response:", response.data)
       return response.data
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("=== ADD NOTIFICATION ERROR DEBUG ===")
       console.error("Full error object:", error)
       console.error("Error message:", error.message)
@@ -683,7 +613,7 @@ export const pillReminderService = {
       console.log('❌ Failed to create reminders:', results.length - successfulReminders.length);
 
       return successfulReminders;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error creating multiple pill reminders:', error);
       return [];
     }
@@ -724,7 +654,7 @@ export const pillReminderService = {
       }
 
       return { success, created: createdReminders, errors };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(' Error adding medicines:', error);
       return { success: false, created: [], errors: ['Failed to add medicines'] };
     }
@@ -738,7 +668,7 @@ export const pillReminderService = {
       const response = await apiClient.put<PillReminder>(`/pill reminder/${reminderId}`, updates);
       console.log('✅ Pill reminder updated successfully:', response.data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error updating pill reminder:', error);
       return null;
     }
@@ -752,7 +682,7 @@ export const pillReminderService = {
       await apiClient.delete(`/pill reminder/${reminderId}`);
       console.log('✅ Pill reminder deleted successfully');
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error deleting pill reminder:', error);
       return false;
     }
@@ -856,7 +786,7 @@ export interface FileItem {
   filePath: string;
   fileType: string;
   uploadedAt: string;
-  fileAccess: any[];
+  fileAccess: unknown[];
 }
 
 export interface FileDetails {
@@ -867,7 +797,7 @@ export interface FileDetails {
   fileSize?: number;
   uploadedAt: string;
   updatedAt?: string;
-  fileAccess: any[];
+  fileAccess: unknown[];
   metadata?: {
     dimensions?: {
       width: number;
@@ -978,7 +908,7 @@ export const folderService = {
       }
 
       return foldersWithFileCount;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error fetching folders:', error);
       console.log('🔍 Error details:', {
         status: error.response?.status,
@@ -1043,7 +973,7 @@ export const folderService = {
       });
 
       return files;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error fetching files:', error);
       console.log('🔍 Error details:', {
         status: error.response?.status,
@@ -1069,7 +999,7 @@ export const folderService = {
       console.log('📦 Folder info data:', response.data);
 
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error fetching folder info:', error);
       console.log('🔍 Error details:', {
         status: error.response?.status,
@@ -1129,7 +1059,7 @@ export const folderService = {
       }
 
       return fileDetails;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error fetching file details:', error);
       console.log('🔍 Error details:', {
         status: error.response?.status,
@@ -1156,7 +1086,7 @@ export const folderService = {
 
       console.log('✅ Folder created successfully:', response.data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error creating folder:', error);
       return null;
     }
@@ -1170,7 +1100,7 @@ export const folderService = {
       await apiClient.delete(`/Folder/${userId}/${folderId}`);
       console.log('✅ Folder deleted successfully');
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error deleting folder:', error);
       return false;
     }
@@ -1187,7 +1117,7 @@ export const folderService = {
 
       console.log('✅ Folder updated successfully:', response.data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ API Error updating folder:', error);
       return null;
     }
@@ -1232,7 +1162,7 @@ export const familyMemberService = {
 
         return familyMembers;
 
-      } catch (error: any) {
+      } catch (error: unknown) {
         console.log(`❌ Endpoint ${endpoint} failed:`, error.response?.status, error.message);
 
         // If this is the last endpoint and it's a 500 error, log detailed info
@@ -1274,7 +1204,7 @@ export const familyMemberService = {
     try {
       const response = await apiClient.post<FamilyMember>(`${API_BASE_URL}/add/${userId}`, memberData);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return null;
     }
   },
@@ -1284,7 +1214,7 @@ export const familyMemberService = {
     try {
       const response = await apiClient.post<FamilyMember>(`${API_BASE_URL}/add/${userId}`, memberData);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return null;
     }
   },
@@ -1294,7 +1224,7 @@ export const familyMemberService = {
     try {
       const response = await apiClient.put<FamilyMember>(`/add/${memberId}`, updates);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return null;
     }
   },
@@ -1304,7 +1234,7 @@ export const familyMemberService = {
     try {
       await apiClient.delete(`/add/${memberId}`);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return false;
     }
   },
@@ -1314,7 +1244,7 @@ export const familyMemberService = {
     try {
       const response = await apiClient.get<FamilyMember>(`/add/${memberId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return null;
     }
   },
@@ -1324,7 +1254,7 @@ export const familyMemberService = {
     try {
       const response = await apiClient.get<FamilyMember>(`/add/${userId}/${patientId}`);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       return null;
     }
   },
@@ -1409,7 +1339,7 @@ export const paymentService = {
 
       console.log('✅ Payment order created:', response.data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error creating payment:', error);
 
       if (error.response?.data?.error) {
@@ -1428,7 +1358,7 @@ export const paymentService = {
 
       console.log('✅ Payment confirmed:', response.data);
       return response.data;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error confirming payment:', error);
 
       if (error.response?.data?.error) {
@@ -1452,7 +1382,7 @@ export const paymentService = {
 
       console.warn('⚠️ Unexpected payment history response format:', response.data);
       return [];
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error fetching payments:', error);
 
       if (error.response?.status === 404) {
@@ -2084,7 +2014,7 @@ export const appointmentService = {
       const response = await apiClient.get(`/Appointment/user/${userId}`);
       console.log("response.data", response.data)
       return response.data?.data || response.data || [];
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error fetching appointments:', error);
       throw error;
     }
@@ -2101,7 +2031,7 @@ export const subscriptionservices = {
       console.log("response.data", response.data)
       return response.data
     }
-    catch (error: any) {
+    catch (error: unknown) {
       console.error("fetching error getallsubscription", error)
     }
   }

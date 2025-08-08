@@ -4,8 +4,8 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Typography, Icon, Input, ClinicCardSkeleton } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
-
-import { Clinic } from '../../contexts/BookingContext';
+import { Clinic } from '../../types/Clinic';
+import { Doctor } from '../../types/Doctor';
 
 const ClinicSelection: React.FC = () => {
   const { state, selectClinic, setStep, setLoading } = useBooking();
@@ -28,10 +28,16 @@ const ClinicSelection: React.FC = () => {
         // If booking by clinic, show all clinics
         // Replace mockAPI.getClinics with clinicService.getAllClinics
         const { clinicService } = await import('../../services/apiServices');
-        clinicsData = await clinicService.getAllClinics();
+        const response = await clinicService.getAllClinics();
+        
+        // Type guard: ensure response.data is Clinic[]
+        if (Array.isArray(response.data)) {
+          setClinics(response.data as Clinic[]);
+        } else {
+          setClinics([]);
+        }
       }
       
-      setClinics(clinicsData);
     } catch {
       showToast({
         type: 'error',
@@ -82,12 +88,18 @@ const ClinicSelection: React.FC = () => {
       try {
         setLoading(true);
         const { clinicService } = await import('../../services/apiServices');
-        const clinicDoctors = await clinicService.getdoctorbyclinicid(clinic._id);
+        const response = await clinicService.getdoctorbyclinicid(clinic._id);
+        
+        // Type guard: ensure response.data is Doctor[]
+        let clinicDoctors: Doctor[] = [];
+        if (Array.isArray(response.data)) {
+          clinicDoctors = response.data as Doctor[];
+        }
         
         // Update the clinic object with the fetched doctors
         const updatedClinic = {
           ...clinic,
-          doctors: clinicDoctors || []
+          doctors: clinicDoctors
         };
         
         selectClinic(updatedClinic);
@@ -124,7 +136,7 @@ const ClinicSelection: React.FC = () => {
       {/* Clinic Image */}
       <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
         <img
-          src={clinic.clinicImage || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
+          src={ 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
           alt={clinic.clinicName}
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-200"
         />
@@ -140,7 +152,7 @@ const ClinicSelection: React.FC = () => {
             <div className="flex items-center text-gray-600 mb-2">
               <Icon name="location" size="small" color="#6b7280" className="mr-2" />
               <Typography variant="body2">
-                {(clinic.clinicAddress?.city || clinic.address?.city || 'Unknown City')}, {(clinic.clinicAddress?.state || clinic.address?.state || 'Unknown State')}
+                {(clinic.clinicAddress?.city || 'Unknown City')}, {(clinic.clinicAddress?.state || 'Unknown State')}
               </Typography>
             </div>
           </div>
@@ -299,7 +311,7 @@ const ClinicSelection: React.FC = () => {
         ) : filteredClinics.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredClinics.map((clinic) => (
-              <ClinicCard key={clinic._id || clinic.clinicId} clinic={clinic} />
+              <ClinicCard key={clinic._id} clinic={clinic} />
             ))}
           </div>
         ) : (

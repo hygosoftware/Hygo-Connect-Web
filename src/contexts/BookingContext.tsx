@@ -1,11 +1,10 @@
 'use client';
 
 import React, { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
+import { Doctor } from '../types/Doctor';
+import { Clinic } from '../types/Clinic';
 
 // Types
-export interface Doctor {
-  _id: string;
-  fullName: string;
   specializations: string[];
   qualifications: Array<{
     _id: string;
@@ -57,7 +56,7 @@ export interface Doctor {
   }>;
 }
 
-export interface Clinic {
+// Removed local Clinic interface. Use shared Clinic type from src/types/Clinic.{
   _id: string;
   clinicName: string;
   clinicAddress: {
