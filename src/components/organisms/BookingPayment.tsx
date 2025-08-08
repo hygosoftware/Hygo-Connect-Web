@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Typography, Icon, Button, Input } from '../atoms';
+import { Typography, Icon, Button } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
 import { createRazorpayOrder, verifyPaymentSignature, getRazorpayConfig } from '../../lib/razorpay';
@@ -11,7 +11,11 @@ import { TokenManager } from '../../services/auth';
 // Razorpay types
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: {
+      new (options: Record<string, unknown>): {
+        open: () => void;
+      };
+    };
   }
 }
 
@@ -48,13 +52,7 @@ const BookingPayment: React.FC = () => {
     });
   }, [state, isBookingComplete]);
   const [selectedMethod, setSelectedMethod] = useState<'card' | 'upi' | 'wallet' | null>(null);
-  const [cardDetails, setCardDetails] = useState({
-    number: '',
-    expiry: '',
-    cvv: '',
-    name: ''
-  });
-  const [upiId, setUpiId] = useState('');
+
   const [isDesktop, setIsDesktop] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
@@ -90,7 +88,7 @@ const BookingPayment: React.FC = () => {
     setPaymentMethod(method);
   };
 
-  const handleRazorpayPayment = async (appointmentData?: any) => {
+  const handleRazorpayPayment = async (appointmentData?: Record<string, unknown>) => {
     if (!window.Razorpay) {
       showToast({
         type: 'error',
@@ -124,7 +122,7 @@ const BookingPayment: React.FC = () => {
         amount: totalAmount * 100, // Amount in paise
         order_id: order.id,
         description: `Appointment with Dr. ${state.selectedDoctor?.fullName}`,
-        handler: async function (response: any) {
+        handler: async function (response: Record<string, unknown>) {
           try {
             // Verify payment (in production, this should be done on your backend)
             const verification = await verifyPaymentSignature(response);
@@ -300,7 +298,7 @@ const BookingPayment: React.FC = () => {
 
       // Check if it's a booking error or payment error
       const errorMessage = error && typeof error === 'object' && 'message' in error
-        ? (error as any).message
+        ? (error as { message: string }).message
         : 'An unexpected error occurred. Please try again.';
 
       showToast({
@@ -661,7 +659,7 @@ const BookingPayment: React.FC = () => {
                 Secure Payment by Razorpay
               </Typography>
               <Typography variant="caption" className="text-green-700">
-                Your payment is processed by Razorpay, India's most trusted payment gateway.
+                Your payment is processed by Razorpay, India&apos;s most trusted payment gateway.
                 All transactions are encrypted with 256-bit SSL and PCI DSS compliant.
               </Typography>
             </div>

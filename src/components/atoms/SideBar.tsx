@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Typography, Icon } from '.';
 import { useAuth } from '../../hooks/useAuth';
 
 interface UserProfile {
@@ -25,6 +24,7 @@ interface ResponsiveNavigationProps {
   className?: string;
   isSidebarExpanded?: boolean;
   onSidebarToggle?: (expanded: boolean) => void;
+  isMobileMenuOpen?: boolean;
 }
 
 const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
@@ -110,13 +110,13 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   // Desktop Sidebar
   const DesktopSidebar = () => (
     <div
-      className={`hidden md:flex md:flex-col ${isSidebarExpanded ? 'md:w-72' : 'md:w-16'} md:h-screen md:fixed md:left-0 md:top-0 md:z-40 transition-all duration-300 ${className}`}
+      className={`hidden md:flex md:flex-col ${isSidebarExpanded ? 'md:w-72' : 'md:w-16'} md:h-screen md:fixed md:left-0 md:top-0 md:z-50 transition-all duration-300 ${className}`}
       style={{
         backgroundColor: '#0e3293',
         background: 'linear-gradient(135deg, #0e3293 0%, #1e40af 50%, #0e3293 100%)',
         boxShadow: '8px 0 32px rgba(0, 0, 0, 0.3), inset -2px 0 8px rgba(0, 0, 0, 0.2)',
         borderRight: '1px solid rgba(255, 255, 255, 0.1)',
-        borderTopRightRadius: '2rem',
+        borderTopRightRadius: '0rem',
         borderBottomRightRadius: '2rem',
       }}
     >

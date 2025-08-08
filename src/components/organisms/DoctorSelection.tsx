@@ -1,34 +1,38 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Typography, Icon, Input, DoctorCardSkeleton } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
-import { mockAPI } from '../../lib/mockBookingData';
+
 import { Doctor } from '../../contexts/BookingContext';
 
 const DoctorSelection: React.FC = () => {
   const { state, selectDoctor, setStep, setLoading } = useBooking();
-  // Only allow in 'doctor' bookingFlow
-  if (state.bookingFlow !== 'doctor') return null;
   const { showToast } = useToast();
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    loadDoctors();
-  }, []);
+  // Only allow in 'doctor' bookingFlow
+  if (state.bookingFlow !== 'doctor') return null;
 
-  const loadDoctors = async () => {
+  const loadDoctors = useCallback(async () => {
     try {
       setLoading(true);
       // Replace mockAPI.getDoctors with doctorService.getAllDoctors
       const { doctorService } = await import('../../services/apiServices');
       const doctorsData = await doctorService.getAllDoctors();
-      setDoctors(doctorsData);
-    } catch (error) {
+      // Transform API doctors to BookingContext.Doctor type
+      const transformedDoctors = doctorsData.map((doc: any) => ({
+        ...doc,
+        department: Array.isArray(doc.department) && doc.department.length > 0
+          ? (doc.department[0].departmentName || doc.department[0].name || '')
+          : '',
+      }));
+      setDoctors(transformedDoctors);
+    } catch {
       showToast({
         type: 'error',
         title: 'Failed to load doctors',
@@ -37,7 +41,11 @@ const DoctorSelection: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setLoading, showToast]);
+
+  useEffect(() => {
+    loadDoctors();
+  }, [loadDoctors]);
 
   const specialties = useMemo(() => {
     const allSpecialties = new Set<string>();
@@ -76,11 +84,11 @@ const DoctorSelection: React.FC = () => {
       className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-[#0e3293]/30 transition-all duration-200 cursor-pointer group"
     >
       {/* Doctor Image */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
+      <div className="relative h-48 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden flex items-center justify-center">
         <img
           src={doctor.profileImage}
           alt={doctor.fullName}
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-200"
+          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-200"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.fullName)}&background=0e3293&color=fff&size=400`;
@@ -197,7 +205,7 @@ const DoctorSelection: React.FC = () => {
                 type="text"
                 placeholder="Search doctors by name or specialty..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={setSearchQuery}
                 className="w-full"
                 leftIcon="search"
               />

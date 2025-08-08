@@ -7,6 +7,7 @@ import { useToast } from '../../contexts/ToastContext';
 
 const BookingReview: React.FC = () => {
   const { state, setStep } = useBooking();
+  const { showToast } = useToast();
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
@@ -56,7 +57,7 @@ const BookingReview: React.FC = () => {
       <div className="flex-1 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Icon name="alert-triangle" size="large" color="#f59e0b" />
+            <Icon name="alert" size="large" color="#f59e0b" />
           </div>
           <Typography variant="h6" className="text-gray-900 mb-2">
             Missing booking information
@@ -295,7 +296,7 @@ const BookingReview: React.FC = () => {
                   <div>
                     <Typography variant="body2" className="text-gray-600">Gender</Typography>
                     <Typography variant="body1" className="text-gray-900 font-medium">
-                      {state.bookingDetails.patientGender?.charAt(0).toUpperCase() + state.bookingDetails.patientGender?.slice(1)}
+                      {state.bookingDetails.patientGender ? state.bookingDetails.patientGender.charAt(0).toUpperCase() + state.bookingDetails.patientGender.slice(1) : ''}
                     </Typography>
                   </div>
                 </div>

@@ -14,8 +14,8 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({
   userName = null,
-  onScanPress = () => {},
-  onMenuPress = () => {},
+  onScanPress = () => { },
+  onMenuPress = () => { },
   showBranding = true,
   showSearch = true,
   className = '',
@@ -129,7 +129,7 @@ const Header: React.FC<HeaderProps> = ({
           >
             <Icon name="plus" size="small" color="#1e40af" className="mr-1" />
             <Typography variant="caption" className="font-semibold text-blue-800 text-xs">
-              Book
+              Book Appointment
             </Typography>
           </button>
         </div>
@@ -144,13 +144,13 @@ const Header: React.FC<HeaderProps> = ({
               Current: {currentAddress}
             </Typography>
             <div className="flex space-x-2">
-              <button 
+              <button
                 className="flex-1 bg-gray-200 py-2 px-4 rounded-lg"
                 onClick={() => setShowLocationModal(false)}
               >
                 Cancel
               </button>
-              <button 
+              <button
                 className="flex-1 bg-blue-800 text-white py-2 px-4 rounded-lg"
                 onClick={() => {
                   setCurrentAddress('New Location Selected');

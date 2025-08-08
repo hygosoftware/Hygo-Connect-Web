@@ -6,7 +6,7 @@ export interface User {
   FullName: string;
   Email: string;
   UserType: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | object | undefined;
 }
 
 export interface Tokens {
@@ -95,9 +95,13 @@ export const AuthService = {
     try {
       const response = await apiClient.post<AuthResponse>('/signup', userData);
       return response.data;
-    } catch (error: any) {
-      console.error('Login failed:', error.response?.data || error.message);
-      throw error;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('Login failed:', error.response?.data || error.message);
+        throw error;
+      } else {
+        throw error;
+      }
     }
   },
 
@@ -123,26 +127,37 @@ export const AuthService = {
         );
       }
       return data;
-    } catch (error: any) {
-      console.error('OTP verification failed:', error.response?.data || error.message);
-
-      if (error.response?.status === 400) {
-        const errorMessage =
-          error.response.data?.message || 'Invalid OTP or session expired. Please try again.';
-        throw new Error(errorMessage);
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('OTP verification failed:', error.response?.data || error.message);
+        if (error.response?.status === 400) {
+          const errorMessage =
+            error.response.data?.message || 'Invalid OTP or session expired. Please try again.';
+          throw new Error(errorMessage);
+        }
+        throw error;
+      } else {
+        throw error;
       }
-
-      throw error;
     }
   },
 
   // Request password reset
   requestPasswordReset: async (email: string) => {
-    const response = await apiClient.post<{ success: boolean; message: string }>(
-      '/request-password-reset',
-      { email }
-    );
-    return response.data;
+    try {
+      const response = await apiClient.post<{ success: boolean; message: string }>(
+        '/request-password-reset',
+        { email }
+      );
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('Password reset request failed:', error.response?.data || error.message);
+        throw error;
+      } else {
+        throw error;
+      }
+    }
   },
 
   // Reset password

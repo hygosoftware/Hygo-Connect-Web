@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { BookingProvider, useBooking } from '../../contexts/BookingContext';
 import { ToastProvider } from '../../contexts/ToastContext';
-import { Typography, Icon, BackButton, ErrorBoundary, UniversalHeader } from '../../components/atoms';
+import { Typography, ErrorBoundary, UniversalHeader } from '../../components/atoms';
 import BookingTabNavigation from '../../components/organisms/BookingTabNavigation';
 import BookingProgressStepper from '../../components/organisms/BookingProgressStepper';
 import DoctorSelection from '../../components/organisms/DoctorSelection';
@@ -44,7 +44,7 @@ const BookingContent: React.FC = () => {
             selectDoctor({
               ...doctor,
               department: Array.isArray(doctor.department)
-                ? doctor.department.map((d: any) => d.name).join(', ')
+                ? doctor.department.map((d: { name: string }) => d.name).join(', ')
                 : doctor.department,
             });
           })

@@ -10,7 +10,10 @@ interface InputProps {
   className?: string;
   autoComplete?: string;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
+  leftIcon?: string; // Name of the icon to display on the left
 }
+
+import { Icon } from './';
 
 const Input: React.FC<InputProps> = ({
   type = 'text',
@@ -22,6 +25,7 @@ const Input: React.FC<InputProps> = ({
   className = '',
   autoComplete,
   autoCapitalize = 'none',
+  leftIcon,
 }) => {
   const baseClasses = 'flex-1 text-base py-4 px-3 text-gray-800 bg-transparent focus:outline-none';
   const errorClasses = error ? 'border-red-500' : 'border-gray-200';
@@ -32,6 +36,11 @@ const Input: React.FC<InputProps> = ({
   return (
     <div className="w-full">
       <div className={`flex items-center border rounded-xl overflow-hidden bg-gray-50 ${errorClasses}`}>
+        {leftIcon && (
+          <span className="pl-3 pr-1 text-gray-400 flex items-center">
+            <Icon name={leftIcon} size="medium" />
+          </span>
+        )}
         <input
           type={type}
           placeholder={placeholder}

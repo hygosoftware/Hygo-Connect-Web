@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useReducer, ReactNode } from 'react';
+import React, { createContext, useContext, useReducer, useCallback, ReactNode } from 'react';
 
 // Types
 export interface Doctor {
@@ -270,9 +270,9 @@ export const BookingProvider: React.FC<BookingProviderProps> = ({ children }) =>
     dispatch({ type: 'SET_PAYMENT_STATUS', payload: status });
   };
 
-  const setLoading = (loading: boolean) => {
+  const setLoading = useCallback((loading: boolean) => {
     dispatch({ type: 'SET_LOADING', payload: loading });
-  };
+  }, []);
 
   const setError = (error: string | null) => {
     dispatch({ type: 'SET_ERROR', payload: error });

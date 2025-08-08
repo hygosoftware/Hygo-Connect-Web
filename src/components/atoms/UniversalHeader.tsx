@@ -61,10 +61,10 @@ const UniversalHeader: React.FC<UniversalHeaderProps> = ({
   const styles = variantStyles[variant];
 
   return (
-    <div className={`${styles.container} rounded-b-2xl shadow-lg ${className}`}>
+    <div className={`${styles.container} rounded-b-2xl shadow-lg w-full ${className}`}>
       {/* Consistent height and padding across all variants */}
-      <div className="h-16 px-4 flex items-center justify-between">
-            <div className="flex items-center flex-1">
+      <div className="h-16 px-4 flex items-center justify-between relative">
+            <div className="flex items-center flex-1 min-w-0">
               {/* Mobile Menu Button for home variant */}
               {variant === 'home' && (
                 <button
@@ -84,7 +84,7 @@ const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                 />
               )}
               
-              <div className="flex items-center">
+              <div className="flex items-center min-w-0">
                 {/* Optional Icon */}
                 {icon && (
                   <div className={`w-12 h-12 ${variant === 'gradient' ? 'bg-white/20' : 'bg-gray-100'} rounded-2xl flex items-center justify-center mr-4 backdrop-blur-sm`}>
@@ -96,17 +96,19 @@ const UniversalHeader: React.FC<UniversalHeaderProps> = ({
                   </div>
                 )}
 
-                <div>
+                <div className="min-w-0">
                   <Typography 
                     variant="h5" 
-                    className={`font-bold ${styles.title}`}
+                    className={`font-bold ${styles.title} truncate block`} // truncate for overflow
+                    style={{maxWidth: '100%'}}
                   >
                     {pageTitle}
                   </Typography>
                   {subtitle && (
                     <Typography 
                       variant="body2" 
-                      className={`${styles.subtitle} text-sm`}
+                      className={`${styles.subtitle} text-sm truncate block`}
+                      style={{maxWidth: '100%'}}
                     >
                       {subtitle}
                     </Typography>

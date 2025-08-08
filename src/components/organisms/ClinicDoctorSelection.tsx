@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Typography, Icon, Input, DoctorCardSkeleton } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
@@ -14,13 +14,7 @@ const ClinicDoctorSelection: React.FC = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    if (state.selectedClinic) {
-      loadDoctorsByClinic();
-    }
-  }, [state.selectedClinic]);
-
-  const loadDoctorsByClinic = async () => {
+  const loadDoctorsByClinic = useCallback(async () => {
     if (!state.selectedClinic) return;
     
     try {
@@ -28,7 +22,7 @@ const ClinicDoctorSelection: React.FC = () => {
       const { clinicService } = await import('../../services/apiServices');
       const doctorsData = await clinicService.getdoctorbyclinicid(state.selectedClinic._id);
       setDoctors(doctorsData);
-    } catch (error) {
+    } catch {
       showToast({
         type: 'error',
         title: 'Failed to load doctors',
@@ -37,7 +31,13 @@ const ClinicDoctorSelection: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [state.selectedClinic, setLoading, showToast]);
+
+  useEffect(() => {
+    if (state.selectedClinic) {
+      loadDoctorsByClinic();
+    }
+  }, [state.selectedClinic, loadDoctorsByClinic]);
 
   const specialties = useMemo(() => {
     const allSpecialties = new Set<string>();
@@ -73,11 +73,11 @@ const ClinicDoctorSelection: React.FC = () => {
       className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-[#0e3293]/30 transition-all duration-200 cursor-pointer group"
     >
       {/* Doctor Image */}
-      <div className="relative h-48 bg-gray-100 overflow-hidden">
+      <div className="relative h-48 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden flex items-center justify-center">
         <img
           src={doctor.profileImage}
           alt={doctor.fullName}
-          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-200"
+          className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-200"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.fullName)}&background=0e3293&color=fff&size=400`;
@@ -194,7 +194,7 @@ const ClinicDoctorSelection: React.FC = () => {
                 type="text"
                 placeholder="Search doctors by name or specialty..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={setSearchQuery}
                 className="w-full"
                 leftIcon="search"
               />

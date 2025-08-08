@@ -391,7 +391,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
           {/* Right: Member Details */}
           <div className="flex-1 overflow-y-auto p-8">
             {selectedMemberData ? (
-              <div className="max-w-xl mx-auto">
+              <div className="max-w-xl mx-auto bg-white shadow-lg rounded-xl p-6">
                 {/* You can customize this detail view as needed */}
                 <div className="flex items-center gap-6 mb-6">
                   <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
@@ -406,15 +406,36 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
                     <div className="text-gray-500 text-sm">{selectedMemberData.relation}</div>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  {selectedMemberData.email && <div><span className="font-medium">Email:</span> {selectedMemberData.email}</div>}
-                  {selectedMemberData.mobileNumber && <div><span className="font-medium">Mobile:</span> {selectedMemberData.mobileNumber}</div>}
-                  {selectedMemberData.bloodGroup && <div><span className="font-medium">Blood Group:</span> {selectedMemberData.bloodGroup}</div>}
+                <div className="space-y-3">
+                  {selectedMemberData.email && (
+                    <div className="flex items-center text-base">
+                      <span className="font-semibold text-gray-900 w-32">Email:</span>
+                      <span className="text-gray-700">{selectedMemberData.email}</span>
+                    </div>
+                  )}
+                  {selectedMemberData.mobileNumber && (
+                    <div className="flex items-center text-base">
+                      <span className="font-semibold text-gray-900 w-32">Mobile:</span>
+                      <span className="text-gray-700">{selectedMemberData.mobileNumber}</span>
+                    </div>
+                  )}
+                  {selectedMemberData.bloodGroup && (
+                    <div className="flex items-center text-base">
+                      <span className="font-semibold text-gray-900 w-32">Blood Group:</span>
+                      <span className="text-gray-700">{selectedMemberData.bloodGroup}</span>
+                    </div>
+                  )}
                   {selectedMemberData.allergies && selectedMemberData.allergies.length > 0 && (
-                    <div><span className="font-medium">Allergies:</span> {selectedMemberData.allergies.join(', ')}</div>
+                    <div className="flex items-center text-base">
+                      <span className="font-semibold text-gray-900 w-32">Allergies:</span>
+                      <span className="text-gray-700">{selectedMemberData.allergies.join(', ')}</span>
+                    </div>
                   )}
                   {selectedMemberData.medications && selectedMemberData.medications.length > 0 && (
-                    <div><span className="font-medium">Medications:</span> {selectedMemberData.medications.join(', ')}</div>
+                    <div className="flex items-center text-base">
+                      <span className="font-semibold text-gray-900 w-32">Medications:</span>
+                      <span className="text-gray-700">{selectedMemberData.medications.join(', ')}</span>
+                    </div>
                   )}
                 </div>
               </div>

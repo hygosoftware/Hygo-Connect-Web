@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Typography, Icon, Input, ClinicCardSkeleton } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
-import { mockAPI } from '../../lib/mockBookingData';
+
 import { Clinic } from '../../contexts/BookingContext';
 
 const ClinicSelection: React.FC = () => {
@@ -15,11 +15,7 @@ const ClinicSelection: React.FC = () => {
   const [selectedType, setSelectedType] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    loadClinics();
-  }, []);
-
-  const loadClinics = async () => {
+  const loadClinics = useCallback(async () => {
     try {
       setLoading(true);
       let clinicsData;
@@ -36,7 +32,7 @@ const ClinicSelection: React.FC = () => {
       }
       
       setClinics(clinicsData);
-    } catch (error) {
+    } catch {
       showToast({
         type: 'error',
         title: 'Failed to load clinics',
@@ -45,7 +41,11 @@ const ClinicSelection: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [state.bookingFlow, state.selectedDoctor, setLoading, showToast]);
+
+  useEffect(() => {
+    loadClinics();
+  }, [loadClinics]);
 
   const clinicTypes = useMemo(() => {
     const types = new Set<string>();
@@ -122,11 +122,11 @@ const ClinicSelection: React.FC = () => {
       className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-[#0e3293]/30 transition-all duration-200 cursor-pointer group"
     >
       {/* Clinic Image */}
-      <div className="h-48 bg-gray-100 overflow-hidden">
+      <div className="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden">
         <img
           src={clinic.clinicImage || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'}
           alt={clinic.clinicName}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-200"
         />
       </div>
 
