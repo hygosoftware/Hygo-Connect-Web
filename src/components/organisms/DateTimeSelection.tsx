@@ -11,6 +11,14 @@ const DateTimeSelection: React.FC = () => {
   const { showToast } = useToast();
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(state.selectedDate);
+
+  // Sync local selectedDate with context selectedDate
+  useEffect(() => {
+    if (state.selectedDate !== selectedDate) {
+      console.log('DateTimeSelection: Syncing local selectedDate with context:', state.selectedDate);
+      setSelectedDate(state.selectedDate);
+    }
+  }, [state.selectedDate]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
 
@@ -88,80 +96,62 @@ const DateTimeSelection: React.FC = () => {
     console.log('Day name:', dayName);
     console.log('Doctor availability:', availability.map((a: any) => ({ clinic: a.clinic, day: a.day })));
 
-    // Filter availabilities for the selected clinic
-    const clinicAvailabilities = availability.filter((a: any) => String(a.clinic) === String(normalizedClinicId));
+    // --- Robust clinic and day matching ---
+    // Normalize all possible clinic IDs for comparison
+    const normalize = (v: any) => (v !== undefined && v !== null) ? String(v).trim().toLowerCase() : '';
+    const selectedClinicIds = [
+      normalize(clinicToUse?._id),
+      normalize(clinicToUse?.clinicId),
+      normalize(clinicToUse?.id),
+      normalize(clinicToUse?.name),
+      normalize(clinicToUse?.clinicName)
+    ].filter(Boolean);
+    const dayNameNorm = dayName.trim().toLowerCase();
 
-    // Gather all slots for the selected clinic and day
-    const slotsForSelectedClinic = clinicAvailabilities
-      .filter((a: any) => a.day === dayName)
-      .flatMap((a: any) => a.slots);
+    // Filter availabilities for the selected clinic (by any ID or name)
+    const clinicAvailabilities = availability.filter((a: any) => {
+      const availClinicNorms = [
+        normalize(a.clinic),
+        normalize(a.clinicId),
+        normalize(a._id),
+        normalize(a.clinicName),
+        normalize(a.name)
+      ];
+      // If any selectedClinicIds matches any availClinicNorms
+      const clinicMatch = selectedClinicIds.some(selId => availClinicNorms.includes(selId));
+      if (!clinicMatch) {
+        console.log('[SLOTS] Clinic mismatch:', {availClinicNorms, selectedClinicIds});
+      }
+      return clinicMatch;
+    });
 
-    // Log for verification
-    console.log('Filtered availabilities for clinic:', clinicAvailabilities);
-    console.log('Slots for selected clinic and day:', slotsForSelectedClinic);
-    return slotsForSelectedClinic;
+    // Now filter for the correct day (case-insensitive)
+    const dayAvailabilities = clinicAvailabilities
+      .filter((a: any) => a.day && a.day.trim().toLowerCase() === dayNameNorm);
+
+    // Debug logs
+    console.log('[SLOTS] Filtered availabilities for clinic:', clinicAvailabilities);
+    console.log('[SLOTS] Day availabilities:', dayAvailabilities);
     
-    
-    
-    
-    
-    
-    
-    // If clinicToUse is undefined, use the first clinic from doctor's clinic array
-    if (!clinicToUse && state.selectedDoctor.clinic && state.selectedDoctor.clinic.length > 0) {
-      
-                 state.selectedDoctor.clinic[0].clinicName;
-    }
-    
-    // Special handling for HYGO clinic ID
-    const isHygoClinic = typeof clinicToUse?._id === 'string' && 
-                        clinicToUse._id.toUpperCase().includes('HYGO');
-    
-    if (isHygoClinic) {
-      
-    }
-    
-    // If no clinic is selected, use all availabilities
-    let clinicAvailability = availability;
-    
-    // Only filter by clinic if one is selected
-    if (clinicToUse) {
-      clinicAvailability = availability.filter((a: any) => {
-        // Always compare as strings
-        const availClinicId = a.clinic ? String(a.clinic) : undefined;
-        const exactMatch = availClinicId === normalizedClinicId;
-        const caseInsensitiveMatch = availClinicId && normalizedClinicId && availClinicId.toLowerCase() === normalizedClinicId.toLowerCase();
-        let nameMatch = false;
-        if (a.clinicName && clinicToUse?.clinicName) {
-          nameMatch = a.clinicName.toLowerCase() === clinicToUse.clinicName.toLowerCase();
-        }
-        let hygoMatch = false;
-        if (isHygoClinic || (availClinicId && availClinicId.toUpperCase().includes('HYGO'))) {
-          hygoMatch = true;
-        }
-        let fallbackMatch = false;
-        if (!exactMatch && !caseInsensitiveMatch && !nameMatch && !hygoMatch && availability.length === 1) {
-          fallbackMatch = true;
-        }
-        const match = exactMatch || caseInsensitiveMatch || nameMatch || hygoMatch || fallbackMatch;
-        return match;
-      });
-    }
-    
-    // Find availability for the selected day
-    let dayAvailability = clinicAvailability.find((a: any) => a.day === dayName);
-    // Fallback: if no match, and only one availability exists, use it
-    if ((!dayAvailability || !dayAvailability.slots) && clinicAvailability.length === 1) {
-      dayAvailability = clinicAvailability[0];
-    }
-    if (!dayAvailability || !dayAvailability.slots) {
+    // If no availability found for this day, return empty array
+    if (dayAvailabilities.length === 0) {
+      console.log('[SLOTS] No availability found for day:', dayName);
       return [];
     }
+    
+    // Get the first matching day availability (there should typically be only one)
+    const dayAvailability = dayAvailabilities[0];
+    
+    if (!dayAvailability || !dayAvailability.slots) {
+      console.log('[SLOTS] No slots found in day availability');
+      return [];
+    }
+    
     // Convert to TimeSlot[] format for UI
-    return dayAvailability.slots.map((slot: any, idx: number) => {
+    const formattedSlots = dayAvailability.slots.map((slot: any, idx: number) => {
       // Ensure we have all required data
       if (!slot._id || !slot.startTime || slot.appointmentLimit === undefined || slot.bookedCount === undefined) {
-        
+        console.log('[SLOTS] Missing slot data:', slot);
       }
       
       return {
@@ -172,6 +162,9 @@ const DateTimeSelection: React.FC = () => {
         maxBookings: slot.appointmentLimit || 5 // Default to 5 if not specified
       };
     });
+    
+    console.log('[SLOTS] Formatted slots:', formattedSlots);
+    return formattedSlots;
   }
 
   useEffect(() => {
@@ -289,8 +282,9 @@ const DateTimeSelection: React.FC = () => {
       
       // Auto-select first available date if none selected
       if ((!selectedDate || !uniqueDates.some(d => d.toDateString() === selectedDate?.toDateString())) && uniqueDates.length > 0) {
-        
+        console.log('DateTimeSelection: Auto-selecting first available date:', uniqueDates[0]);
         setSelectedDate(uniqueDates[0]);
+        selectDate(uniqueDates[0]); // Also update the context
       }
     } else {
       setAvailableDates([]);
@@ -360,12 +354,15 @@ const DateTimeSelection: React.FC = () => {
     
     
     
+    console.log('Rendering slots:', timeSlots);
+    
     return (
       <div className="grid grid-cols-2 gap-3">
-        {timeSlots.map((slot) => {
+        {timeSlots.map((slot, index) => {
+          console.log(`Slot ${index}:`, slot);
           // Validate slot data before rendering
           if (!slot || !slot.id || !slot.time) {
-            
+            console.log(`Skipping slot ${index} - missing data:`, { id: slot?.id, time: slot?.time });
             return null;
           }
           return <TimeSlotCard key={slot.id} slot={slot} />;
@@ -375,27 +372,22 @@ const DateTimeSelection: React.FC = () => {
   };
 
   const handleDateSelect = (date: Date) => {
+    console.log('DateTimeSelection: handleDateSelect called with:', date);
+    console.log('DateTimeSelection: Current context selectedDate before update:', state.selectedDate);
+    
     setSelectedDate(date);
     selectDate(date);
     
-    
-    
-    // Log complete clinic selection state
-    
-    
-    
-    
-    
-    
-    
-    
+    console.log('DateTimeSelection: Local selectedDate updated to:', date);
+    console.log('DateTimeSelection: Context selectDate called with:', date);
     
     // Get slots for the selected date
     const slots = getSlotsForDate(date);
     
+    console.log('DateTimeSelection: Slots found for selected date:', slots.length);
     
     if (slots.length === 0) {
-      
+      console.log('DateTimeSelection: No slots available for selected date');
     }
     
     setTimeSlots(slots);

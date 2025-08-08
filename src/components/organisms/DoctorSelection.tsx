@@ -76,11 +76,11 @@ const DoctorSelection: React.FC = () => {
       className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md hover:border-[#0e3293]/30 transition-all duration-200 cursor-pointer group"
     >
       {/* Doctor Image */}
-      <div className="relative h-48 bg-gray-100">
+      <div className="relative h-48 bg-gray-100 overflow-hidden">
         <img
           src={doctor.profileImage}
           alt={doctor.fullName}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+          className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-200"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
             target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.fullName)}&background=0e3293&color=fff&size=400`;

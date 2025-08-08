@@ -70,7 +70,7 @@ const DoctorCard: React.FC<DoctorCardProps> = ({
             <img
               src={resolvedImageSrc}
               alt={fullName}
-              className="w-20 h-20 rounded-full object-cover"
+              className="w-20 h-20 rounded-full object-cover object-center"
               onError={(e) => {
                 // Hide image and show icon fallback
                 e.currentTarget.style.display = 'none';

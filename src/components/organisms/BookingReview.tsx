@@ -3,6 +3,7 @@
 import React from 'react';
 import { Typography, Icon, Button } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
+import { useToast } from '../../contexts/ToastContext';
 
 const BookingReview: React.FC = () => {
   const { state, setStep } = useBooking();
@@ -25,6 +26,24 @@ const BookingReview: React.FC = () => {
   };
 
   const handleProceedToPayment = () => {
+    // Validate all required information before proceeding
+    if (!state.selectedDoctor || !state.selectedClinic || !state.selectedDate || !state.selectedSlot || !state.bookingDetails) {
+      showToast({
+        type: 'error',
+        title: 'Missing Information',
+        message: 'Please ensure all booking details are complete before proceeding to payment.'
+      });
+      return;
+    }
+    
+    console.log('BookingReview - Proceeding to payment with complete data:', {
+      doctor: state.selectedDoctor.fullName,
+      clinic: state.selectedClinic.clinicName,
+      date: state.selectedDate.toDateString(),
+      slot: state.selectedSlot.time,
+      patient: state.bookingDetails.patientName
+    });
+    
     setStep('payment');
   };
 
@@ -36,12 +55,54 @@ const BookingReview: React.FC = () => {
     return (
       <div className="flex-1 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
+          <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Icon name="alert-triangle" size="large" color="#f59e0b" />
+          </div>
           <Typography variant="h6" className="text-gray-900 mb-2">
             Missing booking information
           </Typography>
-          <Typography variant="body2" className="text-gray-600">
-            Please complete all previous steps
+          <Typography variant="body2" className="text-gray-600 mb-4">
+            Please complete all previous steps to review your appointment
           </Typography>
+          <div className="space-y-2 text-left bg-white rounded-lg p-4 border border-gray-200">
+            <Typography variant="body2" className="text-gray-700 font-medium mb-2">
+              Required information:
+            </Typography>
+            <div className="space-y-1">
+              <div className={`flex items-center ${state.selectedDoctor ? 'text-green-600' : 'text-red-600'}`}>
+                <Icon name={state.selectedDoctor ? 'check' : 'x'} size="small" className="mr-2" />
+                <Typography variant="caption">Doctor selected</Typography>
+              </div>
+              <div className={`flex items-center ${state.selectedClinic ? 'text-green-600' : 'text-red-600'}`}>
+                <Icon name={state.selectedClinic ? 'check' : 'x'} size="small" className="mr-2" />
+                <Typography variant="caption">Clinic selected</Typography>
+              </div>
+              <div className={`flex items-center ${state.selectedDate ? 'text-green-600' : 'text-red-600'}`}>
+                <Icon name={state.selectedDate ? 'check' : 'x'} size="small" className="mr-2" />
+                <Typography variant="caption">Date selected</Typography>
+              </div>
+              <div className={`flex items-center ${state.selectedSlot ? 'text-green-600' : 'text-red-600'}`}>
+                <Icon name={state.selectedSlot ? 'check' : 'x'} size="small" className="mr-2" />
+                <Typography variant="caption">Time slot selected</Typography>
+              </div>
+              <div className={`flex items-center ${state.bookingDetails ? 'text-green-600' : 'text-red-600'}`}>
+                <Icon name={state.bookingDetails ? 'check' : 'x'} size="small" className="mr-2" />
+                <Typography variant="caption">Patient details filled</Typography>
+              </div>
+            </div>
+          </div>
+          <Button
+            onClick={() => {
+              // Navigate to the first missing step
+              if (!state.selectedDoctor) setStep('doctor');
+              else if (!state.selectedClinic) setStep('clinic');
+              else if (!state.selectedDate || !state.selectedSlot) setStep('date');
+              else if (!state.bookingDetails) setStep('details');
+            }}
+            className="mt-4 bg-[#0e3293] hover:bg-[#0e3293]/90 text-white py-2 px-6 rounded-xl font-medium transition-colors"
+          >
+            Complete Missing Steps
+          </Button>
         </div>
       </div>
     );
@@ -130,12 +191,16 @@ const BookingReview: React.FC = () => {
               <Typography variant="h6" className="text-gray-900 font-medium mb-2">
                 {state.selectedClinic.clinicName}
               </Typography>
-              <div className="flex items-start space-x-2 mb-2">
-                <Icon name="location" size="small" color="#6b7280" className="mt-0.5" />
-                <Typography variant="body2" className="text-gray-600">
-                  {state.selectedClinic.clinicAddress.addressLine}, {state.selectedClinic.clinicAddress.city}, {state.selectedClinic.clinicAddress.state}
-                </Typography>
-              </div>
+              {state.selectedClinic.clinicAddress && (
+                <div className="flex items-start space-x-2 mb-2">
+                  <Icon name="location" size="small" color="#6b7280" className="mt-0.5" />
+                  <Typography variant="body2" className="text-gray-600">
+                    {state.selectedClinic.clinicAddress.addressLine && `${state.selectedClinic.clinicAddress.addressLine}, `}
+                    {state.selectedClinic.clinicAddress.city && `${state.selectedClinic.clinicAddress.city}, `}
+                    {state.selectedClinic.clinicAddress.state}
+                  </Typography>
+                </div>
+              )}
               <div className="flex items-center space-x-4">
                 <div className="flex items-center">
                   <Icon name="star" size="small" color="#10b981" className="mr-1" />

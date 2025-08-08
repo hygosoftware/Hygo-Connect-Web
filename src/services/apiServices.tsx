@@ -179,7 +179,7 @@ export interface DoctorsApiResponse {
 }
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://hygo-backend.onrender.com/api/V0';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://backend.thehygo.com/api/V0/';
 
 // Create axios instance
 const apiClient = axios.create({
@@ -611,7 +611,7 @@ export const pillReminderService = {
       // Handle both old and new calling patterns
       let userId: string;
       let data: any;
-      
+
       if (typeof userIdOrPillReminder === 'string') {
         // New pattern: createPillReminder(userId, notificationData)
         userId = userIdOrPillReminder;
@@ -631,10 +631,10 @@ export const pillReminderService = {
 
       // Add each field as FormData (matching your curl format)
       formData.append("medicines", JSON.stringify(data.medicines))
-      
+
       // Handle Time field - backend expects it stringified
       formData.append("Time", JSON.stringify(data.Time))
-      
+
       formData.append("Meal", data.Meal)
       formData.append("dosage", data.dosage)
       formData.append("intake", data.intake)
@@ -1404,14 +1404,14 @@ export const paymentService = {
   async createPayment(paymentData: CreatePaymentRequest): Promise<CreatePaymentResponse> {
     try {
       console.log('🚀 Creating payment order:', paymentData);
-      
+
       const response = await apiClient.post('/payment', paymentData);
-      
+
       console.log('✅ Payment order created:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('❌ Error creating payment:', error);
-      
+
       if (error.response?.data?.error) {
         throw new Error(error.response.data.error);
       }
@@ -1423,14 +1423,14 @@ export const paymentService = {
   async confirmPayment(confirmData: ConfirmPaymentRequest): Promise<ConfirmPaymentResponse> {
     try {
       console.log('🔐 Confirming payment:', confirmData);
-      
+
       const response = await apiClient.post('/payment/confirm', confirmData);
-      
+
       console.log('✅ Payment confirmed:', response.data);
       return response.data;
     } catch (error: any) {
       console.error('❌ Error confirming payment:', error);
-      
+
       if (error.response?.data?.error) {
         throw new Error(error.response.data.error);
       }
@@ -1442,24 +1442,24 @@ export const paymentService = {
   async getPayments(): Promise<PaymentRecord[]> {
     try {
       console.log('📋 Fetching payment history...');
-      
+
       const response = await apiClient.get('/payment');
-      
+
       if (response.data.success && Array.isArray(response.data.data)) {
         console.log('✅ Payment history fetched:', response.data.data.length, 'records');
         return response.data.data;
       }
-      
+
       console.warn('⚠️ Unexpected payment history response format:', response.data);
       return [];
     } catch (error: any) {
       console.error('❌ Error fetching payments:', error);
-      
+
       if (error.response?.status === 404) {
         console.log('📝 No payment history found');
         return [];
       }
-      
+
       throw new Error('Failed to fetch payment history');
     }
   },
@@ -1739,7 +1739,7 @@ export const pillReminderHelpers = {
 
   // Format medicine type for display
   formatMedicineType: (type: string): string => {
-    const typeMap: {[key: string]: string} = {
+    const typeMap: { [key: string]: string } = {
       'tablet': 'Tablet',
       'capsule': 'Capsule',
       'syrup': 'Syrup',
@@ -1754,7 +1754,7 @@ export const pillReminderHelpers = {
 
   // Format meal timing for display
   formatMealTiming: (timing: string): string => {
-    const timingMap: {[key: string]: string} = {
+    const timingMap: { [key: string]: string } = {
       'before': 'Before Meal',
       'after': 'After Meal',
       'with': 'With Meal',
@@ -1809,18 +1809,18 @@ export const pillReminderHelpers = {
   convertMedicineToApiFormat: (medicine: Medicine, userId: string): Omit<PillReminder, '_id' | 'createdAt' | 'updatedAt'> => {
     // Extract times from timings object
     // Helper to convert 24h time to 'HH:MM AM/PM' or passthrough for period strings
-function toAmPm(time24: string): string {
-  if (/^(morning|afternoon|evening|night)$/i.test(time24)) return time24;
-  if (/AM|PM/i.test(time24)) return time24;
-  const [hourStr, minStr] = time24.split(":");
-  let hour = parseInt(hourStr, 10);
-  const min = minStr.padStart(2, "0");
-  const ampm = hour >= 12 ? "PM" : "AM";
-  hour = hour % 12;
-  if (hour === 0) hour = 12;
-  return `${hour.toString().padStart(2, "0")}:${min} ${ampm}`;
-}
-const times = Object.values(medicine.timings).map(timing => toAmPm(timing.time));
+    function toAmPm(time24: string): string {
+      if (/^(morning|afternoon|evening|night)$/i.test(time24)) return time24;
+      if (/AM|PM/i.test(time24)) return time24;
+      const [hourStr, minStr] = time24.split(":");
+      let hour = parseInt(hourStr, 10);
+      const min = minStr.padStart(2, "0");
+      const ampm = hour >= 12 ? "PM" : "AM";
+      hour = hour % 12;
+      if (hour === 0) hour = 12;
+      return `${hour.toString().padStart(2, "0")}:${min} ${ampm}`;
+    }
+    const times = Object.values(medicine.timings).map(timing => toAmPm(timing.time));
 
     // Create API medicine object with proper type casting
     const apiMedicine: ApiMedicine = {
@@ -1978,11 +1978,25 @@ export interface AppointmentSlot {
 }
 
 export interface BookAppointmentPayload {
-  doctor: string;
-  clinic: string;
-  date: string; // 'YYYY-MM-DD'
-  slot: AppointmentSlot;
-  user: string;
+  user: string; // User ObjectId
+  doctor: string; // Doctor ObjectId  
+  clinic: string; // Clinic ObjectId
+  appointmentDate: string; // ISO date string
+  timeSlot: {
+    from: string; // e.g., "10:00 AM"
+    to: string;   // e.g., "10:30 AM"
+  };
+  mode?: string; // 'InPerson' | 'VideoCall' | 'working'
+  consultationFee?: number;
+  purpose?: string;
+  symptoms?: string[];
+  notes?: string;
+  // Legacy fields for backward compatibility
+  date?: string;
+  slot?: {
+    from: string;
+    to: string;
+  };
 }
 
 // Appointment data structure from API
@@ -2018,20 +2032,48 @@ export interface Appointment {
 // Appointment API Services
 export const appointmentService = {
   // Book an appointment
-  bookAppointment: async ({ doctor, clinic, date, slot, user }: BookAppointmentPayload): Promise<any> => {
+  bookAppointment: async (payload: BookAppointmentPayload): Promise<any> => {
+    console.log('📅 Booking appointment with payload:', payload);
+    console.log('🔗 API URL:', `/Appointment/${payload.user}`);
+
     try {
-      const response = await apiClient.post('/appointments/book', {
-        doctor,
-        clinic,
-        date, // format: 'YYYY-MM-DD'
-        slot, // { from: '10:00', to: '10:30' }
-        user,
-      });
+      const requestBody = {
+        user: payload.user,
+        doctor: payload.doctor,
+        clinic: payload.clinic,
+        appointmentDate: payload.appointmentDate,
+        timeSlot: payload.timeSlot,
+        mode: payload.mode || 'InPerson',
+        status: 'Scheduled',
+        consultationFee: payload.consultationFee || 0,
+        purpose: payload.purpose,
+        symptoms: payload.symptoms || [],
+        notes: payload.notes,
+        payment: {
+          amount: payload.consultationFee || 0,
+          isPaid: false,
+          status: 'pending'
+        }
+      };
+
+      console.log('📤 Request body:', requestBody);
+
+      const response = await apiClient.post(`/Appointment/${payload.user}`, requestBody);
+      console.log('✅ Appointment booking successful:', response.data);
       return response.data;
     } catch (error: unknown) {
+      console.error('❌ Appointment booking failed:', error);
+
       if (error && typeof error === 'object' && 'response' in error && error.response) {
-        // @ts-ignore
-        throw error.response.data || error;
+        const apiError = error.response as any;
+        console.error('📋 API Error Details:', {
+          status: apiError.status,
+          statusText: apiError.statusText,
+          data: apiError.data,
+          url: apiError.config?.url,
+          method: apiError.config?.method
+        });
+        throw apiError.data || error;
       }
       throw error;
     }
@@ -2040,7 +2082,7 @@ export const appointmentService = {
   getAppointmentsByUserId: async (userId: string): Promise<Appointment[]> => {
     try {
       const response = await apiClient.get(`/Appointment/user/${userId}`);
-      console.log("response.data",response.data)
+      console.log("response.data", response.data)
       return response.data?.data || response.data || [];
     } catch (error: any) {
       console.error('Error fetching appointments:', error);
@@ -2049,18 +2091,18 @@ export const appointmentService = {
   }
 
 }
- export const subscriptionservices = {
+export const subscriptionservices = {
 
-  getallsubscription : async(): Promise<any> => {
+  getallsubscription: async (): Promise<any> => {
 
-    try{
+    try {
       const response = await apiClient.get(`/Subscription/all`)
-      console.log("response.data",response.data)
-      console.log("response.data",response.data)
+      console.log("response.data", response.data)
+      console.log("response.data", response.data)
       return response.data
     }
-    catch(error: any){
-    console.error("fetching error getallsubscription",error)
+    catch (error: any) {
+      console.error("fetching error getallsubscription", error)
     }
   }
- }
+}

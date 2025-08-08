@@ -156,12 +156,17 @@ const BookingConfirmation: React.FC = () => {
               <Typography variant="body1" className="text-gray-900 font-medium mb-1">
                 {state.selectedClinic.clinicName}
               </Typography>
-              <Typography variant="body2" className="text-gray-600">
-                {state.selectedClinic.clinicAddress.addressLine}
-              </Typography>
-              <Typography variant="body2" className="text-gray-600">
-                {state.selectedClinic.clinicAddress.city}, {state.selectedClinic.clinicAddress.state} {state.selectedClinic.clinicAddress.zipCode}
-              </Typography>
+              {state.selectedClinic.clinicAddress && (
+                <>
+                  <Typography variant="body2" className="text-gray-600">
+                    {state.selectedClinic.clinicAddress.addressLine}
+                  </Typography>
+                  <Typography variant="body2" className="text-gray-600">
+                    {state.selectedClinic.clinicAddress.city && `${state.selectedClinic.clinicAddress.city}, `}
+                    {state.selectedClinic.clinicAddress.state} {state.selectedClinic.clinicAddress.zipCode}
+                  </Typography>
+                </>
+              )}
               <div className="flex items-center mt-2">
                 <Icon name="phone" size="small" color="#6b7280" className="mr-2" />
                 <Typography variant="body2" className="text-gray-600">

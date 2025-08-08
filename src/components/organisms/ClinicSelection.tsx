@@ -57,7 +57,7 @@ const ClinicSelection: React.FC = () => {
     return clinics.filter(clinic => {
       const matchesSearch = searchQuery === '' || 
         clinic.clinicName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        clinic.clinicAddress.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (clinic.clinicAddress?.city && clinic.clinicAddress.city.toLowerCase().includes(searchQuery.toLowerCase())) ||
         clinic.services.some(service => 
           service.toLowerCase().includes(searchQuery.toLowerCase())
         );
@@ -69,7 +69,13 @@ const ClinicSelection: React.FC = () => {
   }, [clinics, searchQuery, selectedType]);
 
   const handleClinicSelect = async (clinic: Clinic) => {
-    selectClinic(clinic);
+    // Patch clinic object to ensure _id is always present
+    let patchedClinic = { ...clinic };
+    if (!patchedClinic._id && (patchedClinic as any).clinicId) {
+      patchedClinic._id = (patchedClinic as any).clinicId;
+    }
+    // You can add more fallback logic here if needed
+    selectClinic(patchedClinic);
     
     if (state.bookingFlow === 'clinic') {
       // In clinic flow, fetch doctors for the selected clinic
