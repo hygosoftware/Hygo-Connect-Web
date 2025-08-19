@@ -21,8 +21,8 @@ interface RazorpayResponse {
 
 interface RazorpayOptions {
   key: string;
-  amount: number;
-  currency: string;
+  amount?: number;
+  currency?: string;
   name: string;
   description: string;
   order_id?: string;
@@ -160,9 +160,7 @@ const HealthCardUpgradePage: React.FC = () => {
 
       // Step 3: Configure Razorpay options
       const options: RazorpayOptions = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_9mOyRUi9azswI4',
-        amount: paymentOrder.amount, // Amount already in paise from backend
-        currency: paymentOrder.currency,
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_fK9weYxngo5yMq',
         name: 'Hygo Health',
         description: `Subscription: ${selectedPlan.subscriptionName}`,
         order_id: paymentOrder.orderId, // Use order ID from backend

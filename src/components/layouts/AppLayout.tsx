@@ -58,7 +58,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   // Navigation items with proper routing
   const navigationItems = [
     {
-      title: 'Home1',
+      title: 'Home',
       icon: 'home',
       path: '/home',
       isActive: pathname === '/home',

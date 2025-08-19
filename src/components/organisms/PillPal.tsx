@@ -117,7 +117,7 @@ const PillPal: React.FC<PillPalProps> = ({
     if (notifications.length === 0) return "No medications scheduled";
     
     let nextMed = null;
-    let earliestTime = null;
+    let earliestTime: string | number | null = null;
     
     notifications.forEach(med => {
       const nextTime = getNextScheduledTime(med.scheduledTimes);
