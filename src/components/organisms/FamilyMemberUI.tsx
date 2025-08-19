@@ -68,7 +68,7 @@ const Toast: React.FC<ToastProps & { onHide?: () => void }> = ({
   const bgColor = {
     error: 'bg-red-500',
     success: 'bg-green-500',
-    info: 'bg-blue-500'
+    info: 'bg-white0'
   }[type];
 
   return (
@@ -127,7 +127,7 @@ const FamilyMemberCard: React.FC<{
             e.stopPropagation();
             onEdit();
           }}
-          className="flex-1 flex items-center justify-center bg-blue-50 py-2 rounded-lg hover:bg-blue-100 transition-colors"
+          className="flex-1 flex items-center justify-center bg-white py-2 rounded-lg hover:bg-blue-100 transition-colors"
         >
           <Icon name="edit" size="small" color="#2563EB" />
         </button>
@@ -181,7 +181,7 @@ const FamilyMemberListItem: React.FC<{
           e.stopPropagation();
           onEdit();
         }}
-        className="p-2 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+        className="p-2 bg-white rounded-lg hover:bg-blue-100 transition-colors"
       >
         <Icon name="edit" size="small" color="#2563EB" />
       </button>
@@ -355,7 +355,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
                   filteredMembers.map((member) => (
                     <div
                       key={member.id}
-                      className={`px-5 py-4 cursor-pointer border-b border-gray-100 flex items-center gap-4 hover:bg-blue-50 transition-colors ${selectedMember === member.id ? 'bg-blue-100' : ''}`}
+                      className={`px-5 py-4 cursor-pointer border-b border-gray-100 flex items-center gap-4 hover:bg-white transition-colors ${selectedMember === member.id ? 'bg-blue-100' : ''}`}
                       onClick={() => handleMemberPress(member)}
                     >
                       <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">

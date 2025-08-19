@@ -203,9 +203,9 @@ const HomePage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-blue-50">
-      {/* Header - fixed and full width behind sidebar */}
-      <div className="fixed top-0 left-0  w-screen z-30" style={{ right: 0 }}>
+    <div className="min-h-screen bg-white">
+      {/* Header - positioned within the layout system */}
+      <div className="sticky top-0 z-30 bg-white">
         <UniversalHeader
           title={`Hi, ${user?.FullName?.split(' ')[0] || user?.fullName?.split(' ')[0] || 'User'}!`}
           subtitle="Good Morning"
@@ -241,8 +241,8 @@ const HomePage: React.FC = () => {
         />
       </div>
 
-      {/* Add top padding to prevent content from being hidden behind the header */}
-      <main className="pt-20">
+      {/* Main content - no top padding needed with sticky header */}
+      <main>
 
         {/* Daily Health Tips */}
         <DailyTips onPress={() => console.log('Daily tip clicked')} />
@@ -260,7 +260,7 @@ const HomePage: React.FC = () => {
                 key={index}
                 icon={<Icon name={item.iconName as any} size="medium" color="#1e40af" />}
                 title={item.title}
-                bgColor={item.title === 'Health Bot' ? 'bg-blue-50' : 'bg-white'}
+                bgColor={item.title === 'Health Bot' ? 'bg-white' : 'bg-white'}
                 hasNotification={item.hasNotification}
                 onPress={item.onPress}
               />
@@ -277,7 +277,7 @@ const HomePage: React.FC = () => {
                   onClick={item.onPress}
                 >
                   <div className="relative mb-3">
-                    <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center transition-colors duration-200 ${item.title === 'Health Bot' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-gray-50 group-hover:bg-blue-50'
+                    <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center transition-colors duration-200 ${item.title === 'Health Bot' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-gray-50 group-hover:bg-white'
                       }`}>
                       <Icon name={item.iconName as any} color="#1e40af" className="w-6 h-6 lg:w-7 lg:h-7" />
                     </div>

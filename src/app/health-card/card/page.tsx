@@ -76,7 +76,7 @@
 
 //   if (!healthCard) {
 //     return (
-//       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+//       <div className="min-h-screen bg-bg-white>
 //         <UniversalHeader
 //           title="My Health Card"
 //           subtitle="Loading your health card..."
@@ -100,7 +100,7 @@
 //   const isFreePlan = healthCard.planType === 'free';
 
 //   return (
-//     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+//     <div className="min-h-screen bg-bg-white>
 //       {/* Header */}
 //       <UniversalHeader
 //         title="My Health Card"

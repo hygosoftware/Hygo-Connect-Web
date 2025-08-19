@@ -59,7 +59,7 @@ const OTPInput = forwardRef<HTMLInputElement, OTPInputProps>(({
 
   const baseClasses = 'w-12 h-14 border rounded-lg text-center text-xl font-bold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500';
   const stateClasses = value 
-    ? 'border-blue-800 bg-blue-50 text-blue-800' 
+    ? 'border-blue-800 bg-white text-blue-800' 
     : 'border-gray-300 bg-white text-gray-800';
   const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : 'hover:border-blue-400';
   

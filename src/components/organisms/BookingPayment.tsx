@@ -449,7 +449,7 @@ const BookingPayment: React.FC = () => {
           <Typography variant="body1" className="text-gray-600 mb-2">
             Complete your payment to confirm the appointment
           </Typography>
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <div className="bg-white border border-blue-200 rounded-lg p-3">
             <div className="flex items-center">
               <Icon name="info" size="small" color="#0e3293" className="mr-2" />
               <Typography variant="body2" className="text-blue-800">
@@ -538,7 +538,7 @@ const BookingPayment: React.FC = () => {
 
                 {selectedMethod === 'card' && (
                   <div className="space-y-4">
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div className="bg-white border border-blue-200 rounded-lg p-4 mb-4">
                       <div className="flex items-center mb-2">
                         <Icon name="shield" size="small" color="#0e3293" className="mr-2" />
                         <Typography variant="body2" className="text-blue-800 font-medium">

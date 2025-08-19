@@ -115,7 +115,7 @@ const HealthCardPage: React.FC = () => {
 
   if (showSubscriptions) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen bg-bg-white>
         <UniversalHeader
           title="Subscription Plans"
           subtitle="Choose your perfect health plan"
@@ -184,7 +184,7 @@ const HealthCardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-bg-white>
       {/* Header */}
       <UniversalHeader
         title="Health Card"

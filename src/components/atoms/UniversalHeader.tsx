@@ -47,7 +47,7 @@ const UniversalHeader: React.FC<UniversalHeaderProps> = ({
     gradient: {
       container: 'bg-gradient-to-r from-[#0E3293] via-[#1e40af] to-[#3b82f6] shadow-xl',
       title: 'text-white',
-      subtitle: 'text-blue-100',
+      subtitle: 'text-white',
       backButtonVariant: 'white' as const,
     },
     home: {

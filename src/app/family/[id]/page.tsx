@@ -109,7 +109,7 @@ const FamilyMemberDetailPage: React.FC = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen bg-bg-white>
         <UniversalHeader
           title="Loading..."
           leftElement={
@@ -137,7 +137,7 @@ const FamilyMemberDetailPage: React.FC = () => {
   // Show error state
   if (error || !memberData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen bg-bg-white>
         <UniversalHeader
           title="Error"
           leftElement={
@@ -261,7 +261,7 @@ const FamilyMemberDetailPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-blue-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
       <UniversalHeader
         title={memberData.name}
@@ -531,7 +531,7 @@ const FamilyMemberDetailPage: React.FC = () => {
           <div className="p-4 sm:p-6 border-t border-gray-100">
             <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">Quick Actions</h3>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-              <button className="p-3 sm:p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors flex flex-col items-center">
+              <button className="p-3 sm:p-4 bg-white rounded-lg hover:bg-blue-100 transition-colors flex flex-col items-center">
                 <Icon name="appointment" size="medium" color="#0E3293" className="mb-2" />
                 <p className="text-xs sm:text-sm text-blue-800 font-medium text-center">Book Appointment</p>
               </button>

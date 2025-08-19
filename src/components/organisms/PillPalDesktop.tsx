@@ -125,7 +125,7 @@ const PillPalDesktop: React.FC<PillPalDesktopProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       {/* Universal Header */}
       <UniversalHeader
         title="PillPal - Medication Calendar"
@@ -139,7 +139,7 @@ const PillPalDesktop: React.FC<PillPalDesktopProps> = ({
             <Button
               onClick={onAddButtonPress}
               variant="primary"
-              className="bg-white text-[#0e3293] hover:bg-blue-50 border border-white flex items-center justify-center"
+              className="bg-white text-[#0e3293] hover:bg-white border border-white flex items-center justify-center"
             >
               <Icon name="plus" size="small" color="#0e3293" className="mr-2" />
               <span className="text-[#0e3293] font-bold">Add Medication</span>
@@ -183,7 +183,7 @@ const PillPalDesktop: React.FC<PillPalDesktopProps> = ({
               <Typography variant="h6" className="text-white font-bold mb-2">
                 Stay Healthy — Take Your Medications!
               </Typography>
-              <Typography variant="body2" className="text-blue-100">
+              <Typography variant="body2" className="text-white">
                 Never miss a dose with PillPal's smart reminders.
               </Typography>
             </div>
@@ -257,7 +257,7 @@ const PillPalDesktop: React.FC<PillPalDesktopProps> = ({
                     className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                       notification.isRead
                         ? 'bg-gray-50 border-gray-200'
-                        : 'bg-blue-50 border-[#0e3293]/20'
+                        : 'bg-white border-[#0e3293]/20'
                     }`}
                     onClick={() => onMarkFcmAsRead(notification.id)}
                   >

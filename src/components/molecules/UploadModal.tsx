@@ -166,7 +166,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
           <div
             className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors duration-200 ${
               isDragOver 
-                ? 'border-blue-400 bg-blue-50' 
+                ? 'border-blue-400 bg-white' 
                 : 'border-gray-300 hover:border-gray-400'
             }`}
             onDragOver={handleDragOver}

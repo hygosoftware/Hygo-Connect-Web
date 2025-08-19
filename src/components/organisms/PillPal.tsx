@@ -147,7 +147,7 @@ const PillPal: React.FC<PillPalProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       {/* Universal Header */}
       <UniversalHeader
         title="Medication Reminders"
@@ -273,7 +273,7 @@ const PillPal: React.FC<PillPalProps> = ({
                   : "No medications scheduled for the selected date"
                 }
               </Typography>
-              <Button onClick={onAddButtonPress} variant="primary" className="bg-white text-[#0e3293] border border-[#0e3293] hover:bg-blue-50 flex items-center justify-center">
+              <Button onClick={onAddButtonPress} variant="primary" className="bg-white text-[#0e3293] border border-[#0e3293] hover:bg-white flex items-center justify-center">
                 <Icon name="plus" size="small" color="#0e3293" className="mr-2" />
                 <span className="font-bold">Add Medication</span>
               </Button>
@@ -346,7 +346,7 @@ const PillPal: React.FC<PillPalProps> = ({
 
                   {/* Next Scheduled Time */}
                   {nextTime && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-[#0e3293]/20">
+                    <div className="mb-4 p-3 bg-white rounded-lg border border-[#0e3293]/20">
                       <div className="flex items-center">
                         <Icon name="clock" size="small" color="#0e3293" className="mr-2" />
                         <Typography variant="body2" className="text-[#0e3293] font-medium">

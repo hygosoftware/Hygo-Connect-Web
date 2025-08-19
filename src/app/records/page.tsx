@@ -187,7 +187,7 @@ const RecordsPage: React.FC = () => {
         }
       `}</style>
 
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen bg-white">
         {/* Universal Header */}
         <UniversalHeader
           title="My Medical Records"
@@ -329,7 +329,7 @@ const RecordsPage: React.FC = () => {
                 <div
                   key={folder.id}
                   onClick={() => handleFolderClick(folder)}
-                  className="group bg-white/80 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/20 hover:shadow-2xl hover:bg-white/90 transition-all duration-300 cursor-pointer transform hover:scale-105 animate-fadeInUp"
+                  className="group bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/20 hover:shadow-2xl hover:bg-white/90 transition-all duration-300 cursor-pointer transform hover:scale-105 animate-fadeInUp"
                   style={{
                     animationDelay: `${index * 100}ms`,
                   }}
@@ -347,7 +347,7 @@ const RecordsPage: React.FC = () => {
                           e.stopPropagation();
                           // Handle edit action
                         }}
-                        className="p-2 text-[#0E3293] hover:bg-blue-50 rounded-xl transition-colors"
+                        className="p-2 text-[#0E3293] hover:bg-white rounded-xl transition-colors"
                       >
                         <Icon name="edit" size="small" color="#0E3293" />
                       </button>
@@ -375,7 +375,7 @@ const RecordsPage: React.FC = () => {
 
                   {/* Sharing Info */}
                   {folder.sharedWith && folder.sharedWith.length > 0 && (
-                    <div className="mb-4 p-3 bg-blue-50 rounded-xl">
+                    <div className="mb-4 p-3 bg-white rounded-xl">
                       <div className="flex items-center mb-1">
                         <Icon name="user" size="small" color="#0E3293" className="mr-2" />
                         <Typography variant="body2" className="text-[#0E3293] font-medium">
@@ -389,7 +389,7 @@ const RecordsPage: React.FC = () => {
                   )}
 
                   {/* Folder Stats */}
-                  <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-3 group-hover:bg-blue-50 transition-colors">
+                  <div className="flex items-center justify-between bg-gray-50 rounded-2xl p-3 group-hover:bg-white transition-colors">
                     <div className="text-center flex-1">
                       <div className="text-lg font-bold text-[#0E3293]">{folder.fileCount || 0}</div>
                       <div className="text-xs text-gray-500">Files</div>

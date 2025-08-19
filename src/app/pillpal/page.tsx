@@ -253,7 +253,7 @@ const PillPalPage: React.FC = () => {
   // Show loading until client-side detection is complete to prevent flash
   if (!isClient) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#0e3293] mx-auto mb-6"></div>
           <div className="text-lg font-medium text-[#0e3293]">Loading PillPal...</div>

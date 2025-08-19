@@ -44,7 +44,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
   if (!isVisible) return null;
 
   const typeStyles = {
-    info: 'bg-blue-500',
+    info: 'bg-white0',
     error: 'bg-red-500',
     success: 'bg-green-500',
     warning: 'bg-[#0e3293]',

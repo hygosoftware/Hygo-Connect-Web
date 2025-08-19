@@ -62,7 +62,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <HeaderProvider onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-      <div className="min-h-screen bg-blue-50">
+      <div className="min-h-screen bg-white">
         {/* Sidebar - positioned behind header */}
         <ResponsiveNavigation
           visible={true}

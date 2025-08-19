@@ -239,7 +239,7 @@ const HealthCardUpgradePage: React.FC = () => {
 
   if (!selectedPlan) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen bg-bg-white>
         <UniversalHeader
           title="Plan Not Found"
           subtitle="Please select a plan from the health card page"
@@ -393,7 +393,7 @@ const HealthCardUpgradePage: React.FC = () => {
                     key={option.method}
                     className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                       paymentMethod === option.method
-                        ? 'border-[#0E3293] bg-blue-50'
+                        ? 'border-[#0E3293] bg-white'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                     onClick={() => handlePaymentMethodSelect(option.method)}
@@ -473,7 +473,7 @@ const HealthCardUpgradePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-bg-white>
       <UniversalHeader
         title={step === 'review' ? 'Review Your Plan' : step === 'payment' ? 'Payment Details' : 'Subscription Confirmed!'}
         subtitle={step === 'review' ? 'Confirm your subscription details' : step === 'payment' ? 'Complete your payment' : 'Welcome to your new health plan'}

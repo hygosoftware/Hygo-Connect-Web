@@ -238,7 +238,7 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
         <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-xl">
           <div className="flex flex-col h-full">
             {/* Mobile Profile Section */}
-            <div className="p-4 bg-blue-50 border-b border-gray-200">
+            <div className="p-4 bg-white border-b border-gray-200">
               <div className="flex items-center space-x-3">
                 <div className="h-16 w-16 rounded-full bg-blue-100 flex items-center justify-center border-2 border-blue-300">
                   <span className="text-blue-800 font-bold text-xl">{getUserInitials()}</span>

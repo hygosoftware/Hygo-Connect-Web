@@ -117,9 +117,9 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header - Fixed with responsive left margin for sidebar */}
-      <div className="fixed top-0 left-0 right-0 z-30">
-        <div className="md:ml-72">
+      {/* Header - Sticky positioning within layout system */}
+      <div className="sticky top-0 z-30 bg-white">
+        <div>
           <UniversalHeader
           title="Find Your Doctor"
           subtitle={`${displayDoctors.length} expert doctors available`}
@@ -142,8 +142,8 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
         </div>
       </div>
 
-      {/* Body Content - Add top padding to account for fixed header */}
-      <div className="px-4 sm:px-6 lg:px-8 py-6 pt-20">
+      {/* Body Content - No top padding needed with sticky header */}
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         {/* Search Bar */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">

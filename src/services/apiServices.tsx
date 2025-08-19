@@ -85,6 +85,9 @@ export interface Medicine {
 // Types for Doctor API response
 import { Doctor, DoctorClinic, DoctorQualification, DoctorAvailability, DoctorDepartment } from "../types/Doctor";
 
+// Re-export Doctor types for external use
+export type { Doctor, DoctorClinic, DoctorQualification, DoctorAvailability, DoctorDepartment };
+
 
 export interface DoctorsApiResponse {
   success: boolean;

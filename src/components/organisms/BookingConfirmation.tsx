@@ -178,13 +178,13 @@ const BookingConfirmation: React.FC = () => {
         </div>
 
         {/* Next Steps */}
-        <div className="bg-blue-50 rounded-xl border border-blue-200 p-6 mb-6">
+        <div className="bg-white rounded-xl border border-blue-200 p-6 mb-6">
           <Typography variant="h6" className="text-blue-900 font-semibold mb-4">
             What's Next?
           </Typography>
           <div className="space-y-3">
             <div className="flex items-start">
-              <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
+              <div className="w-6 h-6 bg-white0 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
                 1
               </div>
               <div>
@@ -197,7 +197,7 @@ const BookingConfirmation: React.FC = () => {
               </div>
             </div>
             <div className="flex items-start">
-              <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
+              <div className="w-6 h-6 bg-white0 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
                 2
               </div>
               <div>
@@ -210,7 +210,7 @@ const BookingConfirmation: React.FC = () => {
               </div>
             </div>
             <div className="flex items-start">
-              <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
+              <div className="w-6 h-6 bg-white0 text-white rounded-full flex items-center justify-center text-xs font-bold mr-3 mt-0.5">
                 3
               </div>
               <div>

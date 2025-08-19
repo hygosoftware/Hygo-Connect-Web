@@ -200,7 +200,7 @@ const BookingDetailsForm: React.FC = () => {
         </div>
 
         {/* Information Note */}
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div className="mt-6 p-4 bg-white rounded-lg border border-blue-200">
           <div className="flex items-start">
             <Icon name="info" size="small" color="#3b82f6" className="mr-3 mt-0.5" />
             <div>

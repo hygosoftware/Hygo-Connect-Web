@@ -150,7 +150,7 @@ const MedicationPanel: React.FC<MedicationPanelProps> = ({
                   <div className="flex space-x-2">
                     <button
                       onClick={() => onEditMedication(medication.id)}
-                      className="p-2 text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      className="p-2 text-gray-500 hover:text-blue-600 hover:bg-white rounded-lg transition-colors"
                     >
                       <Icon name="edit" size="small" />
                     </button>

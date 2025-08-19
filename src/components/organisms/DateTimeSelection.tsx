@@ -694,7 +694,7 @@ const DateTimeSelection: React.FC = () => {
             />
             
             {availableDates.length > 0 ? (
-              <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <div className="mt-4 p-3 bg-white rounded-lg">
                 <Typography variant="caption" className="text-blue-700 block mb-1">
                   Note:
                 </Typography>

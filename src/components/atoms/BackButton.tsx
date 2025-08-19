@@ -18,7 +18,7 @@ const BackButton: React.FC<BackButtonProps> = ({
 
   const variantClasses = {
     default: {
-      button: 'cursor-pointer hover:bg-blue-50 active:bg-blue-100 focus:ring-blue-500',
+      button: 'cursor-pointer hover:bg-white active:bg-blue-100 focus:ring-blue-500',
       icon: '#0e3293'
     },
     white: {

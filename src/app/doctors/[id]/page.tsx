@@ -323,9 +323,9 @@ const DoctorDetailsPage: React.FC = () => {
                 return (
                   <div key={clinicId} className="mb-4 last:mb-0">
                     {/* Compact Clinic Header */}
-                    <div className="flex items-center justify-between mb-3 p-3 bg-blue-50 rounded-lg">
+                    <div className="flex items-center justify-between mb-3 p-3 bg-white rounded-lg">
                       <div className="flex items-center">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                        <div className="w-2 h-2 bg-white0 rounded-full mr-2"></div>
                         <div>
                           <Typography variant="body1" className="font-bold text-blue-800">
                             {clinic?.clinicName || `Clinic ${clinicId}`}

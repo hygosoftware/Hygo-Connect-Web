@@ -107,12 +107,12 @@ const FileItem: React.FC<FileItemProps> = ({
                   e.currentTarget.nextElementSibling?.classList.remove('hidden');
                 }}
               />
-              <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center hidden">
+              <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center hidden">
                 <Icon name={fileIcon as any} size="medium" color="#3B82F6" />
               </div>
             </div>
           ) : (
-            <div className="w-12 h-12 rounded-lg bg-blue-50 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center">
               <Icon name={fileIcon as any} size="medium" color="#3B82F6" />
             </div>
           )}
@@ -149,7 +149,7 @@ const FileItem: React.FC<FileItemProps> = ({
             <div className={`flex items-center space-x-1 transition-opacity duration-200 ${showActions ? 'opacity-100' : 'opacity-0 md:opacity-100'}`}>
               <button
                 onClick={handleView}
-                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+                className="p-2 text-gray-400 hover:text-blue-600 hover:bg-white rounded-lg transition-colors duration-200"
                 title="View file"
               >
                 <Icon name="eye" size="small" />
@@ -184,7 +184,7 @@ const FileItem: React.FC<FileItemProps> = ({
           <div className="flex items-center justify-end space-x-2 mt-3 pt-3 border-t border-gray-100">
             <button
               onClick={handleView}
-              className="flex items-center space-x-1 px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-200"
+              className="flex items-center space-x-1 px-3 py-2 text-sm text-blue-600 hover:bg-white rounded-lg transition-colors duration-200"
             >
               <Icon name="eye" size="small" />
               <span>View</span>
