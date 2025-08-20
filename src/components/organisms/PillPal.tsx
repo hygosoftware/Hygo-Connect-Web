@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Typography, Icon, BackButton, Button, HorizontalDatePicker, UniversalHeader } from '../atoms';
+import { Typography, Icon, Button, HorizontalDatePicker, UniversalHeader } from '../atoms';
 
 // Types and Interfaces
 interface MedicationNotification {
@@ -116,8 +116,8 @@ const PillPal: React.FC<PillPalProps> = ({
   const getNextMedicationInfo = () => {
     if (notifications.length === 0) return "No medications scheduled";
     
-    let nextMed = null;
-    let earliestTime: string | number | null = null;
+    let nextMed: MedicationNotification | null = null;
+    let earliestTime: string | null = null;
     
     notifications.forEach(med => {
       const nextTime = getNextScheduledTime(med.scheduledTimes);
@@ -128,14 +128,14 @@ const PillPal: React.FC<PillPalProps> = ({
     });
     
     if (nextMed && earliestTime) {
-      return `Next: ${nextMed.medicineName} at ${formatTimeWithAMPM(earliestTime)}`;
+      return `Next: ${nextMed} at ${formatTimeWithAMPM(earliestTime)}`;
     }
     
     return `${notifications.length} medication${notifications.length > 1 ? 's' : ''} scheduled`;
   };
 
   // Filter medications by selected date
-  const getFilteredMedications = () => {
+  const getFilteredMedications = (): MedicationNotification[] => {
     const selectedDateString = selectedDate.toISOString().split('T')[0];
     return notifications.filter(med =>
       !med.date || med.date === selectedDateString
@@ -260,7 +260,7 @@ const PillPal: React.FC<PillPalProps> = ({
             </div>
           </div>
         ) : (() => {
-          const filteredMedications = getFilteredMedications();
+          const filteredMedications: MedicationNotification[] = getFilteredMedications();
           return filteredMedications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12">
               <Icon name="pill-off" size="large" color="#9ca3af" className="mb-4 w-16 h-16" />
@@ -280,7 +280,7 @@ const PillPal: React.FC<PillPalProps> = ({
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {filteredMedications.map((medication) => {
+              {filteredMedications.map((medication: MedicationNotification) => {
               const nextTime = getNextScheduledTime(medication.scheduledTimes);
 
               return (

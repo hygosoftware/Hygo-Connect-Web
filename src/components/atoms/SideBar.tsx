@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -16,10 +18,18 @@ interface UserNameWithPhoto {
   [key: string]: any;
 }
 
+type NavIcon = 'home' | 'records' | 'document' | 'pills' | 'user' | 'pill' | 'news';
+interface NavigationItem {
+  title: string;
+  icon: NavIcon;
+  isActive?: boolean;
+  onPress: () => void | Promise<void>;
+}
+
 interface ResponsiveNavigationProps {
   visible: boolean;
   onClose: () => void;
-  navigation?: any;
+  navigation?: NavigationItem[];
   userName: string | UserNameWithPhoto | null;
   className?: string;
   isSidebarExpanded?: boolean;
@@ -150,7 +160,7 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
 
       {/* Navigation Items */}
       <div className="py-2 flex-1">
-        {navigation.map((item: any, index: number) => (
+        {navigation.map((item: NavigationItem, index: number) => (
           <button
             key={index}
             className={`w-full ${isSidebarExpanded ? 'flex items-center px-4' : 'flex justify-center px-2'} py-3 transition-all duration-200 ${
@@ -172,7 +182,7 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
                 e.currentTarget.style.boxShadow = '';
               }
             }}
-            onClick={item.onPress}
+            onClick={() => { void item.onPress(); }}
           >
             <div className={isSidebarExpanded ? "flex-shrink-0" : ""}>
               {/* Render SVG icons as in AppLayout */}
@@ -212,7 +222,7 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
       >
         <button
           className={`w-full ${isSidebarExpanded ? 'flex items-center px-4' : 'flex justify-center px-2'} py-3 text-red-300 hover:bg-red-600 rounded-lg transition-colors duration-200`}
-          onClick={handleLogout}
+          onClick={() => { void handleLogout(); }}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -252,12 +262,12 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
 
             {/* Navigation Items */}
             <div className="flex-1 py-2">
-              {navigation.map((item: any, index: number) => (
+              {navigation.map((item: NavigationItem, index: number) => (
                 <button
                   key={index}
                   className="w-full flex items-center px-6 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200"
                   onClick={() => {
-                    item.onPress();
+                    void item.onPress();
                     handleCloseMobileMenu();
                   }}
                 >
@@ -288,7 +298,7 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
             <div className="p-4">
               <button
                 className="w-full flex items-center px-6 py-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors duration-200"
-                onClick={handleLogout}
+                onClick={() => { void handleLogout(); }}
               >
                 <svg className="w-6 h-6 text-red-600 mr-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -332,74 +342,9 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
       }
     };
 
-    fetchUserProfile();
+    void fetchUserProfile();
   }, [visible, user]);
 
-  const navigationItems = [
-    {
-      title: 'Home',
-      icon: 'home',
-      isActive: true,
-      onPress: () => {
-        console.log('Navigate to Home');
-        onClose();
-      }
-    },
-    {
-      title: 'Records',
-      icon: 'document',
-      isActive: false,
-      onPress: () => {
-        console.log('Navigate to Records');
-        onClose();
-      }
-    },
-    {
-      title: 'PillPal',
-      icon: 'pills',
-      isActive: false,
-      onPress: () => {
-        console.log('Navigate to PillPal');
-        onClose();
-      }
-    },
-    {
-      title: 'Profile',
-      icon: 'user',
-      isActive: false,
-      onPress: () => {
-        console.log('Navigate to Profile');
-        onClose();
-      }
-    },
-  ];
-
-  const menuItems = [
-    {
-      title: 'Medical Records',
-      icon: 'document',
-      onPress: () => {
-        console.log('Navigate to Medical Records');
-        onClose();
-      }
-    },
-    {
-      title: 'Medication Reminders',
-      icon: 'pill',
-      onPress: () => {
-        console.log('Navigate to Medication Reminders');
-        onClose();
-      }
-    },
-    {
-      title: 'News and Updates',
-      icon: 'news',
-      onPress: () => {
-        console.log('Navigate to News and Updates');
-        onClose();
-      }
-    },
-  ];
 
   // Get display name with priority order
   const getDisplayName = () => {

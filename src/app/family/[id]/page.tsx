@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Icon, Button, Input, UniversalHeader } from '../../../components/atoms';
 import { familyMemberService, FamilyMember as ApiFamilyMember } from '../../../services/apiServices';
+import useAuth from '../../../hooks/useAuth';
 
 interface FamilyMember {
   id: string;
@@ -26,22 +27,50 @@ interface FamilyMember {
   city?: string;
 }
 
-// Helper function to convert API data to UI format
-const convertApiToUiMember = (apiResponse: any): FamilyMember => {
-  // Handle the nested API response structure
-  const patientInfo = apiResponse?.patientDetails?.patientInfo || apiResponse;
+// Helper types and function to convert API data to UI format
+type ApiPatientInfo = {
+  _id?: string;
+  id?: string;
+  FullName?: string;
+  Age?: number | string;
+  profilePhoto?: string;
+  DateOfBirth?: string | Date;
+  BloodGroup?: string;
+  Allergies?: string[];
+  MobileNumber?: Array<{ number?: string; isVerified?: boolean }> | string[];
+  Email?: string;
+  AlternativeNumber?: string;
+  Gender?: ApiFamilyMember['Gender'];
+  Height?: number;
+  Weight?: number;
+  Country?: string;
+  State?: string;
+  City?: string;
+};
+
+type ApiMemberResponse = { patientDetails?: { patientInfo?: ApiPatientInfo } } | ApiPatientInfo | ApiFamilyMember;
+
+const convertApiToUiMember = (apiResponse: ApiMemberResponse): FamilyMember => {
+  const patientInfo: ApiPatientInfo =
+    (typeof apiResponse === 'object' && apiResponse && 'patientDetails' in apiResponse)
+      ? (apiResponse.patientDetails?.patientInfo ?? {})
+      : (apiResponse as ApiPatientInfo);
 
   return {
     id: patientInfo._id || patientInfo.id || 'unknown',
     name: patientInfo.FullName || 'Unknown',
     relation: 'Family Member',
-    age: patientInfo.Age?.toString() || '',
+    age: (typeof patientInfo.Age === 'number' ? String(patientInfo.Age) : (patientInfo.Age || '')),
     profileImage: patientInfo.profilePhoto,
     dateOfBirth: patientInfo.DateOfBirth ? new Date(patientInfo.DateOfBirth).toISOString().split('T')[0] : undefined,
     bloodGroup: patientInfo.BloodGroup,
     allergies: patientInfo.Allergies || [],
-    medications: [], // You might want to get this from pill reminders or chronic diseases
-    phone: patientInfo.MobileNumber?.[0]?.number,
+    medications: [],
+    phone: Array.isArray(patientInfo.MobileNumber) && patientInfo.MobileNumber.length > 0
+      ? (typeof patientInfo.MobileNumber[0] === 'string'
+        ? patientInfo.MobileNumber[0]
+        : patientInfo.MobileNumber[0]?.number)
+      : undefined,
     email: patientInfo.Email,
     emergencyContact: patientInfo.AlternativeNumber || '',
     gender: patientInfo.Gender,
@@ -57,7 +86,8 @@ const FamilyMemberDetailPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const memberId = params.id as string;
-  const userId = useAuthStore((state) => state.userId);
+  const { user, loading: authLoading } = useAuth();
+  const userId = user?._id ?? '';
 
   const [memberData, setMemberData] = useState<FamilyMember | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,15 +97,15 @@ const FamilyMemberDetailPage: React.FC = () => {
   const [newAllergy, setNewAllergy] = useState('');
   const [newMedication, setNewMedication] = useState('');
 
-  // Load member data on component mount
-  useEffect(() => {
-    loadMemberData();
-  }, [memberId]);
-
-  const loadMemberData = async () => {
+  const loadMemberData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+
+      if (!userId) {
+        setError('User not authenticated');
+        return;
+      }
 
       // Load real member data from API for all members including self
       console.log('🔍 Loading family member details for:', { userId, memberId });
@@ -97,7 +127,14 @@ const FamilyMemberDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, memberId]);
+
+  // Load member data when auth is ready and memberId changes
+  useEffect(() => {
+    if (!authLoading) {
+      void loadMemberData();
+    }
+  }, [authLoading, loadMemberData]);
 
   const relationOptions = [
     'Father', 'Mother', 'Son', 'Daughter', 'Brother', 'Sister',
@@ -109,20 +146,11 @@ const FamilyMemberDetailPage: React.FC = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-bg-white>
+      <div className="min-h-screen bg-bg-white">
         <UniversalHeader
           title="Loading..."
-          leftElement={
-            <Button
-              variant="ghost"
-              size="small"
-              onClick={() => router.back()}
-              className="flex items-center text-gray-600 hover:text-gray-800"
-            >
-              <Icon name="arrow-left" size="small" className="mr-2" />
-              Back
-            </Button>
-          }
+          showBackButton={true}
+          onBackPress={() => router.back()}
         />
         <div className="flex items-center justify-center p-8">
           <div className="text-center">
@@ -137,38 +165,29 @@ const FamilyMemberDetailPage: React.FC = () => {
   // Show error state
   if (error || !memberData) {
     return (
-      <div className="min-h-screen bg-bg-white>
+      <div className="min-h-screen bg-bg-white">
         <UniversalHeader
           title="Error"
-          leftElement={
-            <Button
-              variant="ghost"
-              size="small"
-              onClick={() => router.back()}
-              className="flex items-center text-gray-600 hover:text-gray-800"
-            >
-              <Icon name="arrow-left" size="small" className="mr-2" />
-              Back
-            </Button>
-          }
+          showBackButton={true}
+          onBackPress={() => router.back()}
         />
         <div className="flex items-center justify-center p-8">
           <div className="text-center">
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Icon name="alert-circle" size="large" color="#DC2626" />
+              <Icon name="alert" size="large" color="#DC2626" />
             </div>
             <h2 className="text-xl font-semibold text-gray-800 mb-2">Error Loading Details</h2>
             <p className="text-gray-600 mb-4">{error || 'Family member not found'}</p>
             <Button
               variant="primary"
               size="medium"
-              onClick={loadMemberData}
+              onClick={() => void loadMemberData()}
               className="mr-2"
             >
               Try Again
             </Button>
             <Button
-              variant="ghost"
+              variant="secondary"
               size="medium"
               onClick={() => router.back()}
             >
@@ -188,7 +207,6 @@ const FamilyMemberDetailPage: React.FC = () => {
       const updates = {
         FullName: editData.name,
         Email: editData.email,
-        Age: editData.age ? parseInt(editData.age) : undefined,
         Gender: editData.gender as ApiFamilyMember['Gender'],
         Height: editData.height,
         Weight: editData.weight,
@@ -216,7 +234,7 @@ const FamilyMemberDetailPage: React.FC = () => {
       } else {
         setError('Failed to update family member');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to save changes');
     }
   };
@@ -228,36 +246,36 @@ const FamilyMemberDetailPage: React.FC = () => {
 
   const handleAddAllergy = () => {
     if (newAllergy.trim()) {
-      setEditData({
-        ...editData,
-        allergies: [...(editData.allergies || []), newAllergy.trim()]
-      });
+      setEditData(prev => prev ? {
+        ...prev,
+        allergies: [...(prev.allergies || []), newAllergy.trim()]
+      } : prev);
       setNewAllergy('');
     }
   };
 
   const handleRemoveAllergy = (index: number) => {
-    setEditData({
-      ...editData,
-      allergies: editData.allergies?.filter((_, i) => i !== index) || []
-    });
+    setEditData(prev => prev ? {
+      ...prev,
+      allergies: prev.allergies?.filter((_, i) => i !== index) || []
+    } : prev);
   };
 
   const handleAddMedication = () => {
     if (newMedication.trim()) {
-      setEditData({
-        ...editData,
-        medications: [...(editData.medications || []), newMedication.trim()]
-      });
+      setEditData(prev => prev ? {
+        ...prev,
+        medications: [...(prev.medications || []), newMedication.trim()]
+      } : prev);
       setNewMedication('');
     }
   };
 
   const handleRemoveMedication = (index: number) => {
-    setEditData({
-      ...editData,
-      medications: editData.medications?.filter((_, i) => i !== index) || []
-    });
+    setEditData(prev => prev ? {
+      ...prev,
+      medications: prev.medications?.filter((_, i) => i !== index) || []
+    } : prev);
   };
 
   return (
@@ -277,7 +295,7 @@ const FamilyMemberDetailPage: React.FC = () => {
                 <Button variant="secondary" onClick={handleCancel} className="px-4 py-2 bg-white/20 text-white hover:bg-white/30">
                   Cancel
                 </Button>
-                <Button variant="primary" onClick={handleSave} className="px-4 py-2 bg-white text-[#0e3293] hover:bg-white/90 font-semibold">
+                <Button variant="primary" onClick={() => void handleSave()} className="px-4 py-2 bg-white text-[#0e3293] hover:bg-white/90 font-semibold">
                   Save
                 </Button>
               </>
@@ -325,7 +343,7 @@ const FamilyMemberDetailPage: React.FC = () => {
                     <Input
                       type="text"
                       value={editData?.name || ''}
-                      onChange={(e) => setEditData(prev => prev ? {...prev, name: e.target.value} : null)}
+                      onChange={(value) => setEditData(prev => prev ? { ...prev, name: value } : prev)}
                       className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   ) : (
@@ -343,7 +361,7 @@ const FamilyMemberDetailPage: React.FC = () => {
                     <Input
                       type="number"
                       value={editData?.age || ''}
-                      onChange={(e) => setEditData(prev => prev ? {...prev, age: e.target.value} : null)}
+                      onChange={(value) => setEditData(prev => prev ? { ...prev, age: value } : prev)}
                       className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                   ) : (
@@ -360,7 +378,7 @@ const FamilyMemberDetailPage: React.FC = () => {
                   {isEditing ? (
                     <select
                       value={editData?.relation || ''}
-                      onChange={(e) => setEditData(prev => prev ? {...prev, relation: e.target.value} : null)}
+                      onChange={(e) => setEditData(prev => prev ? { ...prev, relation: e.target.value } : prev)}
                       className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                     >
                       <option value="Self">Self</option>
@@ -385,7 +403,7 @@ const FamilyMemberDetailPage: React.FC = () => {
                     <Input
                       type="email"
                       value={editData?.email || ''}
-                      onChange={(e) => setEditData(prev => prev ? {...prev, email: e.target.value} : null)}
+                      onChange={(value) => setEditData(prev => prev ? { ...prev, email: value } : prev)}
                       className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Enter email address"
                     />
@@ -404,7 +422,7 @@ const FamilyMemberDetailPage: React.FC = () => {
                     <Input
                       type="text"
                       value={editData?.phone || ''}
-                      onChange={(e) => setEditData(prev => prev ? {...prev, phone: e.target.value} : null)}
+                      onChange={(value) => setEditData(prev => prev ? { ...prev, phone: value } : prev)}
                       className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       placeholder="Enter phone number"
                     />
@@ -422,7 +440,7 @@ const FamilyMemberDetailPage: React.FC = () => {
                   {isEditing ? (
                     <select
                       value={editData?.bloodGroup || ''}
-                      onChange={(e) => setEditData(prev => prev ? {...prev, bloodGroup: e.target.value} : null)}
+                      onChange={(e) => setEditData(prev => prev ? { ...prev, bloodGroup: e.target.value } : prev)}
                       className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
                     >
                       <option value="">Select Blood Group</option>
@@ -450,7 +468,7 @@ const FamilyMemberDetailPage: React.FC = () => {
             <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">Allergies</h3>
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                {(isEditing ? editData.allergies : memberData.allergies)?.map((allergy, index) => (
+                {(isEditing ? editData?.allergies : memberData.allergies)?.map((allergy, index) => (
                   <div
                     key={index}
                     className="flex items-center px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm"
@@ -473,10 +491,10 @@ const FamilyMemberDetailPage: React.FC = () => {
                   <Input
                     type="text"
                     value={newAllergy}
-                    onChange={(e) => setNewAllergy(e.target.value)}
+                    onChange={(value) => setNewAllergy(value)}
                     placeholder="Add new allergy"
                     className="flex-1"
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddAllergy()}
+                    
                   />
                   <Button variant="secondary" onClick={handleAddAllergy} className="px-4 py-2">
                     Add
@@ -491,7 +509,7 @@ const FamilyMemberDetailPage: React.FC = () => {
             <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-4 sm:mb-6">Current Medications</h3>
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                {(isEditing ? editData.medications : memberData.medications)?.map((medication, index) => (
+                {(isEditing ? editData?.medications : memberData.medications)?.map((medication, index) => (
                   <div
                     key={index}
                     className="flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm"
@@ -514,10 +532,10 @@ const FamilyMemberDetailPage: React.FC = () => {
                   <Input
                     type="text"
                     value={newMedication}
-                    onChange={(e) => setNewMedication(e.target.value)}
+                    onChange={(value) => setNewMedication(value)}
                     placeholder="Add new medication"
                     className="flex-1"
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddMedication()}
+                    
                   />
                   <Button variant="secondary" onClick={handleAddMedication} className="px-4 py-2">
                     Add
@@ -556,7 +574,4 @@ const FamilyMemberDetailPage: React.FC = () => {
 };
 
 export default FamilyMemberDetailPage;
-function useAuthStore(arg0: (state: any) => any) {
-  throw new Error('Function not implemented.');
-}
-
+ 

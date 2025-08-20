@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { UniversalHeader, FeatureCard, Icon, AppointmentCard, Typography, DailyTips, AutoScrollBanner, DoctorCard } from '../../components/atoms';
+import type { IconName } from '../../components/atoms/Icon';
 import { doctorService, Doctor as ApiDoctor, doctorHelpers, appointmentService, Appointment } from '../../services/apiServices';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -14,10 +15,6 @@ const HomePage: React.FC = () => {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
 
-  const handleScanPress = () => {
-    console.log('Scan pressed');
-  };
-
   const handleFeaturePress = (feature: string) => {
     console.log(`Feature pressed: ${feature}`);
     if (feature === 'PillPal') {
@@ -28,7 +25,7 @@ const HomePage: React.FC = () => {
   };
 
   // Load doctors from API
-  const loadDoctors = async () => {
+  const loadDoctors = useCallback(async () => {
     try {
       setLoadingDoctors(true);
       const apiDoctors = await doctorService.getAllDoctors();
@@ -41,10 +38,10 @@ const HomePage: React.FC = () => {
     } finally {
       setLoadingDoctors(false);
     }
-  };
+  }, []);
 
   // Load appointments from API
-  const loadAppointments = async () => {
+  const loadAppointments = useCallback(async () => {
     if (!user?._id) {
       setLoadingAppointments(false);
       return;
@@ -66,16 +63,16 @@ const HomePage: React.FC = () => {
     } finally {
       setLoadingAppointments(false);
     }
-  };
+  }, [user?._id]);
 
   // Load doctors and appointments on component mount
   useEffect(() => {
     loadDoctors();
     loadAppointments();
-  }, [user?._id]);
+  }, [loadDoctors, loadAppointments]);
 
   // Feature items with icon names
-  const featureItems = [
+  const featureItems: { iconName: IconName; title: string; onPress: () => void; hasNotification?: boolean }[] = [
     {
       iconName: 'pills',
       title: 'PillPal',
@@ -258,7 +255,7 @@ const HomePage: React.FC = () => {
             {featureItems.map((item, index) => (
               <FeatureCard
                 key={index}
-                icon={<Icon name={item.iconName as any} size="medium" color="#1e40af" />}
+                icon={<Icon name={item.iconName} size="medium" color="#1e40af" />}
                 title={item.title}
                 bgColor={item.title === 'Health Bot' ? 'bg-white' : 'bg-white'}
                 hasNotification={item.hasNotification}
@@ -279,7 +276,7 @@ const HomePage: React.FC = () => {
                   <div className="relative mb-3">
                     <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center transition-colors duration-200 ${item.title === 'Health Bot' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-gray-50 group-hover:bg-white'
                       }`}>
-                      <Icon name={item.iconName as any} color="#1e40af" className="w-6 h-6 lg:w-7 lg:h-7" />
+                      <Icon name={item.iconName} color="#1e40af" className="w-6 h-6 lg:w-7 lg:h-7" />
                     </div>
                     {item.hasNotification && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white">
@@ -338,7 +335,14 @@ const HomePage: React.FC = () => {
                   actualStartTime={appointment.appointmentTime.from}
                   actualEndTime={appointment.appointmentTime.to}
                   mode="InPerson" // Default mode, can be enhanced later
-                  status={appointment.status === 'scheduled' ? 'upcoming' : appointment.status as any}
+                  status={((): 'upcoming' | 'ongoing' | 'completed' | 'cancelled' => {
+                    const s = String(appointment.status).toLowerCase();
+                    if (s === 'scheduled') return 'upcoming';
+                    if (s === 'ongoing') return 'ongoing';
+                    if (s === 'completed') return 'completed';
+                    if (s === 'cancelled' || s === 'canceled') return 'cancelled';
+                    return 'upcoming';
+                  })()}
                   clinic={{
                     _id: appointment.clinic._id,
                     clinicName: appointment.clinic.clinicName,

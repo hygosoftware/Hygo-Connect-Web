@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { UniversalHeader } from '../../components/atoms';
 import { useAuth } from '../../hooks/useAuth';
-import { profileService } from '../../services/apiServices';
+import { profileService, UpdateProfileRequest } from '../../services/apiServices';
 import { User, Mail, Phone, Calendar, Heart, Activity, Edit3, Save, X, Camera, Ruler, Weight, Bell, Shield, Settings, Stethoscope, AlertCircle, CheckCircle2, Plus, Trash2 } from 'lucide-react';
 import ProfileCompletionWizard from '../../components/organisms/ProfileCompletionWizard';
 import ProfileSettings from '../../components/organisms/ProfileSettings';
@@ -84,13 +84,14 @@ const ProfileScreen: React.FC = () => {
           setProfileData({
             ...defaultProfileData,
             ...apiProfileData,
+            profilePhoto: apiProfileData?.profilePhoto ?? '',
             MobileNumber: normalizeNumber(apiProfileData?.MobileNumber),
             AlternativeNumber: normalizeNumber(apiProfileData?.AlternativeNumber) || '',
             Age: apiProfileData?.Age !== undefined ? String(apiProfileData.Age) : '',
             Height: apiProfileData?.Height !== undefined ? String(apiProfileData.Height) : '',
             Weight: apiProfileData?.Weight !== undefined ? String(apiProfileData.Weight) : '',
-            ChronicDiseases: apiProfileData?.ChronicDiseases || [],
-            Allergies: apiProfileData?.Allergies || [],
+            ChronicDiseases: Array.isArray(apiProfileData?.ChronicDiseases) ? apiProfileData!.ChronicDiseases : [],
+            Allergies: Array.isArray(apiProfileData?.Allergies) ? apiProfileData!.Allergies : [],
           });
         }
       } catch (e: any) {
@@ -134,22 +135,24 @@ const ProfileScreen: React.FC = () => {
           return;
         }
 
-        // Format mobile numbers to match API schema
-        const formatMobileNumber = (number: string) => {
-          if (!number || number.trim() === '') return [];
-          return [{
-            number: number.trim(),
-            isVerified: false
-          }];
-        };
-
-        const dataToSend = {
-          ...profileData,
-          MobileNumber: formatMobileNumber(profileData.MobileNumber),
-          AlternativeNumber: profileData.AlternativeNumber || null,
-          Age: profileData.Age ? parseInt(profileData.Age) : undefined,
-          Height: profileData.Height ? parseFloat(profileData.Height) : undefined,
-          Weight: profileData.Weight ? parseFloat(profileData.Weight) : undefined,
+        // Build payload to match UpdateProfileRequest (strings for numbers, plain strings for phones)
+        const dataToSend: UpdateProfileRequest = {
+          FullName: profileData.FullName || undefined,
+          Email: profileData.Email || undefined,
+          MobileNumber: profileData.MobileNumber?.trim() || undefined,
+          AlternativeNumber: profileData.AlternativeNumber?.trim() || undefined,
+          Gender: profileData.Gender || undefined,
+          Age: profileData.Age?.trim() || undefined,
+          DateOfBirth: profileData.DateOfBirth || undefined,
+          Country: profileData.Country || undefined,
+          State: profileData.State || undefined,
+          City: profileData.City || undefined,
+          Height: profileData.Height?.trim() || undefined,
+          Weight: profileData.Weight?.trim() || undefined,
+          BloodGroup: profileData.BloodGroup || undefined,
+          ChronicDiseases: profileData.ChronicDiseases?.length ? profileData.ChronicDiseases : undefined,
+          Allergies: profileData.Allergies?.length ? profileData.Allergies : undefined,
+          profilePhoto: profileData.profilePhoto ?? undefined,
         };
 
         await profileService.updateProfile(user._id, dataToSend);

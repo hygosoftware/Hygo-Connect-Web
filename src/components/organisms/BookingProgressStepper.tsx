@@ -4,10 +4,12 @@ import React from 'react';
 import { Typography, Icon } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 
+type StepIconName = React.ComponentProps<typeof Icon>['name'];
+
 interface StepInfo {
   key: string;
   label: string;
-  icon: string;
+  icon: StepIconName;
   description: string;
 }
 
@@ -198,7 +200,7 @@ const BookingProgressStepper: React.FC = () => {
                             {state.selectedClinic.clinicName}
                           </Typography>
                           <Typography variant="caption" className="text-gray-600">
-                            {state.selectedClinic.clinicAddress?.city || state.selectedClinic.address?.city || 'Unknown City'}
+                            {state.selectedClinic.clinicAddress?.city || 'Unknown City'}
                           </Typography>
                         </div>
                       )}

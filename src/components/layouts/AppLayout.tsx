@@ -10,6 +10,16 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+// Match the icon names expected by ResponsiveNavigation (SideBar.tsx)
+type NavIcon = 'home' | 'records' | 'document' | 'pills' | 'user' | 'news';
+type NavigationItemLocal = {
+  title: string;
+  icon: NavIcon;
+  path: string;
+  isActive: boolean;
+  onPress: () => void;
+};
+
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const router = useRouter();
   const pathname = usePathname();
@@ -22,7 +32,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   };
 
   // Navigation items with proper routing
-  const navigationItems = [
+  const navigationItems: NavigationItemLocal[] = [
     {
       title: 'Home',
       icon: 'home',
@@ -66,8 +76,8 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         {/* Sidebar - positioned behind header */}
         <ResponsiveNavigation
           visible={true}
-          navigation={navigationItems}
-          userName={user}
+          navigation={navigationItems.map(({ title, icon, isActive, onPress }) => ({ title, icon, isActive, onPress }))}
+          userName={(user && (user.FullName || (user as any).fullName)) || null}
           isSidebarExpanded={isSidebarExpanded}
           onSidebarToggle={setIsSidebarExpanded}
           onClose={() => setIsMobileMenuOpen(false)}

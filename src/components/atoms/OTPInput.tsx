@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useRef, useEffect, forwardRef } from 'react';
 
 interface OTPInputProps {

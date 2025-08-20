@@ -1,5 +1,7 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { Typography, Icon } from './';
+import type { IconName } from './Icon';
 
 interface DailyTipProps {
   onPress?: () => void;
@@ -77,7 +79,7 @@ const DailyTips: React.FC<DailyTipProps> = ({ onPress, className = '' }) => {
   }, []);
 
   // Get appropriate icon and color based on category
-  const getCategoryInfo = () => {
+  const getCategoryInfo = (): { icon: IconName; color: string } => {
     switch (tipCategory) {
       case 'Hydration':
         return { icon: 'water', color: 'text-blue-500' };
@@ -126,7 +128,7 @@ const DailyTips: React.FC<DailyTipProps> = ({ onPress, className = '' }) => {
               </Typography>
             </div>
             <div className="flex items-center flex-shrink-0 ml-2">
-              <Icon name={categoryInfo.icon as any} size="small" color={categoryInfo.color.replace('text-', '#')} className="flex-shrink-0" />
+              <Icon name={categoryInfo.icon} size="small" color={categoryInfo.color.replace('text-', '#')} className="flex-shrink-0" />
               <Typography variant="caption" className="ml-1 text-gray-500 whitespace-nowrap">
                 {tipCategory}
               </Typography>

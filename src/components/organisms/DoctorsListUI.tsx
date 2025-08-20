@@ -70,7 +70,7 @@ interface DoctorsListUIProps {
   onFilterPress?: (filter: string) => void;
   onClinicFilterPress?: (filter: string) => void;
   onClearFilters?: () => void;
-  onDoctorPress?: (doctor: Doctor) => void;
+  onDoctorPress?: (doctor: { _id: string }) => void;
   onRetry?: () => void;
   onErrorDetails?: () => void;
 }
@@ -152,7 +152,7 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
                 type="text"
                 placeholder="Search by doctor name, specialty, or clinic..."
                 value={searchQuery}
-                onChange={(e) => onSearchChange(e.target.value)}
+                onChange={(value) => onSearchChange(value)}
                 className="w-full"
                 leftIcon="search"
               />

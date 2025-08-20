@@ -115,8 +115,10 @@ export default function FileScreen() {
             </Typography>
             <Typography variant="caption" className="text-blue-200">
               {filteredFiles.length} file(s)
-              {folderInfo?.folderAccess?.length > 0 &&
-                ` • Shared with ${folderInfo.folderAccess.length}`}
+              {(() => {
+                const sharedCount = folderInfo?.folderAccess ? folderInfo.folderAccess.length : 0;
+                return sharedCount > 0 ? ` • Shared with ${sharedCount}` : '';
+              })()}
             </Typography>
           </div>
         </div>

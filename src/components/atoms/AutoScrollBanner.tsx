@@ -1,3 +1,4 @@
+"use client";
 import React, { useRef, useEffect, useState } from 'react';
 import { Typography } from './';
 
@@ -22,7 +23,8 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
   className = '',
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const intervalRef = useRef<number | null>(null);  const containerRef = useRef<HTMLDivElement>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto scroll logic
   useEffect(() => {

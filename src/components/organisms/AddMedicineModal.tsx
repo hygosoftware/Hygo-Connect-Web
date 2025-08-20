@@ -37,10 +37,15 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
     const updatedMedicines = [...medicines];
     if (field.includes('.')) {
       const [parent, child] = field.split('.');
+      // Safely spread only when the parent value is an object; otherwise default to {}
+      const currentParentValue = (updatedMedicines[index] as any)[parent];
+      const safeParentObject =
+        currentParentValue && typeof currentParentValue === 'object' ? currentParentValue : {};
+
       updatedMedicines[index] = {
         ...updatedMedicines[index],
         [parent]: {
-          ...updatedMedicines[index][parent as keyof Medicine],
+          ...(safeParentObject as Record<string, any>),
           [child]: value
         }
       };
@@ -152,7 +157,7 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
             {errors.length > 0 && (
               <div className="bg-red-50 border-l-4 border-red-500 rounded-r-xl p-5">
                 <div className="flex items-start">
-                  <Icon name="alert-circle" size="small" color="#ef4444" className="mt-0.5 mr-3" />
+                  <Icon name="alert" size="small" color="#ef4444" className="mt-0.5 mr-3" />
                   <div>
                     <Typography variant="body2" className="text-red-800 font-semibold mb-2">
                       Please fix the following errors:
@@ -190,7 +195,7 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
                     onClick={() => handleRemoveMedicine(medicineIndex)}
                     className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-colors"
                   >
-                    <Icon name="delete" size="small" color="#ef4444" />
+                    <Icon name="trash" size="small" color="#ef4444" />
                   </button>
                 )}
               </div>

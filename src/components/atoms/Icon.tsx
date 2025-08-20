@@ -1,7 +1,10 @@
 import React from 'react';
 
-interface IconProps {
-  name: 'email' | 'eye' | 'eye-off' | 'check' | 'x' | 'alert' | 'arrow-left' | 'menu' | 'location' | 'chevron-down' | 'chevron-left' | 'chevron-right' | 'notification' | 'plus' | 'user' | 'document' | 'pill' | 'news' | 'logout' | 'pills' | 'family' | 'doctor' | 'health-card' | 'records' | 'robot' | 'appointment' | 'laboratory' | 'video' | 'hospital' | 'clock' | 'calendar' | 'qr-code' | 'lightbulb' | 'water' | 'apple' | 'brain' | 'sleep' | 'activity' | 'hygiene' | 'chair' | 'heart' | 'home' | 'bell' | 'bell-off' | 'pill-off' | 'capsule' | 'bottle-tonic' | 'needle' | 'food' | 'edit' | 'trash' | 'chevron-up' | 'search' | 'filter' | 'star' | 'close' | 'refresh' | 'file' | 'folder' | 'upload' | 'download' | 'share' | 'image' | 'audio' | 'loader' | 'check-circle' | 'credit-card' | 'smartphone' | 'wallet' | 'shield' | 'users' | 'info' | 'phone';
+export type IconName =
+  | 'email' | 'eye' | 'eye-off' | 'check' | 'x' | 'alert' | 'arrow-left' | 'menu' | 'location' | 'chevron-down' | 'chevron-left' | 'chevron-right' | 'notification' | 'plus' | 'user' | 'document' | 'pill' | 'news' | 'logout' | 'pills' | 'family' | 'doctor' | 'health-card' | 'records' | 'robot' | 'appointment' | 'laboratory' | 'video' | 'hospital' | 'clock' | 'calendar' | 'qr-code' | 'lightbulb' | 'water' | 'apple' | 'brain' | 'sleep' | 'activity' | 'hygiene' | 'chair' | 'heart' | 'home' | 'bell' | 'bell-off' | 'pill-off' | 'capsule' | 'bottle-tonic' | 'needle' | 'food' | 'edit' | 'trash' | 'chevron-up' | 'search' | 'filter' | 'star' | 'close' | 'refresh' | 'file' | 'folder' | 'upload' | 'download' | 'share' | 'image' | 'audio' | 'loader' | 'check-circle' | 'credit-card' | 'smartphone' | 'wallet' | 'shield' | 'users' | 'info' | 'phone';
+
+export interface IconProps {
+  name: IconName;
   size?: 'small' | 'medium' | 'large';
   color?: string;
   className?: string;

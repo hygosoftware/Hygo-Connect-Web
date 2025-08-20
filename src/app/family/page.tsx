@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { FamilyMemberUI } from '../../components/organisms';
 import { TokenManager } from '../../services/auth';
@@ -21,18 +21,28 @@ interface FamilyMember {
 }
 
 // Helper functions to convert between API and UI models
-const convertApiToUiMember = (apiResponse: any): FamilyMember => {
+type ApiMemberEnvelope = {
+  patientDetails?: { patientInfo?: Partial<ApiFamilyMember> & { _id?: string } };
+  _id?: string;
+} & Partial<ApiFamilyMember>;
+
+const convertApiToUiMember = (apiResponse: ApiMemberEnvelope): FamilyMember => {
   // Handle the nested API response structure
   // The structure can be: { patientDetails: { patientInfo: {...} } } or direct member object
-  const member = apiResponse?.patientDetails?.patientInfo || apiResponse._id || apiResponse;
+  const member = (apiResponse?.patientDetails?.patientInfo as ApiMemberEnvelope | undefined) ?? apiResponse;
 
   return {
     id: member._id || member.id || 'unknown',
-    name: member.FullName || member.name || 'Unknown',
+    name: member.FullName || (member as Partial<{ name?: string }>).name || 'Unknown',
     relation: 'Family Member', // You might want to add a relation field to your schema
     age: member.Age?.toString() || '',
     profileImage: member.profilePhoto,
-    mobileNumber: member.MobileNumber?.[0]?.number?.replace(/^\+\d{1,3}/, ''), // Remove country code
+    mobileNumber: Array.isArray(member.MobileNumber)
+      ? (member.MobileNumber[0] as { number?: string } | string | undefined &&
+        typeof member.MobileNumber[0] === 'object'
+          ? (member.MobileNumber[0] as { number?: string }).number?.replace(/^\+\d{1,3}/, '')
+          : String(member.MobileNumber[0]).replace(/^\+\d{1,3}/, ''))
+      : undefined,
     email: member.Email,
     dateOfBirth: member.DateOfBirth ? new Date(member.DateOfBirth).toISOString().split('T')[0] : undefined,
     bloodGroup: member.BloodGroup,
@@ -41,16 +51,15 @@ const convertApiToUiMember = (apiResponse: any): FamilyMember => {
   };
 };
 
-const convertUiToApiMember = (uiMember: Partial<FamilyMember>, userId: string): CreateFamilyMemberRequest => ({
+const convertUiToApiMember = (uiMember: Partial<FamilyMember>): CreateFamilyMemberRequest => ({
   FullName: uiMember.name || '',
   Email: uiMember.email,
   MobileNumber: uiMember.mobileNumber ? [{
     number: `+91${uiMember.mobileNumber}`, // Add country code
     isVerified: false
   }] : [],
-  Age: uiMember.age ? parseInt(uiMember.age) : undefined,
   DateOfBirth: uiMember.dateOfBirth,
-  BloodGroup: uiMember.bloodGroup as ApiFamilyMember['BloodGroup'],
+  BloodGroup: uiMember.bloodGroup,
   Allergies: uiMember.allergies || [],
 });
 
@@ -60,10 +69,8 @@ const FamilyPage: React.FC = () => {
   // State
   const [selectedMember, setSelectedMember] = useState('self');
 const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember | null>(null);
-const [detailsLoading, setDetailsLoading] = useState(false);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
-  const [newMemberAge, setNewMemberAge] = useState('');
   const [newMemberRelation, setNewMemberRelation] = useState('');
   const [newMemberEmail, setNewMemberEmail] = useState('');
   const [newMemberMobile, setNewMemberMobile] = useState('');
@@ -74,34 +81,22 @@ const [detailsLoading, setDetailsLoading] = useState(false);
   const { userId } = TokenManager.getTokens();
 
   // Load family members on component mount
-  useEffect(() => {
-    loadFamilyMembers();
-  }, []);
-
-  const loadFamilyMembers = async () => {
+  const loadFamilyMembers = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const apiResponse = await familyMemberService.getFamilyMembers(userId);
-
-      // Handle the API response structure
-      let apiMembers: any[] = [];
-
-      if (Array.isArray(apiResponse)) {
-        // Check if the first element has a patients array
-        if (apiResponse.length > 0 && apiResponse[0].patients) {
-          apiMembers = apiResponse[0].patients;
-        } else {
-          // If it's already an array of members, use it directly
-          apiMembers = apiResponse;
-        }
-      } else if (apiResponse && typeof apiResponse === 'object' && (apiResponse as any).patients) {
-        // If it has a patients property, extract it
-        apiMembers = (apiResponse as any).patients;
+      // Guard: ensure user is logged in
+      if (!userId) {
+        setError('Please login to view family members.');
+        setLoading(false);
+        return;
       }
 
-      const uiMembers = apiMembers.map(convertApiToUiMember);
+      const apiResponse = await familyMemberService.getFamilyMembers(userId);
+
+      // familyMemberService.getFamilyMembers returns a normalized array of members
+      const uiMembers = apiResponse.map(convertApiToUiMember);
 
       // Add self as first member (you might want to get this from user profile)
       const selfMember: FamilyMember = {
@@ -119,21 +114,25 @@ const [detailsLoading, setDetailsLoading] = useState(false);
       const allMembers = [selfMember, ...uiMembers];
       setFamilyMembers(allMembers);
 
-      if (apiMembers.length === 0) {
+      if (uiMembers.length === 0) {
         setError('No family members found. You can add new members using the + button.');
       }
 
     } catch (error: any) {
       let errorMessage = 'Failed to load family members';
-
-      if (error.response?.status === 500) {
-        errorMessage = 'Server error: There might be an issue with the database. Please try again later.';
-      } else if (error.response?.status === 401) {
-        errorMessage = 'Authentication failed. Please login again.';
-      } else if (error.response?.status === 404) {
-        errorMessage = 'Family members endpoint not found. Using offline mode.';
-      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
-        errorMessage = 'Request timed out. Please check your connection and try again.';
+      // Narrow error type safely
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      if ((error as any) && typeof error === 'object') {
+        const maybeAxios = error as { response?: { status?: number }; code?: string; message?: string };
+        if (maybeAxios.response?.status === 500) {
+          errorMessage = 'Server error: There might be an issue with the database. Please try again later.';
+        } else if (maybeAxios.response?.status === 401) {
+          errorMessage = 'Authentication failed. Please login again.';
+        } else if (maybeAxios.response?.status === 404) {
+          errorMessage = 'Family members endpoint not found. Using offline mode.';
+        } else if (maybeAxios.code === 'ECONNABORTED' || maybeAxios.message?.includes('timeout')) {
+          errorMessage = 'Request timed out. Please check your connection and try again.';
+        }
       }
 
       setError(errorMessage);
@@ -143,7 +142,11 @@ const [detailsLoading, setDetailsLoading] = useState(false);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    void loadFamilyMembers();
+  }, [loadFamilyMembers]);
 
   // Handlers
   const handleGoBack = () => {
@@ -152,33 +155,42 @@ const [detailsLoading, setDetailsLoading] = useState(false);
 
   const handleMemberSelect = async (memberId: string) => {
     setSelectedMember(memberId);
-    setDetailsLoading(true);
     setSelectedMemberDetails(null);
     try {
+      // Guard: ensure user is logged in
+      if (!userId) {
+        setError('Please login to view member details.');
+        return;
+      }
       const apiDetail = await familyMemberService.getFamilyMemberDetails(userId, memberId);
       if (apiDetail) {
         setSelectedMemberDetails(convertApiToUiMember(apiDetail));
       }
     } finally {
-      setDetailsLoading(false);
+      // no-op
     }
   };
 
-  // Utility to remove undefined fields from an object
-  function removeUndefined(obj: any) {
+  // Utility to remove undefined fields from an object (preserve type)
+  function removeUndefined<T extends object>(obj: T): T {
     return Object.fromEntries(
       Object.entries(obj).filter(([_, v]) => v !== undefined)
-    );
+    ) as T;
   }
 
   const handleAddMember = async () => {
     if (newMemberName.trim()) {
       try {
+        // Guard: ensure user is logged in
+        if (!userId) {
+          setError('Please login to add a family member.');
+          return;
+        }
         const memberData = removeUndefined(convertUiToApiMember({
           name: newMemberName.trim(),
           email: newMemberEmail.trim() || undefined,
           mobileNumber: newMemberMobile.trim() || undefined,
-        }, userId));
+        }));
 
         console.log('Payload being sent to addFamilyMember:', memberData);
         const addedMember = await familyMemberService.addFamilyMember(userId, memberData);
@@ -189,7 +201,7 @@ const [detailsLoading, setDetailsLoading] = useState(false);
 
           setFamilyMembers([...familyMembers, uiMember]);
           setNewMemberName('');
-          setNewMemberAge('');
+          // removed unused age field
           setNewMemberRelation('');
           setNewMemberEmail('');
           setNewMemberMobile('');
@@ -234,7 +246,12 @@ const [detailsLoading, setDetailsLoading] = useState(false);
     }
 
     try {
-      const apiUpdates = convertUiToApiMember(updatedData, userId);
+      // Guard: ensure user is logged in
+      if (!userId) {
+        setError('Please login to update a family member.');
+        return;
+      }
+      const apiUpdates = convertUiToApiMember(updatedData);
       const updatedMember = await familyMemberService.updateFamilyMember(memberId, apiUpdates);
 
       if (updatedMember) {
@@ -259,7 +276,6 @@ const [detailsLoading, setDetailsLoading] = useState(false);
   const handleCancelAdd = () => {
     setShowAddMember(false);
     setNewMemberName('');
-    setNewMemberAge('');
     setNewMemberRelation('');
     setNewMemberEmail('');
     setNewMemberMobile('');
@@ -267,15 +283,19 @@ const [detailsLoading, setDetailsLoading] = useState(false);
 
   const handleMemberDetails = async (memberId: string) => {
     setSelectedMember(memberId);
-    setDetailsLoading(true);
     setSelectedMemberDetails(null);
     try {
+      // Guard: ensure user is logged in
+      if (!userId) {
+        setError('Please login to view member details.');
+        return;
+      }
       const apiDetail = await familyMemberService.getFamilyMemberDetails(userId, memberId);
       if (apiDetail) {
         setSelectedMemberDetails(convertApiToUiMember(apiDetail));
       }
     } finally {
-      setDetailsLoading(false);
+      // no-op
     }
   };
 
@@ -306,7 +326,7 @@ const [detailsLoading, setDetailsLoading] = useState(false);
               <button
                 onClick={() => {
                   setError(null);
-                  loadFamilyMembers();
+                  void loadFamilyMembers();
                 }}
                 className="text-red-600 hover:text-red-800 text-sm underline"
               >
@@ -329,21 +349,17 @@ const [detailsLoading, setDetailsLoading] = useState(false);
         selectedMemberData={selectedMemberData}
         showAddMember={showAddMember}
         newMemberName={newMemberName}
-        newMemberAge={newMemberAge}
-        newMemberRelation={newMemberRelation}
         newMemberEmail={newMemberEmail}
         newMemberMobile={newMemberMobile}
         onGoBack={handleGoBack}
-        onMemberSelect={handleMemberSelect}
-        onAddMember={handleAddMember}
-        onDeleteMember={handleDeleteMember}
-        onEditMember={handleEditMember}
+        onMemberSelect={(id) => { void handleMemberSelect(id); }}
+        onAddMember={() => { void handleAddMember(); }}
+        onDeleteMember={(id) => { void handleDeleteMember(id); }}
+        onEditMember={(id, data) => { void handleEditMember(id, data); }}
         onCancelAdd={handleCancelAdd}
-        onMemberDetails={handleMemberDetails}
+        onMemberDetails={(id) => { void handleMemberDetails(id); }}
         onShowAddMember={() => setShowAddMember(true)}
         onNewMemberNameChange={setNewMemberName}
-        onNewMemberAgeChange={setNewMemberAge}
-        onNewMemberRelationChange={setNewMemberRelation}
         onNewMemberEmailChange={setNewMemberEmail}
         onNewMemberMobileChange={setNewMemberMobile}
       />

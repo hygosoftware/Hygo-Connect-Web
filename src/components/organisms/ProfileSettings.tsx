@@ -1,13 +1,39 @@
 'use client'
 import React, { useState } from 'react';
+
 import { Settings, Bell, Shield, Palette, Globe, Moon, Sun, Volume2, VolumeX, Smartphone, Mail, MessageSquare } from 'lucide-react';
 
 interface ProfileSettingsProps {
   onClose: () => void;
 }
 
+interface SettingsState {
+  theme: 'light' | 'dark' | 'auto' | string;
+  language: string;
+  notifications: {
+    push: boolean;
+    email: boolean;
+    sms: boolean;
+    appointments: boolean;
+    reminders: boolean;
+    marketing: boolean;
+  };
+  privacy: {
+    profileVisibility: 'private' | 'friends' | 'public' | string;
+    dataSharing: boolean;
+    analytics: boolean;
+  };
+  accessibility: {
+    fontSize: 'small' | 'medium' | 'large' | string;
+    highContrast: boolean;
+    soundEffects: boolean;
+  };
+}
+
+type NestedCategory = 'notifications' | 'privacy' | 'accessibility';
+
 const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
-  const [settings, setSettings] = useState({
+  const [settings, setSettings] = useState<SettingsState>({
     theme: 'light',
     language: 'English',
     notifications: {
@@ -16,27 +42,31 @@ const ProfileSettings: React.FC<ProfileSettingsProps> = ({ onClose }) => {
       sms: false,
       appointments: true,
       reminders: true,
-      marketing: false
+      marketing: false,
     },
     privacy: {
       profileVisibility: 'private',
       dataSharing: false,
-      analytics: true
+      analytics: true,
     },
     accessibility: {
       fontSize: 'medium',
       highContrast: false,
-      soundEffects: true
-    }
+      soundEffects: true,
+    },
   });
 
-  const updateSetting = (category: string, key: string, value: any) => {
+  const updateSetting = <C extends NestedCategory, K extends keyof SettingsState[C]>(
+    category: C,
+    key: K,
+    value: SettingsState[C][K]
+  ) => {
     setSettings(prev => ({
       ...prev,
       [category]: {
-        ...prev[category as keyof typeof prev],
-        [key]: value
-      }
+        ...(prev[category] as SettingsState[C]),
+        [key]: value,
+      } as SettingsState[C],
     }));
   };
 

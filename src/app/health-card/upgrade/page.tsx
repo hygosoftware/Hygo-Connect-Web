@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
+
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Icon, Button, Typography, UniversalHeader } from '../../../components/atoms';
 import { subscriptionservices, paymentService } from '../../../services/apiServices';
 import { TokenManager } from '../../../services/auth';
+import type { IconName } from '../../../components/atoms/Icon';
 
-// Razorpay types
+// Razorpay: avoid conflicting global redeclarations; we'll cast at usage time
 declare global {
   interface Window {
-    Razorpay: any;
+    Razorpay: new (options: Record<string, unknown>) => { open: () => void };
   }
 }
 
@@ -19,7 +21,7 @@ interface RazorpayResponse {
   razorpay_signature: string;
 }
 
-interface RazorpayOptions {
+interface RazorpayOptions extends Record<string, unknown> {
   key: string;
   amount?: number;
   currency?: string;
@@ -58,7 +60,7 @@ interface UserProfile {
   email?: string;
 }
 
-const HealthCardUpgradePage: React.FC = () => {
+const HealthCardUpgradeContent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
@@ -67,10 +69,34 @@ const HealthCardUpgradePage: React.FC = () => {
   const [step, setStep] = useState<'review' | 'payment' | 'confirmation'>('review');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
+  const fetchPlanData = useCallback(async () => {
+    try {
+      const planId = searchParams.get('planId');
+      const response = await subscriptionservices.getallsubscription();
+      
+      let plans: SubscriptionPlan[] = [];
+      if (response && (response as { data?: unknown }).data) {
+        const data = (response as { data?: unknown }).data;
+        if (Array.isArray(data)) plans = data as SubscriptionPlan[];
+      } else if (Array.isArray(response as unknown[])) {
+        plans = response as unknown as SubscriptionPlan[];
+      }
+      
+      if (planId) {
+        const plan = plans.find(p => p._id === planId);
+        if (plan) {
+          setSelectedPlan(plan);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching plan data:', error);
+    }
+  }, [searchParams]);
+
   useEffect(() => {
     loadUserProfile();
-    fetchPlanData();
-  }, [searchParams]);
+    void fetchPlanData();
+  }, [fetchPlanData]);
 
   const loadUserProfile = () => {
     const tokens = TokenManager.getTokens();
@@ -83,29 +109,6 @@ const HealthCardUpgradePage: React.FC = () => {
         id: userId,
         email: userInfo.Email || userInfo.email
       });
-    }
-  };
-
-  const fetchPlanData = async () => {
-    try {
-      const planId = searchParams.get('planId');
-      const response = await subscriptionservices.getallsubscription();
-      
-      let plans: SubscriptionPlan[] = [];
-      if (response && response.data) {
-        plans = response.data;
-      } else if (Array.isArray(response)) {
-        plans = response;
-      }
-      
-      if (planId) {
-        const plan = plans.find(p => p._id === planId);
-        if (plan) {
-          setSelectedPlan(plan);
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching plan data:', error);
     }
   };
 
@@ -181,9 +184,13 @@ const HealthCardUpgradePage: React.FC = () => {
       const razorpay = new window.Razorpay(options);
       razorpay.open();
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Error initiating payment:', error);
-      alert(error.message || 'Failed to initiate payment. Please try again.');
+      const message =
+        typeof error === 'object' && error && 'message' in error && typeof (error as { message: unknown }).message === 'string'
+          ? (error as { message: string }).message
+          : 'Failed to initiate payment. Please try again.';
+      alert(message);
       setLoading(false);
     }
   };
@@ -194,9 +201,9 @@ const HealthCardUpgradePage: React.FC = () => {
       console.log('🔐 Confirming payment with backend:', response);
       
       const confirmationResult = await paymentService.confirmPayment({
-        razorpay_order_id: response.razorpay_order_id,
-        razorpay_payment_id: response.razorpay_payment_id,
-        razorpay_signature: response.razorpay_signature
+        razorpayOrderId: response.razorpay_order_id,
+        razorpayPaymentId: response.razorpay_payment_id,
+        razorpaySignature: response.razorpay_signature
       });
 
       console.log('✅ Payment confirmed successfully:', confirmationResult);
@@ -204,9 +211,13 @@ const HealthCardUpgradePage: React.FC = () => {
       // Step 2: Show success and navigate to confirmation
       setStep('confirmation');
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('❌ Payment verification failed:', error);
-      alert(error.message || 'Payment verification failed. Please contact support.');
+      const message =
+        typeof error === 'object' && error && 'message' in error && typeof (error as { message: unknown }).message === 'string'
+          ? (error as { message: string }).message
+          : 'Payment verification failed. Please contact support.';
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -239,7 +250,7 @@ const HealthCardUpgradePage: React.FC = () => {
 
   if (!selectedPlan) {
     return (
-      <div className="min-h-screen bg-bg-white>
+      <div className="min-h-screen bg-bg-white">
         <UniversalHeader
           title="Plan Not Found"
           subtitle="Please select a plan from the health card page"
@@ -280,7 +291,7 @@ const HealthCardUpgradePage: React.FC = () => {
                     Price
                   </Typography>
                   <Typography variant="h6" className="text-[#0E3293] font-bold">
-                    ${selectedPlan.price}
+                    ₹{selectedPlan.price}
                   </Typography>
                 </div>
                 
@@ -372,7 +383,7 @@ const HealthCardUpgradePage: React.FC = () => {
                     Total Amount
                   </Typography>
                   <Typography variant="h6" className="text-[#0E3293] font-bold">
-                    ${selectedPlan.price}
+                    ₹{selectedPlan.price}
                   </Typography>
                 </div>
               </div>
@@ -384,10 +395,10 @@ const HealthCardUpgradePage: React.FC = () => {
                 Select Payment Method
               </Typography>
               <div className="space-y-3">
-                {[
-                  { method: 'card' as const, icon: 'credit-card', title: 'Credit/Debit Card', description: 'Pay securely with your card' },
-                  { method: 'upi' as const, icon: 'smartphone', title: 'UPI Payment', description: 'Pay using UPI apps like GPay, PhonePe' },
-                  { method: 'wallet' as const, icon: 'wallet', title: 'Digital Wallet', description: 'Pay using digital wallets' }
+                {[/* eslint-disable @typescript-eslint/no-explicit-any */
+                  { method: 'card' as const, icon: 'credit-card' as IconName, title: 'Credit/Debit Card', description: 'Pay securely with your card' },
+                  { method: 'upi' as const, icon: 'smartphone' as IconName, title: 'UPI Payment', description: 'Pay using UPI apps like GPay, PhonePe' },
+                  { method: 'wallet' as const, icon: 'wallet' as IconName, title: 'Digital Wallet', description: 'Pay using digital wallets' }
                 ].map((option) => (
                   <div
                     key={option.method}
@@ -402,7 +413,7 @@ const HealthCardUpgradePage: React.FC = () => {
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
                         paymentMethod === option.method ? 'bg-[#0E3293]' : 'bg-gray-100'
                       }`}>
-                        <Icon name={option.icon as any} className={`w-5 h-5 ${
+                        <Icon name={option.icon} className={`w-5 h-5 ${
                           paymentMethod === option.method ? 'text-white' : 'text-gray-600'
                         }`} />
                       </div>
@@ -426,7 +437,7 @@ const HealthCardUpgradePage: React.FC = () => {
             {/* Confirm Payment Button */}
             {paymentMethod && (
               <Button
-                onClick={handleConfirmUpgrade}
+                onClick={() => void handleConfirmUpgrade()}
                 disabled={loading}
                 className="w-full py-3 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50"
               >
@@ -473,7 +484,7 @@ const HealthCardUpgradePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-bg-white>
+    <div className="min-h-screen bg-bg-white">
       <UniversalHeader
         title={step === 'review' ? 'Review Your Plan' : step === 'payment' ? 'Payment Details' : 'Subscription Confirmed!'}
         subtitle={step === 'review' ? 'Confirm your subscription details' : step === 'payment' ? 'Complete your payment' : 'Welcome to your new health plan'}
@@ -487,6 +498,14 @@ const HealthCardUpgradePage: React.FC = () => {
         {renderStepContent()}
       </div>
     </div>
+  );
+};
+
+const HealthCardUpgradePage: React.FC = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-bg-white px-4 md:px-6 py-8">Loading...</div>}>
+      <HealthCardUpgradeContent />
+    </Suspense>
   );
 };
 

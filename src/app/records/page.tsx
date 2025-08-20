@@ -69,14 +69,18 @@ const RecordsPage: React.FC = () => {
         const transformedFolders: RecordFolder[] = apiResponse.map((folder: Folder, index: number) => {
           console.log(`🔄 Transforming folder ${index + 1}:`, folder);
 
-          // Extract access information from the actual structure
-          const accessUsers = folder.folderAccess?.map(access => access.DelegateFolderAuthID) || [];
-          const fileCount = folder.files ? folder.files.length : 0;
+          // Extract access information from the actual structure (string or object)
+          const accessUsers = folder.folderAccess?.map(access =>
+            typeof access === 'string' ? access : access.DelegateFolderAuthID
+          ) || [];
+          // Some APIs may include an embedded files array; it's not part of Folder type, so read safely
+          const files = (folder as unknown as { files?: Array<{ uploadedAt: string }> }).files;
+          const fileCount = files ? files.length : 0;
 
           // Get the most recent file upload date for lastUpdated
           let lastUpdated = new Date().toISOString().split('T')[0];
-          if (folder.files && folder.files.length > 0) {
-            const mostRecentFile = folder.files.reduce((latest, file) =>
+          if (files && files.length > 0) {
+            const mostRecentFile = files.reduce((latest, file) =>
               new Date(file.uploadedAt) > new Date(latest.uploadedAt) ? file : latest
             );
             lastUpdated = new Date(mostRecentFile.uploadedAt).toISOString().split('T')[0];
@@ -203,7 +207,7 @@ const RecordsPage: React.FC = () => {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-white">
-                  {filteredFolders.reduce((acc, folder) => acc + folder.fileCount, 0)}
+                  {filteredFolders.reduce((acc, folder) => acc + (folder.fileCount || 0), 0)}
                 </div>
                 <div className="text-blue-100 text-xs">Total Files</div>
               </div>
@@ -369,7 +373,7 @@ const RecordsPage: React.FC = () => {
                       {folder.name}
                     </Typography>
                     <Typography variant="body2" className="text-gray-600 line-clamp-2">
-                      {folder.description || 'Medical documents and files'}
+                      {'Medical documents and files'}
                     </Typography>
                   </div>
 
@@ -396,7 +400,7 @@ const RecordsPage: React.FC = () => {
                     </div>
                     <div className="w-px h-8 bg-gray-300"></div>
                     <div className="text-center flex-1">
-                      <div className="text-sm font-semibold text-gray-700">{folder.lastModified || 'Recent'}</div>
+                      <div className="text-sm font-semibold text-gray-700">{folder.lastUpdated || 'Recent'}</div>
                       <div className="text-xs text-gray-500">Updated</div>
                     </div>
                   </div>

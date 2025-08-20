@@ -5,7 +5,7 @@ import { Typography, Icon, Input, DoctorCardSkeleton } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
 
-import { Doctor } from '../../contexts/BookingContext';
+import { Doctor } from '../../types/Doctor';
 
 const DoctorSelection: React.FC = () => {
   const { state, selectDoctor, setStep, setLoading } = useBooking();
@@ -15,8 +15,7 @@ const DoctorSelection: React.FC = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Only allow in 'doctor' bookingFlow
-  if (state.bookingFlow !== 'doctor') return null;
+  // Render gating will be handled after hooks to comply with rules-of-hooks
 
   const loadDoctors = useCallback(async () => {
     try {
@@ -24,14 +23,8 @@ const DoctorSelection: React.FC = () => {
       // Replace mockAPI.getDoctors with doctorService.getAllDoctors
       const { doctorService } = await import('../../services/apiServices');
       const doctorsData = await doctorService.getAllDoctors();
-      // Transform API doctors to BookingContext.Doctor type
-      const transformedDoctors = doctorsData.map((doc: any) => ({
-        ...doc,
-        department: Array.isArray(doc.department) && doc.department.length > 0
-          ? (doc.department[0].departmentName || doc.department[0].name || '')
-          : '',
-      }));
-      setDoctors(transformedDoctors);
+      // Assume API returns Doctor[]; coerce cautiously without using any
+      setDoctors(doctorsData as unknown as Doctor[]);
     } catch {
       showToast({
         type: 'error',
@@ -44,7 +37,7 @@ const DoctorSelection: React.FC = () => {
   }, [setLoading, showToast]);
 
   useEffect(() => {
-    loadDoctors();
+    void loadDoctors();
   }, [loadDoctors]);
 
   const specialties = useMemo(() => {
@@ -182,6 +175,10 @@ const DoctorSelection: React.FC = () => {
       </div>
     </div>
   );
+
+  if (state.bookingFlow !== 'doctor') {
+    return null;
+  }
 
   return (
     <div className="flex-1 bg-gray-50 overflow-auto">

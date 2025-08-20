@@ -1,4 +1,5 @@
 import React from 'react';
+import { Icon } from './';
 
 interface InputProps {
   type?: 'text' | 'email' | 'password' | 'number';
@@ -10,10 +11,8 @@ interface InputProps {
   className?: string;
   autoComplete?: string;
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
-  leftIcon?: string; // Name of the icon to display on the left
+  leftIcon?: React.ComponentProps<typeof Icon>['name']; // Name of the icon to display on the left
 }
-
-import { Icon } from './';
 
 const Input: React.FC<InputProps> = ({
   type = 'text',

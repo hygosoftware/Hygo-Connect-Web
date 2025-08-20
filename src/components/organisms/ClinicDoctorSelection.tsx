@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Typography, Icon, Input, DoctorCardSkeleton } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
-import { Doctor } from '../../contexts/BookingContext';
+import { Doctor } from '../../types/Doctor';
 
 const ClinicDoctorSelection: React.FC = () => {
   const { state, selectDoctor, setStep, setLoading } = useBooking();
@@ -14,14 +14,15 @@ const ClinicDoctorSelection: React.FC = () => {
   const [selectedSpecialty, setSelectedSpecialty] = useState('All');
   const [showFilters, setShowFilters] = useState(false);
 
-  const loadDoctorsByClinic = useCallback(async () => {
+  const loadDoctorsByClinic = useCallback(async (): Promise<void> => {
     if (!state.selectedClinic) return;
     
     try {
       setLoading(true);
       const { clinicService } = await import('../../services/apiServices');
       const doctorsData = await clinicService.getdoctorbyclinicid(state.selectedClinic._id);
-      setDoctors(doctorsData);
+      const validated: Doctor[] = Array.isArray(doctorsData) ? (doctorsData as Doctor[]) : [];
+      setDoctors(validated);
     } catch {
       showToast({
         type: 'error',

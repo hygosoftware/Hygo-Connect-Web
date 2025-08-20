@@ -96,7 +96,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
           router.push(`/otp?email=${encodeURIComponent(email)}`);
         }, 2000);
       } else {
-        showToast(response?.message || 'Failed to send OTP. Please try again.', 'error');
+        const msg = typeof (response as any)?.message === 'string'
+          ? (response as any).message
+          : 'Failed to send OTP. Please try again.';
+        showToast(msg, 'error');
       }
     } catch (error: any) {
       const errorMessage = error.message || 'Failed to send OTP. Please try again.';

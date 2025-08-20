@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Icon, Button } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
-import { createRazorpayOrder, verifyPaymentSignature, getRazorpayConfig } from '../../lib/razorpay';
+import { createRazorpayOrder, verifyPaymentSignature, getRazorpayConfig, RazorpayOrderData } from '../../lib/razorpay';
 import { appointmentService } from '../../services/apiServices';
 import { TokenManager } from '../../services/auth';
 
@@ -68,8 +68,8 @@ const BookingPayment: React.FC = () => {
 
   // Load Razorpay script
   useEffect(() => {
-    const loadRazorpayScript = () => {
-      return new Promise((resolve) => {
+    const loadRazorpayScript = (): Promise<boolean> => {
+      return new Promise<boolean>((resolve) => {
         const script = document.createElement('script');
         script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.onload = () => resolve(true);
@@ -78,7 +78,7 @@ const BookingPayment: React.FC = () => {
       });
     };
 
-    loadRazorpayScript();
+    void loadRazorpayScript();
   }, []);
 
   const totalAmount = state.selectedDoctor ? state.selectedDoctor.consultationFee + 50 : 0;
@@ -100,17 +100,17 @@ const BookingPayment: React.FC = () => {
 
     try {
       // Create order (in production, this should be done on your backend)
-      const orderData = {
+      const orderData: RazorpayOrderData = {
         amount: totalAmount * 100, // Amount in paise
         currency: 'INR',
         receipt: `receipt_${Date.now()}`,
         notes: {
-          appointment_id: appointmentData?._id || appointmentData?.id || '',
-          doctor_id: state.selectedDoctor?._id || '',
-          clinic_id: state.selectedClinic?._id || '',
-          appointment_date: state.selectedDate?.toISOString() || '',
-          slot_id: state.selectedSlot?.id || '',
-          patient_name: state.bookingDetails?.patientName || ''
+          appointment_id: String((appointmentData as Record<string, unknown> | undefined)?.['_id'] ?? (appointmentData as Record<string, unknown> | undefined)?.['id'] ?? ''),
+          doctor_id: String(state.selectedDoctor?._id ?? ''),
+          clinic_id: String(state.selectedClinic?._id ?? ''),
+          appointment_date: String(state.selectedDate?.toISOString() ?? ''),
+          slot_id: String(state.selectedSlot?.id ?? ''),
+          patient_name: String(state.bookingDetails?.patientName ?? '')
         }
       };
 
@@ -122,7 +122,7 @@ const BookingPayment: React.FC = () => {
         amount: totalAmount * 100, // Amount in paise
         order_id: order.id,
         description: `Appointment with Dr. ${state.selectedDoctor?.fullName}`,
-        handler: async function (response: Record<string, unknown>) {
+        handler: async function (response: import('../../lib/razorpay').RazorpayPaymentData) {
           try {
             // Verify payment (in production, this should be done on your backend)
             const verification = await verifyPaymentSignature(response);
@@ -378,7 +378,7 @@ const BookingPayment: React.FC = () => {
       </div>
 
       <Button
-        onClick={handlePayment}
+        onClick={() => { void handlePayment(); }}
         className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 text-white py-3 px-6 rounded-xl font-medium transition-colors"
       >
         I have paid ₹{totalAmount}
@@ -633,7 +633,7 @@ const BookingPayment: React.FC = () => {
             {/* Pay Button */}
             {selectedMethod && !showQR && (
               <Button
-                onClick={handlePayment}
+                onClick={() => { void handlePayment(); }}
                 disabled={state.loading}
                 className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 disabled:bg-gray-400 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
               >

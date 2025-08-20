@@ -29,22 +29,29 @@ interface UsedService {
   status: string;
 }
 
+interface UserProfile {
+  name: string;
+  id: string;
+  memberSince: string;
+  plan: string;
+}
+
 const HealthCardPage: React.FC = () => {
   const router = useRouter();
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSubscriptions, setShowSubscriptions] = useState(false);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const [usedServices, setUsedServices] = useState<UsedService[]>([]);
 
   useEffect(() => {
-    fetchSubscriptionPlans();
+    void fetchSubscriptionPlans();
     loadUserProfile();
     fetchUsedServices();
   }, []);
 
-  const fetchUsedServices = async () => {
+  const fetchUsedServices = () => {
     try {
       const tokens = TokenManager.getTokens();
       const userId = tokens.userId;
@@ -69,11 +76,12 @@ const HealthCardPage: React.FC = () => {
   const fetchSubscriptionPlans = async () => {
     try {
       const response = await subscriptionservices.getallsubscription();
-      console.log('Subscription plans:', response);
-      if (response && response.data) {
-        setSubscriptionPlans(response.data);
-      } else if (Array.isArray(response)) {
-        setSubscriptionPlans(response);
+      const respUnknown = response as unknown;
+      const data = (respUnknown as { data?: unknown }).data;
+      if (Array.isArray(data)) {
+        setSubscriptionPlans(data as SubscriptionPlan[]);
+      } else if (Array.isArray(respUnknown)) {
+        setSubscriptionPlans(respUnknown as SubscriptionPlan[]);
       }
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
@@ -82,7 +90,7 @@ const HealthCardPage: React.FC = () => {
     }
   };
 
-  const loadUserProfile = async () => {
+  const loadUserProfile = () => {
     const tokens = TokenManager.getTokens();
     const userId = tokens.userId;
     const userInfo = tokens.userInfo;
@@ -115,7 +123,7 @@ const HealthCardPage: React.FC = () => {
 
   if (showSubscriptions) {
     return (
-      <div className="min-h-screen bg-bg-white>
+      <div className="min-h-screen bg-bg-white">
         <UniversalHeader
           title="Subscription Plans"
           subtitle="Choose your perfect health plan"
@@ -144,7 +152,7 @@ const HealthCardPage: React.FC = () => {
                       {plan.subscriptionName || 'Subscription Plan'}
                     </Typography>
                     <div className="text-3xl font-bold text-[#0E3293] mb-2">
-                      ${plan.price || 0}
+                      ₹{plan.price || 0}
                     </div>
                     <Typography variant="body2" className="text-gray-600">
                       {plan.duration ? 
@@ -184,7 +192,7 @@ const HealthCardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-bg-white>
+    <div className="min-h-screen bg-bg-white">
       {/* Header */}
       <UniversalHeader
         title="Health Card"
@@ -255,7 +263,7 @@ const HealthCardPage: React.FC = () => {
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
             {usedServices.length === 0 ? (
               <div className="flex flex-col items-center py-8">
-                <Icon name="inbox" className="w-12 h-12 text-gray-300 mb-4" />
+                <Icon name="info" className="w-12 h-12 text-gray-300 mb-4" />
                 <Typography variant="body1" className="text-gray-600 mb-2">
                   No services used yet
                 </Typography>
@@ -269,7 +277,7 @@ const HealthCardPage: React.FC = () => {
                   <div key={service.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-[#0E3293] rounded-full flex items-center justify-center">
-                        <Icon name={service.type === 'Consultation' ? 'stethoscope' : 'heart'} className="w-5 h-5 text-white" />
+                        <Icon name={service.type === 'Consultation' ? 'appointment' : 'heart'} className="w-5 h-5 text-white" />
                       </div>
                       <div>
                         <Typography variant="body1" className="font-semibold text-gray-900">

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { doctorService, Doctor, doctorHelpers } from '../../../services/apiServices';
+import { doctorService, Doctor, DoctorClinic, doctorHelpers } from '../../../services/apiServices';
 import { UniversalHeader, Typography, Icon } from '../../../components/atoms';
 
 const DoctorDetailsPage: React.FC = () => {
@@ -12,12 +12,12 @@ const DoctorDetailsPage: React.FC = () => {
 
   // State
   const [doctor, setDoctor] = useState<Doctor | null>(null);
-  const [clinics, setClinics] = useState<{[key: string]: any}>({});
+  const [clinics, setClinics] = useState<Record<string, DoctorClinic>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Load doctor details
-  const loadDoctorDetails = async () => {
+  const loadDoctorDetails = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -32,7 +32,7 @@ const DoctorDetailsPage: React.FC = () => {
         const uniqueClinicIds = [...new Set(doctorData.availability.map(avail => avail.clinic))];
         console.log('🏥 Fetching clinic details for IDs:', uniqueClinicIds);
 
-        const clinicPromises = uniqueClinicIds.map(async (clinicId) => {
+        const clinicPromises = uniqueClinicIds.map(async (clinicId: string) => {
           try {
             const clinicData = await doctorService.getClinicById(clinicId);
             return { id: clinicId, data: clinicData };
@@ -43,7 +43,7 @@ const DoctorDetailsPage: React.FC = () => {
         });
 
         const clinicResults = await Promise.all(clinicPromises);
-        const clinicsMap: {[key: string]: any} = {};
+        const clinicsMap: Record<string, DoctorClinic> = {};
 
         clinicResults.forEach(result => {
           if (result.data) {
@@ -61,14 +61,14 @@ const DoctorDetailsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [doctorId]);
 
   // Load doctor on component mount
   useEffect(() => {
     if (doctorId) {
-      loadDoctorDetails();
+      void loadDoctorDetails();
     }
-  }, [doctorId]);
+  }, [doctorId, loadDoctorDetails]);
 
   const handleGoBack = () => {
     router.back();
@@ -125,7 +125,7 @@ const DoctorDetailsPage: React.FC = () => {
         />
         <div className="p-6">
           <div className="bg-white rounded-2xl shadow-lg p-6 text-center">
-            <Icon name="alert-circle" size="large" color="red" className="mx-auto mb-4" />
+            <Icon name="alert" size="large" color="red" className="mx-auto mb-4" />
             <Typography variant="h6" className="text-gray-800 mb-2">
               {error || 'Doctor not found'}
             </Typography>
@@ -133,7 +133,7 @@ const DoctorDetailsPage: React.FC = () => {
               Unable to load doctor details. Please try again.
             </Typography>
             <button
-              onClick={loadDoctorDetails}
+              onClick={() => { void loadDoctorDetails(); }}
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors mr-3"
             >
               Retry
@@ -283,7 +283,7 @@ const DoctorDetailsPage: React.FC = () => {
             Qualifications
           </Typography>
           <div className="space-y-3">
-            {doctor.qualifications.map((qual, index) => (
+            {doctor.qualifications.map((qual) => (
               <div key={qual._id} className="flex items-center p-3 bg-gray-50 rounded-lg">
                 <div className="w-2 h-2 bg-blue-600 rounded-full mr-3"></div>
                 <div>

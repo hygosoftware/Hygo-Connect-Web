@@ -50,10 +50,11 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     setToasts(prev => [...prev, newToast]);
 
     // Auto-hide toast after duration
-    if (newToast.duration > 0) {
+    const duration = newToast.duration ?? 0;
+    if (duration > 0) {
       setTimeout(() => {
         hideToast(id);
-      }, newToast.duration);
+      }, duration);
     }
   }, []);
 

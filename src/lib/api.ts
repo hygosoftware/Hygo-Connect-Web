@@ -30,68 +30,11 @@ export interface GetFilesResponse {
   folderInfo: FolderInfo;
 }
 
-import { TokenManager } from '../services/auth';
+// No direct auth imports here; actual API calls are performed via services in apiServices
 
-// Base API configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://hygo-backend.onrender.com/api/V0';
+// Base API configuration (not directly used in this module; API calls are delegated)
 
-// Generic API request function with authorization
-async function apiRequest<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
-
-  // Get authorization token
-  const { accessToken } = TokenManager.getTokens();
-
-  const defaultOptions: RequestInit = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(accessToken && { 'Authorization': `Bearer ${accessToken}` }),
-      ...options.headers,
-    },
-    ...options,
-  };
-
-  // Log the request for debugging
-  console.log('🔐 API Request (fetch):', {
-    method: options.method || 'GET',
-    url,
-    hasAuth: !!accessToken
-  });
-
-  try {
-    const response = await fetch(url, defaultOptions);
-
-    // Handle 401 Unauthorized errors
-    if (response.status === 401) {
-      console.log('🔄 Unauthorized request, clearing tokens...');
-      TokenManager.clearTokens();
-      if (typeof window !== 'undefined') {
-        window.location.href = '/login';
-      }
-      throw new Error('Unauthorized - please login again');
-    }
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-
-    const data = await response.json();
-
-    // Log successful response
-    console.log('✅ API Response (fetch):', {
-      status: response.status,
-      url
-    });
-
-    return data;
-  } catch (error) {
-    console.error('❌ API request failed:', error);
-    throw error;
-  }
-}
+// Note: API requests are delegated to services in `src/services/apiServices.tsx`.
 
 // Get all files from a folder
 export const getAllFileFromFolder = async (
@@ -120,10 +63,24 @@ export const getAllFileFromFolder = async (
     }));
 
     // Create folder info from API response or fallback
+    type FolderAccessEntry = string | { DelegateFolderAuthID?: string } | null | undefined;
+    const toAccessId = (entry: FolderAccessEntry): string | null => {
+      if (typeof entry === 'string') return entry;
+      if (entry && typeof entry === 'object' && typeof entry.DelegateFolderAuthID === 'string') {
+        return entry.DelegateFolderAuthID;
+      }
+      return null;
+    };
+    const normalizedAccess: string[] = Array.isArray(folderData?.folderAccess)
+      ? (folderData!.folderAccess as FolderAccessEntry[])
+          .map(toAccessId)
+          .filter((v): v is string => typeof v === 'string' && v.length > 0)
+      : [];
+
     const folderInfo: FolderInfo = folderData ? {
       _id: folderData._id,
       folderName: folderData.folderName,
-      folderAccess: folderData.folderAccess?.map(access => access.DelegateFolderAuthID) || [],
+      folderAccess: normalizedAccess,
       createdAt: folderData.createdAt || new Date().toISOString(),
       updatedAt: folderData.updatedAt || new Date().toISOString()
     } : {
@@ -148,9 +105,9 @@ export const getAllFileFromFolder = async (
 
 // Delete a file from folder
 export const deleteFileFromFolder = async (
-  userId: string,
-  folderId: string,
-  fileId: string
+  _userId: string,
+  _folderId: string,
+  _fileId: string
 ): Promise<{ success: boolean; message: string }> => {
   // Not implemented: Replace with actual API call
   throw new Error('deleteFileFromFolder is not implemented. Connect to real API.');
@@ -158,9 +115,9 @@ export const deleteFileFromFolder = async (
 
 // Upload file to folder
 export const uploadFileToFolder = async (
-  userId: string,
-  folderId: string,
-  file: File
+  _userId: string,
+  _folderId: string,
+  _file: File
 ): Promise<{ success: boolean; message: string; file?: FileItem }> => {
   // Not implemented: Replace with actual API call
   throw new Error('uploadFileToFolder is not implemented. Connect to real API.');
@@ -168,9 +125,9 @@ export const uploadFileToFolder = async (
 
 // Get file download URL
 export const getFileDownloadUrl = async (
-  userId: string,
-  folderId: string,
-  fileId: string
+  _userId: string,
+  _folderId: string,
+  _fileId: string
 ): Promise<{ downloadUrl: string }> => {
   // Not implemented: Replace with actual API call
   throw new Error('getFileDownloadUrl is not implemented. Connect to real API.');

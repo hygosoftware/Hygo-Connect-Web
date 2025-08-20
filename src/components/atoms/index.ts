@@ -8,7 +8,6 @@ export { default as BackButton } from './BackButton';
 export { default as Header } from './Header';
 export { default as UniversalHeader } from './UniversalHeader';
 export { default as HeaderWrapper, HeaderProvider, useHeader } from './HeaderWrapper';
-export { default as SideMenu } from './SideBar';
 export { default as ResponsiveNavigation } from './SideBar';
 export { default as FeatureCard } from './FeatureCard';
 export { default as AppointmentCard } from './AppointmentCard';

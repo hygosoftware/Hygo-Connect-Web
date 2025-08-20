@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { DoctorsListUI } from '../../components/organisms';
 import { doctorService, Doctor as ApiDoctor, doctorHelpers } from '../../services/apiServices';
 
-// Types - Use the API types but create a compatible interface for the UI
+// Types
 interface Doctor {
   _id: string;
   fullName: string;
@@ -59,42 +59,53 @@ interface Doctor {
   }>;
 }
 
-// Helper function to convert API doctor to UI doctor format
-const convertApiDoctorToUiDoctor = (apiDoctor: ApiDoctor): Doctor => {
-  return {
-    _id: apiDoctor._id,
-    fullName: apiDoctor.fullName,
-    specializations: apiDoctor.specializations,
-    qualifications: apiDoctor.qualifications.map(qual => ({
-      _id: qual._id,
-      degree: qual.degree,
-      institution: qual.institution,
-      year: qual.year
+// Helper to convert API -> UI
+const convertApiDoctorToUiDoctor = (apiDoctor: ApiDoctor): Doctor => ({
+  _id: apiDoctor._id,
+  fullName: apiDoctor.fullName,
+  specializations: apiDoctor.specializations,
+  qualifications: apiDoctor.qualifications.map(qual => ({
+    _id: qual._id,
+    degree: qual.degree,
+    institution: qual.institution,
+    year: qual.year
+  })),
+  ratings: apiDoctor.ratings,
+  profileImage: doctorHelpers.getFullImageUrl(apiDoctor.profileImage),
+  experience: apiDoctor.experience,
+  consultationFee: apiDoctor.consultationFee,
+  isAvailableNow: apiDoctor.isAvailableNow,
+  availability: (apiDoctor.availability || []).map(av => ({
+    clinic: av.clinic,
+    day: av.day,
+    slots: (av.slots || []).map(slot => ({
+      startTime: slot.startTime,
+      endTime: slot.endTime,
+      appointmentLimit: slot.appointmentLimit,
+      bookedCount: slot.bookedCount,
+      _id: slot._id
     })),
-    ratings: apiDoctor.ratings,
-    profileImage: doctorHelpers.getFullImageUrl(apiDoctor.profileImage),
-    experience: apiDoctor.experience,
-    consultationFee: apiDoctor.consultationFee,
-    isAvailableNow: apiDoctor.isAvailableNow,
-    department: apiDoctor.department?.[0]?.departmentName,
-    clinic: apiDoctor.clinic?.map(clinic => ({
-      _id: clinic._id,
-      clinicName: clinic.clinicName,
-      clinicAddress: clinic.clinicAddress ? {
-        addressLine: clinic.clinicAddress.addressLine,
-        city: clinic.clinicAddress.city,
-        state: clinic.clinicAddress.state,
-        zipCode: clinic.clinicAddress.zipCode,
-        country: clinic.clinicAddress.country,
-        location: clinic.clinicAddress.location
-      } : undefined
-    }))
-  };
-};
+    _id: av._id
+  })),
+  department: apiDoctor.department?.[0]?.departmentName,
+  clinic: apiDoctor.clinic?.map(clinic => ({
+    _id: clinic._id,
+    clinicName: clinic.clinicName,
+    clinicAddress: clinic.clinicAddress ? {
+      addressLine: clinic.clinicAddress.addressLine,
+      city: clinic.clinicAddress.city,
+      state: clinic.clinicAddress.state,
+      zipCode: clinic.clinicAddress.zipCode,
+      country: clinic.clinicAddress.country,
+      location: clinic.clinicAddress.location
+    } : undefined
+  }))
+});
 
-
-
-const DoctorsPage: React.FC = () => {
+// -----------------------------------------
+// Inner component that uses useSearchParams
+// -----------------------------------------
+const DoctorsPageContent: React.FC = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -109,7 +120,7 @@ const DoctorsPage: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   // Load doctors from API
-  const loadDoctors = async () => {
+  const loadDoctors = useCallback(async () => {
     try {
       setError(null);
       const apiDoctors = await doctorService.getAllDoctors();
@@ -121,12 +132,11 @@ const DoctorsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Load doctors on component mount
-  useEffect(() => {
-    loadDoctors();
   }, []);
+
+  useEffect(() => {
+    void loadDoctors();
+  }, [loadDoctors]);
 
   // Get location from URL params
   const locationFromParams = useMemo(() => {
@@ -140,103 +150,47 @@ const DoctorsPage: React.FC = () => {
 
   const currentAddressFromParams = searchParams.get('address') || '';
 
-  // Generate filter options
+  // Filter options
   const specializations = useMemo(() => {
     const specs = new Set<string>();
-    doctors.forEach(doctor => {
-      doctor.specializations.forEach(spec => specs.add(spec));
-    });
+    doctors.forEach(d => d.specializations.forEach(spec => specs.add(spec)));
     return ['All', ...Array.from(specs)];
   }, [doctors]);
 
   const clinics = useMemo(() => {
-    const clinicNames = new Set<string>();
-    doctors.forEach(doctor => {
-      doctor.clinic?.forEach(clinic => clinicNames.add(clinic.clinicName));
-    });
-    return ['All', ...Array.from(clinicNames)];
+    const names = new Set<string>();
+    doctors.forEach(d => d.clinic?.forEach(c => names.add(c.clinicName)));
+    return ['All', ...Array.from(names)];
   }, [doctors]);
 
-  // Filter doctors
+  // Apply filters
   const filteredDoctors = useMemo(() => {
-    return doctors.filter(doctor => {
-      // Search filter
-      const matchesSearch = searchQuery === '' || 
-        doctor.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        doctor.specializations.some(spec => spec.toLowerCase().includes(searchQuery.toLowerCase())) ||
-        doctor.clinic?.some(clinic => clinic.clinicName.toLowerCase().includes(searchQuery.toLowerCase()));
+    return doctors.filter(d => {
+      const matchesSearch = searchQuery === '' ||
+        d.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        d.specializations.some(spec => spec.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        d.clinic?.some(c => c.clinicName.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      // Specialization filter
-      const matchesSpecialization = activeFilter === 'All' || 
-        doctor.specializations.includes(activeFilter);
-
-      // Clinic filter
-      const matchesClinic = activeClinicFilter === 'All' || 
-        doctor.clinic?.some(clinic => clinic.clinicName === activeClinicFilter);
+      const matchesSpecialization = activeFilter === 'All' || d.specializations.includes(activeFilter);
+      const matchesClinic = activeClinicFilter === 'All' || d.clinic?.some(c => c.clinicName === activeClinicFilter);
 
       return matchesSearch && matchesSpecialization && matchesClinic;
     });
   }, [doctors, searchQuery, activeFilter, activeClinicFilter]);
 
   // Handlers
-  const handleGoBack = () => {
-    router.back();
-  };
-
+  const handleGoBack = () => router.back();
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       const apiDoctors = await doctorService.getAllDoctors();
-      const uiDoctors = apiDoctors.map(convertApiDoctorToUiDoctor);
-      setDoctors(uiDoctors);
+      setDoctors(apiDoctors.map(convertApiDoctorToUiDoctor));
       setError(null);
     } catch (err) {
-      console.error('Failed to refresh doctors:', err);
       setError(err instanceof Error ? err.message : 'Failed to refresh doctors');
     } finally {
       setRefreshing(false);
     }
-  };
-
-  const handleSearchChange = (query: string) => {
-    setSearchQuery(query);
-  };
-
-  const handleClearSearch = () => {
-    setSearchQuery('');
-  };
-
-  const handleToggleFilters = () => {
-    setShowFilters(!showFilters);
-  };
-
-  const handleFilterPress = (filter: string) => {
-    setActiveFilter(filter);
-  };
-
-  const handleClinicFilterPress = (filter: string) => {
-    setActiveClinicFilter(filter);
-  };
-
-  const handleClearFilters = () => {
-    setActiveFilter('All');
-    setActiveClinicFilter('All');
-    setSearchQuery('');
-  };
-
-  const handleDoctorPress = (doctor: Doctor) => {
-    console.log('👨‍⚕️ Doctors List: Doctor card clicked:', doctor);
-    console.log('🔗 Navigating to doctor ID:', doctor._id);
-    router.push(`/doctors/${doctor._id}`);
-  };
-
-  const handleRetry = () => {
-    setLoading(true);
-    loadDoctors();
-  };
-
-  const handleErrorDetails = () => {
-    alert('Error details: Unable to connect to server');
   };
 
   return (
@@ -255,17 +209,32 @@ const DoctorsPage: React.FC = () => {
       locationFromParams={locationFromParams}
       currentAddressFromParams={currentAddressFromParams}
       onGoBack={handleGoBack}
-      onRefresh={handleRefresh}
-      onSearchChange={handleSearchChange}
-      onClearSearch={handleClearSearch}
-      onToggleFilters={handleToggleFilters}
-      onFilterPress={handleFilterPress}
-      onClinicFilterPress={handleClinicFilterPress}
-      onClearFilters={handleClearFilters}
-      onDoctorPress={handleDoctorPress}
-      onRetry={handleRetry}
-      onErrorDetails={handleErrorDetails}
+      onRefresh={() => { void handleRefresh(); }}
+      onSearchChange={setSearchQuery}
+      onClearSearch={() => setSearchQuery('')}
+      onToggleFilters={() => setShowFilters(!showFilters)}
+      onFilterPress={setActiveFilter}
+      onClinicFilterPress={setActiveClinicFilter}
+      onClearFilters={() => {
+        setActiveFilter('All');
+        setActiveClinicFilter('All');
+        setSearchQuery('');
+      }}
+      onDoctorPress={(doctor) => router.push(`/doctors/${doctor._id}`)}
+      onRetry={() => { setLoading(true); void loadDoctors(); }}
+      onErrorDetails={() => alert('Error details: Unable to connect to server')}
     />
+  );
+};
+
+// -----------------------------------------
+// Page wrapper with Suspense
+// -----------------------------------------
+const DoctorsPage: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading doctors page...</div>}>
+      <DoctorsPageContent />
+    </Suspense>
   );
 };
 

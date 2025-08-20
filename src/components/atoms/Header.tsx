@@ -1,7 +1,8 @@
+"use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Typography, Icon } from './';
-import { useHeader } from './HeaderWrapper';
+// Removed useHeader to avoid conditional hook usage in this atom component
 
 interface HeaderProps {
   userName?: string | null;
@@ -22,14 +23,8 @@ const Header: React.FC<HeaderProps> = ({
 }) => {
   const router = useRouter();
 
-  // Try to get the mobile menu handler from context, fallback to prop
-  let mobileMenuHandler = onMenuPress;
-  try {
-    const { onMobileMenuToggle } = useHeader();
-    mobileMenuHandler = onMobileMenuToggle;
-  } catch {
-    // Context not available, use the prop
-  }
+  // Use provided prop for mobile menu handling to keep this component context-agnostic
+  const mobileMenuHandler = onMenuPress;
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(3); // Static for demo
   const [currentAddress, setCurrentAddress] = useState('New York, NY');
   const [locationLoading, setLocationLoading] = useState(false);

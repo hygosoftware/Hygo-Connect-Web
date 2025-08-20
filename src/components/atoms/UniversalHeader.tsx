@@ -11,7 +11,7 @@ interface UniversalHeaderProps {
   rightContent?: React.ReactNode;
   className?: string;
   variant?: 'default' | 'gradient' | 'home';
-  icon?: string;
+  icon?: React.ComponentProps<typeof Icon>['name'];
   subtitle?: string;
 }
 

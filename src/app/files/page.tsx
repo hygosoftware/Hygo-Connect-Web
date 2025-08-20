@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import FileScreen from '../../components/organisms/FileScreen';
 import FileScreenDesktop from '../../components/organisms/FileScreenDesktop';
+import { Suspense } from 'react';
 
-const FilesPage: React.FC = () => {
+const FilesContent: React.FC = () => {
   const [isDesktop, setIsDesktop] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const searchParams = useSearchParams();
@@ -61,4 +62,10 @@ const FilesPage: React.FC = () => {
   return <FileComponent />;
 };
 
-export default FilesPage;
+export default function FilesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading Files...</div>}>
+      <FilesContent />
+    </Suspense>
+  );
+}

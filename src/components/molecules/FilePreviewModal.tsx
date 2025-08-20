@@ -144,7 +144,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       return (
         <div className="bg-gray-50 rounded-lg p-8">
           <div className="text-center mb-4">
-            <Icon name="music" size="large" color="#6B7280" className="mx-auto mb-2" />
+            <Icon name="audio" size="large" color="#6B7280" className="mx-auto mb-2" />
             <Typography variant="h6" className="text-gray-700">
               {fileName}
             </Typography>
@@ -208,7 +208,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             onClick={() => window.open(filePath, '_blank')}
             className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
           >
-            <Icon name="external-link" size="small" color="white" />
+            <Icon name="share" size="small" color="white" />
             <span>Open in New Tab</span>
           </button>
           <button
@@ -332,7 +332,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                           onClick={() => window.open(fileDetails.filePath, '_blank')}
                           className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                         >
-                          <Icon name="external-link" size="small" color="white" />
+                          <Icon name="share" size="small" color="white" />
                           <span>Open in New Tab</span>
                         </button>
                         <button

@@ -13,11 +13,38 @@ const getDateString = (daysFromToday: number = 0) => {
   date.setDate(date.getDate() + daysFromToday);
   return date.toISOString().split('T')[0];
 };
+
+// Local types to match PillPal props (not exported by component)
+interface MedicationNotification {
+  id: string;
+  medicineName: string;
+  medicineType: 'tablet' | 'capsule' | 'syrup' | 'injection';
+  dosage: string;
+  mealTiming?: 'before' | 'after' | 'with';
+  scheduledTimes: string[];
+  nextScheduledTime?: string;
+  isActive?: boolean;
+  date?: string; // YYYY-MM-DD
+}
+
+interface FCMNotification {
+  id: string;
+  title: string;
+  body: string;
+  timestamp: string;
+  isRead: boolean;
+}
+
+interface ToastState {
+  message: string;
+  type: 'success' | 'error' | 'info';
+  visible: boolean;
+}
 const PillPalPage: React.FC = () => {
   const router = useRouter();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<MedicationNotification[]>([]);
   const [pillReminders, setPillReminders] = useState<PillReminder[]>([]);
-  const [fcmNotifications, setFcmNotifications] = useState<any[]>([]);
+  const [fcmNotifications, setFcmNotifications] = useState<FCMNotification[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showFcmHistory, setShowFcmHistory] = useState(false);
@@ -26,9 +53,9 @@ const PillPalPage: React.FC = () => {
   const [addingMedicines, setAddingMedicines] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [toast, setToast] = useState({
+  const [toast, setToast] = useState<ToastState>({
     message: '',
-    type: 'info' as 'success' | 'error' | 'info',
+    type: 'info',
     visible: false,
   });
 
@@ -37,7 +64,13 @@ const PillPalPage: React.FC = () => {
     try {
       setLoading(true);
       // Using the sample user ID from your API example
-     const { userId } = TokenManager.getTokens();
+     const tokens = TokenManager.getTokens();
+      const userId = tokens?.userId;
+      if (!userId) {
+        console.warn('No userId found in tokens. Aborting loadPillReminders.');
+        showToast('Please login to view your medication reminders.', 'error');
+        return;
+      }
       console.log('💊 Loading pill reminders for user:', userId);
 
       const apiReminders = await pillReminderService.getPillRemindersByUserId(userId);
@@ -178,7 +211,12 @@ const PillPalPage: React.FC = () => {
 
     try {
       // Using the sample user ID from your API example
-    const { userId } = TokenManager.getTokens();
+    const tokens = TokenManager.getTokens();
+    const userId = tokens?.userId;
+    if (!userId) {
+      showToast('Please login to add medicines.', 'error');
+      return;
+    }
       
 
       // Show initial loading message
@@ -280,12 +318,12 @@ const PillPalPage: React.FC = () => {
         unreadFcmCount={unreadFcmCount}
         toast={toast}
         onGoBack={handleGoBack}
-        onRefresh={handleRefresh}
+        onRefresh={() => { void handleRefresh(); }}
         onToggleFcmHistory={handleToggleFcmHistory}
         onTestFcmToken={handleTestFcmToken}
         onMarkFcmAsRead={handleMarkFcmAsRead}
         onEditNotification={handleEditNotification}
-        onDeleteNotification={handleDeleteNotification}
+        onDeleteNotification={(id: string) => { void handleDeleteNotification(id); }}
         onAddButtonPress={handleAddButtonPress}
         onMarkTaken={handleMarkTaken}
         onSnooze={handleSnooze}
@@ -297,7 +335,7 @@ const PillPalPage: React.FC = () => {
       <AddMedicineModal
         isOpen={showAddMedicineModal}
         onClose={() => setShowAddMedicineModal(false)}
-        onAddMedicines={handleAddMedicines}
+        onAddMedicines={(medicines) => { void handleAddMedicines(medicines); }}
         loading={addingMedicines}
       />
 

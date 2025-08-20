@@ -104,7 +104,10 @@ const OTPForm: React.FC<OTPFormProps> = ({
           }, 1000);
         }, 1000);
       } else {
-        showToast(response?.message || 'Failed to verify OTP. Please try again.', 'error');
+        const msg = typeof (response as any)?.message === 'string'
+          ? (response as any).message
+          : 'Failed to verify OTP. Please try again.';
+        showToast(msg, 'error');
       }
 
     } catch (error: any) {
@@ -138,7 +141,10 @@ const OTPForm: React.FC<OTPFormProps> = ({
         // Call onResend callback if provided
         onResend?.();
       } else {
-        showToast(response?.message || 'Failed to resend OTP. Please try again.', 'error');
+        const msg = typeof (response as any)?.message === 'string'
+          ? (response as any).message
+          : 'Failed to resend OTP. Please try again.';
+        showToast(msg, 'error');
       }
 
     } catch (error: any) {

@@ -149,8 +149,10 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
               </Typography>
               <Typography variant="body1" color="secondary">
                 {sortedAndFilteredFiles.length} file(s)
-                {folderInfo?.folderAccess?.length > 0 &&
-                  ` • Shared with ${folderInfo.folderAccess.length} people`}
+                {(() => {
+                  const sharedCount = folderInfo?.folderAccess ? folderInfo.folderAccess.length : 0;
+                  return sharedCount > 0 ? ` • Shared with ${sharedCount} people` : '';
+                })()}
               </Typography>
             </div>
           </div>

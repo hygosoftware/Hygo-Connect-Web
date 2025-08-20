@@ -1,6 +1,8 @@
+"use client";
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { Typography, Icon } from './';
+import type { IconName } from './Icon';
 import { useAuth } from '../../hooks/useAuth';
 
 interface BottomNavigationProps {
@@ -45,7 +47,13 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userId, className =
     return pathname === tabPath;
   };
 
-  const navigationItems = [
+  const navigationItems: Array<{
+    path: string;
+    icon: IconName;
+    label: string;
+    onClick: () => void;
+    isProfile?: boolean;
+  }> = [
     {
       path: '/home',
       icon: 'home',
@@ -94,7 +102,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userId, className =
               />
             ) : (
               <Icon
-                name={item.icon as any}
+                name={item.icon}
                 size="medium"
                 color={getTabColor(item.path)}
                 className="mb-1"

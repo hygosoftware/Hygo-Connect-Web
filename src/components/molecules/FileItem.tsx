@@ -1,6 +1,9 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Icon, Typography } from '../atoms';
 import { FileItem as FileItemType, formatFileSize, formatDate, getFileIcon } from '../../lib/api';
+import type { IconName } from '../atoms/Icon';
 
 interface FileItemProps {
   file: FileItemType;
@@ -27,7 +30,7 @@ const FileItem: React.FC<FileItemProps> = ({
     
     setIsDeleting(true);
     try {
-      await onDelete(file._id);
+      await Promise.resolve(onDelete(file._id));
     } catch (error) {
       console.error('Failed to delete file:', error);
     } finally {
@@ -84,7 +87,7 @@ const FileItem: React.FC<FileItemProps> = ({
   };
 
   const isImage = file.fileType.startsWith('image/');
-  const fileIcon = getFileIcon(file.fileType);
+  const fileIcon = getFileIcon(file.fileType) as IconName;
 
   return (
     <div 
@@ -108,12 +111,12 @@ const FileItem: React.FC<FileItemProps> = ({
                 }}
               />
               <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center hidden">
-                <Icon name={fileIcon as any} size="medium" color="#3B82F6" />
+                <Icon name={fileIcon} size="medium" color="#3B82F6" />
               </div>
             </div>
           ) : (
             <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center">
-              <Icon name={fileIcon as any} size="medium" color="#3B82F6" />
+              <Icon name={fileIcon} size="medium" color="#3B82F6" />
             </div>
           )}
         </div>

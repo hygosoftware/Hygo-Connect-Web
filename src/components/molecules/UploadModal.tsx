@@ -1,5 +1,8 @@
+'use client';
+
 import React, { useState, useRef } from 'react';
 import { Icon, Typography, Button } from '../atoms';
+import type { IconName } from '../atoms/Icon';
 import { uploadFileToFolder, formatFileSize } from '../../lib/api';
 
 interface UploadModalProps {
@@ -131,7 +134,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
     }
   };
 
-  const getFileIcon = (fileType: string) => {
+  const getFileIcon = (fileType: string): IconName => {
     if (fileType.startsWith('image/')) return 'image';
     if (fileType.includes('pdf')) return 'document';
     if (fileType.includes('word')) return 'document';
@@ -207,7 +210,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
                 {uploadFiles.map((uploadFile, index) => (
                   <div key={index} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <Icon 
-                      name={getFileIcon(uploadFile.file.type) as any} 
+                      name={getFileIcon(uploadFile.file.type)} 
                       size="medium" 
                       color="#6B7280" 
                     />

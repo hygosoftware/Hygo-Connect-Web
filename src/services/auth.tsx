@@ -38,9 +38,11 @@ const apiClient = axios.create({
 });
 
 // --- Token Manager ---
+const isBrowser = typeof window !== 'undefined';
 export const TokenManager = {
   setTokens: (accessToken: string, refreshToken: string, user: User) => {
     try {
+      if (!isBrowser) return;
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('userId', user._id);
@@ -52,6 +54,14 @@ export const TokenManager = {
 
   getTokens: () => {
     try {
+      if (!isBrowser) {
+        return {
+          accessToken: null,
+          refreshToken: null,
+          userId: null,
+          userInfo: null,
+        };
+      }
       return {
         accessToken: localStorage.getItem('accessToken'),
         refreshToken: localStorage.getItem('refreshToken'),
@@ -73,6 +83,7 @@ export const TokenManager = {
 
   clearTokens: () => {
     try {
+      if (!isBrowser) return;
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('userId');

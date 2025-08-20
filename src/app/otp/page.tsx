@@ -79,7 +79,7 @@ const OTPPageContent: React.FC = () => {
     <main>
       <OTPForm
         email={email}
-        onSubmit={handleOTPSubmit}
+        onSubmit={(otp) => { void handleOTPSubmit(otp); }}
         onResend={handleResend}
         onBack={handleBack}
       />

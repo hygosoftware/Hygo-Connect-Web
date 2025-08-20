@@ -5,7 +5,49 @@ import { Typography, Icon, Input, ClinicCardSkeleton } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
 import { Clinic } from '../../types/Clinic';
-import { Doctor } from '../../types/Doctor';
+import { Doctor, DoctorClinic } from '../../types/Doctor';
+
+// Helper: map API DoctorClinic shape to UI Clinic shape with safe defaults
+const mapDoctorClinicToClinic = (c: DoctorClinic): Clinic => {
+  const images: string[] = [];
+  if (typeof c.clinicImage === 'string' && c.clinicImage) {
+    images.push(c.clinicImage);
+  }
+
+  const addressLine = c.clinicAddress?.addressLine ?? '';
+  const city = c.clinicAddress?.city ?? '';
+  const state = c.clinicAddress?.state ?? '';
+  const zipCode = c.clinicAddress?.zipCode ?? '';
+  const country = c.clinicAddress?.country ?? '';
+  const locationType = c.clinicAddress?.location?.type ?? 'Point';
+  const locationCoordinates = Array.isArray(c.clinicAddress?.location?.coordinates)
+    ? c.clinicAddress!.location!.coordinates
+    : [0, 0];
+
+  return {
+    _id: c._id,
+    clinicName: c.clinicName,
+    clinicAddress: {
+      addressLine,
+      city,
+      state,
+      zipCode,
+      country,
+      location: {
+        type: locationType,
+        coordinates: locationCoordinates,
+      },
+    },
+    clinicType: c.clinicType ?? 'General',
+    rating: 0,
+    phone: c.clinicPhone ?? '',
+    email: c.clinicEmail ?? '',
+    description: c.clinicDescription ?? '',
+    services: [],
+    images,
+    doctors: [],
+  };
+};
 
 const ClinicSelection: React.FC = () => {
   const { state, selectClinic, setStep, setLoading } = useBooking();
@@ -18,26 +60,25 @@ const ClinicSelection: React.FC = () => {
   const loadClinics = useCallback(async () => {
     try {
       setLoading(true);
-      let clinicsData;
+      let clinicsData: DoctorClinic[] = [];
       
       if (state.bookingFlow === 'doctor' && state.selectedDoctor) {
         // If coming from doctor selection, show only clinics where this doctor is available
         const { clinicService } = await import('../../services/apiServices');
-        clinicsData = await clinicService.getClinicsByDoctor(state.selectedDoctor._id);
+        const result = await clinicService.getClinicsByDoctor(state.selectedDoctor._id);
+        clinicsData = Array.isArray(result) ? (result as DoctorClinic[]) : [];
       } else {
         // If booking by clinic, show all clinics
         // Replace mockAPI.getClinics with clinicService.getAllClinics
         const { clinicService } = await import('../../services/apiServices');
-        const response = await clinicService.getAllClinics();
-        
-        // Type guard: ensure response.data is Clinic[]
-        if (Array.isArray(response.data)) {
-          setClinics(response.data as Clinic[]);
-        } else {
-          setClinics([]);
-        }
+        const result = await clinicService.getAllClinics();
+        clinicsData = Array.isArray(result) ? result : [];
       }
       
+      // Map DoctorClinic -> Clinic with safe fallbacks
+      const mappedClinics: Clinic[] = (clinicsData || []).map((c) => mapDoctorClinicToClinic(c));
+      setClinics(mappedClinics);
+
     } catch {
       showToast({
         type: 'error',
@@ -75,25 +116,19 @@ const ClinicSelection: React.FC = () => {
   }, [clinics, searchQuery, selectedType]);
 
   const handleClinicSelect = async (clinic: Clinic) => {
-    // Patch clinic object to ensure _id is always present
-    let patchedClinic = { ...clinic };
-    if (!patchedClinic._id && (patchedClinic as any).clinicId) {
-      patchedClinic._id = (patchedClinic as any).clinicId;
-    }
-    // You can add more fallback logic here if needed
-    selectClinic(patchedClinic);
+    selectClinic(clinic);
     
     if (state.bookingFlow === 'clinic') {
       // In clinic flow, fetch doctors for the selected clinic
       try {
         setLoading(true);
         const { clinicService } = await import('../../services/apiServices');
-        const response = await clinicService.getdoctorbyclinicid(clinic._id);
+        const result = await clinicService.getdoctorbyclinicid(clinic._id);
         
-        // Type guard: ensure response.data is Doctor[]
+        // Type guard: ensure result is Doctor[]
         let clinicDoctors: Doctor[] = [];
-        if (Array.isArray(response.data)) {
-          clinicDoctors = response.data as Doctor[];
+        if (Array.isArray(result)) {
+          clinicDoctors = result as Doctor[];
         }
         
         // Update the clinic object with the fetched doctors
@@ -251,7 +286,7 @@ const ClinicSelection: React.FC = () => {
                 type="text"
                 placeholder="Search clinics by name, location, or services..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(value) => setSearchQuery(value)}
                 className="w-full"
                 leftIcon="search"
               />

@@ -53,6 +53,12 @@ const BookingConfirmation: React.FC = () => {
     );
   }
 
+  // After the guard above, assert non-null locally for better type narrowing
+  const doctor = state.selectedDoctor;
+  const clinic = state.selectedClinic;
+  const date = state.selectedDate;
+  const slot = state.selectedSlot;
+
   return (
     <div className="flex-1 bg-gray-50 overflow-auto">
       <div className="max-w-2xl mx-auto p-6">
@@ -97,26 +103,26 @@ const BookingConfirmation: React.FC = () => {
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
                 <img
-                  src={state.selectedDoctor.profileImage}
-                  alt={state.selectedDoctor.fullName}
+                  src={doctor.profileImage}
+                  alt={doctor.fullName}
                   className="w-full h-full object-cover"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
-                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(state.selectedDoctor.fullName)}&background=0e3293&color=fff`;
+                    target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(doctor.fullName)}&background=0e3293&color=fff`;
                   }}
                 />
               </div>
               <div className="flex-1">
                 <Typography variant="h6" className="text-gray-900 font-semibold mb-1">
-                  {state.selectedDoctor.fullName}
+                  {doctor.fullName}
                 </Typography>
                 <Typography variant="body2" className="text-gray-600 mb-2">
-                  {state.selectedDoctor.specializations.join(', ')}
+                  {doctor.specializations.join(', ')}
                 </Typography>
                 <div className="flex items-center">
                   <Icon name="location" size="small" color="#6b7280" className="mr-2" />
                   <Typography variant="body2" className="text-gray-600">
-                    {state.selectedClinic.clinicName}
+                    {clinic.clinicName}
                   </Typography>
                 </div>
               </div>
@@ -131,7 +137,7 @@ const BookingConfirmation: React.FC = () => {
                     Date
                   </Typography>
                   <Typography variant="body1" className="text-gray-900 font-medium">
-                    {formatDate(state.selectedDate)}
+                    {formatDate(date)}
                   </Typography>
                 </div>
               </div>
@@ -142,7 +148,7 @@ const BookingConfirmation: React.FC = () => {
                     Time
                   </Typography>
                   <Typography variant="body1" className="text-gray-900 font-medium">
-                    {formatTime(state.selectedSlot.time)}
+                    {formatTime(slot.time)}
                   </Typography>
                 </div>
               </div>
@@ -154,23 +160,23 @@ const BookingConfirmation: React.FC = () => {
                 Clinic Address
               </Typography>
               <Typography variant="body1" className="text-gray-900 font-medium mb-1">
-                {state.selectedClinic.clinicName}
+                {clinic.clinicName}
               </Typography>
-              {state.selectedClinic.clinicAddress && (
+              {clinic.clinicAddress && (
                 <>
                   <Typography variant="body2" className="text-gray-600">
-                    {state.selectedClinic.clinicAddress.addressLine}
+                    {clinic.clinicAddress.addressLine}
                   </Typography>
                   <Typography variant="body2" className="text-gray-600">
-                    {state.selectedClinic.clinicAddress.city && `${state.selectedClinic.clinicAddress.city}, `}
-                    {state.selectedClinic.clinicAddress.state} {state.selectedClinic.clinicAddress.zipCode}
+                    {clinic.clinicAddress.city && `${clinic.clinicAddress.city}, `}
+                    {clinic.clinicAddress.state} {clinic.clinicAddress.zipCode}
                   </Typography>
                 </>
               )}
               <div className="flex items-center mt-2">
                 <Icon name="phone" size="small" color="#6b7280" className="mr-2" />
                 <Typography variant="body2" className="text-gray-600">
-                  {state.selectedClinic.phone}
+                  {clinic.phone}
                 </Typography>
               </div>
             </div>

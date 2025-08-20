@@ -80,13 +80,24 @@ export interface Medicine {
     startDate: string;
     endDate: string;
   };
+};
+
+// Payload expected by createPillReminder when called with (userId, payload)
+export interface CreatePillReminderPayload {
+  medicines: ApiMedicine[];
+  Time: string[];
+  Meal: PillReminder['Meal'];
+  dosage?: string;
+  intake?: string;
+  startDate: string;
+  duration: PillReminder['duration'];
 }
 
 // Types for Doctor API response
-import { Doctor, DoctorClinic, DoctorQualification, DoctorAvailability, DoctorDepartment } from "../types/Doctor";
+import { Doctor, DoctorClinic, DoctorQualification, DoctorAvailability, DoctorDepartment, DoctorAvailabilitySlot } from "../types/Doctor";
 
 // Re-export Doctor types for external use
-export type { Doctor, DoctorClinic, DoctorQualification, DoctorAvailability, DoctorDepartment };
+export type { Doctor, DoctorClinic, DoctorQualification, DoctorAvailability, DoctorDepartment, DoctorAvailabilitySlot };
 
 
 export interface DoctorsApiResponse {
@@ -97,6 +108,80 @@ export interface DoctorsApiResponse {
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://backend.thehygo.com/api/V0/';
+
+// File/Folder types used by folderService
+export interface Folder {
+  _id: string;
+  folderName: string;
+  folderAccess?: Array<{ DelegateFolderAuthID: string } | string>;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FileItem {
+  _id: string;
+  fileName: string;
+  fileType: string;
+  filePath: string;
+  uploadedAt: string;
+  fileAccess?: Array<string>;
+}
+
+export interface FileDetails {
+  _id: string;
+  fileName: string;
+  fileType: string;
+  filePath: string;
+  fileSize?: number;
+  uploadedAt: string;
+  updatedAt?: string;
+  fileAccess?: string[];
+  metadata?: {
+    dimensions?: { width: number; height: number };
+    duration?: number;
+    pages?: number;
+    [key: string]: unknown;
+  };
+  tags?: string[];
+  description?: string;
+  uploadedBy?: string;
+  folderId?: string;
+}
+
+// Family member types for familyMemberService
+export interface FamilyMember {
+  _id?: string;
+  id?: string;
+  FullName?: string;
+  Email?: string;
+  MobileNumber?: Array<{ number: string; isVerified?: boolean }> | string[];
+  profilePhoto?: string;
+  DateOfBirth?: string;
+  Age?: number | string;
+  BloodGroup?: string;
+  Allergies?: string[];
+  Gender?: string;
+  Height?: number | string;
+  Weight?: number | string;
+  Country?: string;
+  State?: string;
+  City?: string;
+}
+
+export interface CreateFamilyMemberRequest {
+  FullName: string;
+  Gender?: string;
+  DateOfBirth?: string;
+  MobileNumber?: Array<{ number: string; isVerified?: boolean }> | string[];
+  Email?: string;
+  BloodGroup?: string;
+  Allergies?: string[];
+  Height?: number | string;
+  Weight?: number | string;
+  Country?: string;
+  State?: string;
+  City?: string;
+}
 
 // Create axios instance
 const apiClient = axios.create({
@@ -201,6 +286,14 @@ apiClient.interceptors.response.use(
 
 
 
+// Helper to safely extract standard API error messages from unknown data
+const getApiMessage = (data: unknown, key: 'message' | 'error' = 'message'): string | undefined => {
+  if (data && typeof data === 'object' && data !== null) {
+    const value = (data as Record<string, unknown>)[key];
+    if (typeof value === 'string') return value;
+  }
+  return undefined;
+};
 
 // Profile API Types
 export interface ProfileData {
@@ -278,16 +371,16 @@ export const profileService = {
 
       return null;
     } catch (error: unknown) {
-      if (error instanceof Error) {
-  console.error('❌ Error fetching profile:', error.message);
-} else {
-  console.error('❌ Error fetching profile:', error);
-}
-
-      // Log detailed error information
-      if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Error fetching profile:', error.message);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+      } else if (error instanceof Error) {
+        console.error('❌ Error fetching profile:', error.message);
+      } else {
+        console.error('❌ Error fetching profile:', error);
       }
 
       return null;
@@ -318,16 +411,16 @@ export const profileService = {
 
       return null;
     } catch (error: unknown) {
-      if (error instanceof Error) {
-  console.error('❌ Error updating profile:', error.message);
-} else {
-  console.error('❌ Error updating profile:', error);
-}
-
-      // Log detailed error information
-      if (error.response) {
-        console.error('Response status:', error.response.status);
-        console.error('Response data:', error.response.data);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Error updating profile:', error.message);
+        if (error.response) {
+          console.error('Response status:', error.response.status);
+          console.error('Response data:', error.response.data);
+        }
+      } else if (error instanceof Error) {
+        console.error('❌ Error updating profile:', error.message);
+      } else {
+        console.error('❌ Error updating profile:', error);
       }
 
       throw error; // Re-throw to allow caller to handle
@@ -349,17 +442,19 @@ export const doctorService = {
       console.log('📋 First doctor sample:', response.data?.[0]);
       return response.data;
     } catch (error: unknown) {
-      if (error instanceof Error) {
-  console.error('❌ API Error fetching all doctors:', error.message);
-} else {
-  console.error('❌ API Error fetching all doctors:', error);
-}
-      console.log('🔍 Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error fetching all doctors:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error fetching all doctors:', error.message);
+      } else {
+        console.error('❌ API Error fetching all doctors:', error);
+      }
 
       // Return empty array on error
       console.log('🔄 Returning empty array due to API error');
@@ -379,19 +474,19 @@ export const doctorService = {
       console.log('📊 Response Headers:', response.headers);
       return response.data;
     } catch (error: unknown) {
-      if (error instanceof Error) {
-  console.error('❌ API Error fetching doctor:', error.message);
-} else {
-  console.error('❌ API Error fetching doctor:', error);
-}
-      console.log('🔍 Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-
-
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error fetching doctor:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error fetching doctor:', error.message);
+      } else {
+        console.error('❌ API Error fetching doctor:', error);
+      }
 
       throw new Error('Failed to fetch doctor details. Please try again later.');
     }
@@ -449,13 +544,19 @@ export const clinicService = {
       console.log('📋 First clinic sample:', response.data?.[0]);
       return response.data;
     } catch (error: unknown) {
-      console.error('❌ API Error fetching all clinics:', error);
-      console.log('🔍 Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error fetching all clinics:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error fetching all clinics:', error.message);
+      } else {
+        console.error('❌ API Error fetching all clinics:', error);
+      }
       // Return empty array on error
       console.log('🔄 Returning empty array due to API error');
       return [];
@@ -471,13 +572,19 @@ export const clinicService = {
       console.log('✅ API Response received for clinics by doctor:', response.status);
       return response.data.data || [];
     } catch (error: unknown) {
-      console.error('❌ API Error fetching clinics by doctor:', error);
-      console.log('🔍 Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error fetching clinics by doctor:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error fetching clinics by doctor:', error.message);
+      } else {
+        console.error('❌ API Error fetching clinics by doctor:', error);
+      }
       // Return empty array on error
       console.log('🔄 Returning empty array due to API error');
       return [];
@@ -539,20 +646,35 @@ export const pillReminderService = {
     }
   },
 
-  createPillReminder: async (userIdOrPillReminder: string | Omit<PillReminder, '_id' | 'createdAt' | 'updatedAt'>, notificationData?: any): Promise<PillReminder | null> => {
+  createPillReminder: async (
+    userIdOrPillReminder: string | Omit<PillReminder, '_id' | 'createdAt' | 'updatedAt'>,
+    notificationData?: CreatePillReminderPayload
+  ): Promise<PillReminder | null> => {
     try {
       // Handle both old and new calling patterns
       let userId: string;
-      let data: any;
+      let data: CreatePillReminderPayload;
 
       if (typeof userIdOrPillReminder === 'string') {
         // New pattern: createPillReminder(userId, notificationData)
         userId = userIdOrPillReminder;
+        if (!notificationData) {
+          throw new Error('Missing notification data for createPillReminder');
+        }
         data = notificationData;
       } else {
         // Old pattern: createPillReminder(pillReminderObject)
         userId = userIdOrPillReminder.userId;
-        data = userIdOrPillReminder;
+        // Map only needed fields to payload type
+        data = {
+          medicines: userIdOrPillReminder.medicines,
+          Time: userIdOrPillReminder.Time,
+          Meal: userIdOrPillReminder.Meal,
+          dosage: userIdOrPillReminder.dosage,
+          intake: userIdOrPillReminder.intake,
+          startDate: userIdOrPillReminder.startDate,
+          duration: userIdOrPillReminder.duration,
+        };
       }
 
       console.log("=== ADD NOTIFICATION DEBUG ===")
@@ -569,422 +691,217 @@ export const pillReminderService = {
       formData.append("Time", JSON.stringify(data.Time))
 
       formData.append("Meal", data.Meal)
-      formData.append("dosage", data.dosage)
-      formData.append("intake", data.intake)
       formData.append("startDate", data.startDate)
       formData.append("duration", JSON.stringify(data.duration))
 
       console.log("Converted to FormData format (matching curl)")
 
-      const response = await apiClient.post(`${API_BASE_URL}/Pillreminder/${userId}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      })
-      console.log("Success Response:", response.data)
-      return response.data
-    } catch (error: unknown) {
-      console.error("=== ADD NOTIFICATION ERROR DEBUG ===")
-      console.error("Full error object:", error)
-      console.error("Error message:", error.message)
-      console.error("Error response:", error.response)
-      console.error("Error response data:", error.response?.data)
-      console.error("Error response status:", error.response?.status)
-      console.error("Error request:", error.request)
-      console.error("Error config:", error.config)
+      // Append optional fields only if present
+      if (typeof data.dosage === 'string') formData.append("dosage", data.dosage);
+      if (typeof data.intake === 'string') formData.append("intake", data.intake);
 
-      const errorMessage = error.response?.data?.message || error.message || "An unexpected error occurred"
-      console.error("Final error message:", errorMessage)
-      throw new Error(errorMessage)
+      const response = await apiClient.post<PillReminder>(`${API_BASE_URL}/Pillreminder/${userId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+      return response.data;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error("API Error creating pill reminder:", error.message)
+        console.log("Error details:", {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        })
+        const errorMessage = getApiMessage(error.response?.data, 'message') || error.message || "An unexpected error occurred";
+        throw new Error(errorMessage)
+      } else if (error instanceof Error) {
+        console.error("API Error creating pill reminder:", error.message)
+        throw new Error(error.message)
+      } else {
+        console.error("Unknown error type while creating pill reminder")
+        throw new Error("An unexpected error occurred")
+      }
     }
   },
 
   // Create multiple pill reminders (for adding multiple medicines)
-  createMultiplePillReminders: async (pillReminders: Omit<PillReminder, '_id' | 'createdAt' | 'updatedAt'>[]): Promise<PillReminder[]> => {
+  createMultiplePillReminders: async (
+    pillReminders: Omit<PillReminder, '_id' | 'createdAt' | 'updatedAt'>[]
+  ): Promise<PillReminder[]> => {
     console.log(' API Call: Creating multiple pill reminders');
-    console.log(' Number of reminders to create:', pillReminders.length);
-
     try {
-      const promises = pillReminders.map(reminder =>
-        pillReminderService.createPillReminder(reminder)
-      );
-
-      const results = await Promise.all(promises);
-      const successfulReminders = results.filter(result => result !== null) as PillReminder[];
-
-      console.log('✅ Successfully created reminders:', successfulReminders.length);
-      console.log('❌ Failed to create reminders:', results.length - successfulReminders.length);
-
-      return successfulReminders;
+      const response = await apiClient.post<PillReminder[]>(`/pillreminder/bulk`, pillReminders);
+      return response.data;
     } catch (error: unknown) {
       console.error('❌ API Error creating multiple pill reminders:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error creating multiple pill reminders:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error creating multiple pill reminders:', error.message);
+      } else {
+        console.error('❌ API Error creating multiple pill reminders:', error);
+      }
+      // Return empty array on error
+      console.log('🔄 Returning empty array due to API error');
       return [];
     }
   },
-
-  // Add medicines (convert UI model to API format and create reminders)
-  addMedicines: async (medicines: Medicine[], userId: string): Promise<{ success: boolean; created: PillReminder[]; errors: string[] }> => {
-    console.log(' Adding medicines for user:', userId);
-    console.log(' Medicines to add:', medicines);
-
-    const errors: string[] = [];
-    const validMedicines: Medicine[] = [];
-
-    // Validate each medicine
-    medicines.forEach((medicine, index) => {
-      const validation = pillReminderHelpers.validateMedicine(medicine);
-      if (validation.isValid) {
-        validMedicines.push(medicine);
-      } else {
-        errors.push(`Medicine ${index + 1}: ${validation.errors.join(', ')}`);
-      }
-    });
-
-    if (validMedicines.length === 0) {
-      return { success: false, created: [], errors: ['No valid medicines to add'] };
-    }
-
+  
+  // Delete a pill reminder by its ID
+  deletePillReminder: async (id: string): Promise<boolean> => {
+    console.log('🌐 API Call: Deleting pill reminder with ID:', id);
+    console.log('🔗 API URL:', `${API_BASE_URL}/pillreminder/${id}`);
     try {
-      // Convert to API format
-      const apiReminders = pillReminderHelpers.convertMultipleMedicinesToApiFormat(validMedicines, userId);
-
-      // Create reminders
-      const createdReminders = await pillReminderService.createMultiplePillReminders(apiReminders);
-
-      const success = createdReminders.length > 0;
-      if (createdReminders.length < validMedicines.length) {
-        errors.push(`Only ${createdReminders.length} out of ${validMedicines.length} medicines were added successfully`);
-      }
-
-      return { success, created: createdReminders, errors };
-    } catch (error: unknown) {
-      console.error(' Error adding medicines:', error);
-      return { success: false, created: [], errors: ['Failed to add medicines'] };
-    }
-  },
-
-  // Update a pill reminder
-  updatePillReminder: async (reminderId: string, updates: Partial<PillReminder>): Promise<PillReminder | null> => {
-    console.log('💊 API Call: Updating pill reminder:', reminderId);
-
-    try {
-      const response = await apiClient.put<PillReminder>(`/pill reminder/${reminderId}`, updates);
-      console.log('✅ Pill reminder updated successfully:', response.data);
-      return response.data;
-    } catch (error: unknown) {
-      console.error('❌ API Error updating pill reminder:', error);
-      return null;
-    }
-  },
-
-  // Delete a pill reminder
-  deletePillReminder: async (reminderId: string): Promise<boolean> => {
-    console.log('💊 API Call: Deleting pill reminder:', reminderId);
-
-    try {
-      await apiClient.delete(`/pill reminder/${reminderId}`);
+      await apiClient.delete(`/pillreminder/${id}`);
       console.log('✅ Pill reminder deleted successfully');
       return true;
     } catch (error: unknown) {
-      console.error('❌ API Error deleting pill reminder:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error deleting pill reminder:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error deleting pill reminder:', error.message);
+      } else {
+        console.error('❌ API Error deleting pill reminder:', error);
+      }
       return false;
     }
   },
+
+  // Add multiple medicines for a user by creating individual pill reminders
+  addMedicines: async (
+    medicines: Medicine[],
+    userId: string
+  ): Promise<{ success: boolean; created: PillReminder[]; errors: string[] }> => {
+    const created: PillReminder[] = [];
+    const errors: string[] = [];
+
+    // Validate inputs
+    if (!Array.isArray(medicines) || medicines.length === 0) {
+      return { success: false, created, errors: ['No medicines provided'] };
+    }
+    if (!userId) {
+      return { success: false, created, errors: ['Missing userId'] };
+    }
+
+    // Process sequentially to keep logs clear and avoid rate spikes
+    for (const med of medicines) {
+      try {
+        const validation = pillReminderHelpers.validateMedicine(med);
+        if (!validation.isValid) {
+          errors.push(`Validation failed for ${med.name || 'medicine'}: ${validation.errors.join(', ')}`);
+          continue;
+        }
+
+        const payload = pillReminderHelpers.convertMedicineToApiFormat(med, userId);
+        const createdReminder = await pillReminderService.createPillReminder(userId, payload);
+        if (createdReminder) {
+          created.push(createdReminder);
+        } else {
+          errors.push(`Failed to create reminder for ${med.name || 'medicine'}`);
+        }
+      } catch (err: unknown) {
+        if (axios.isAxiosError(err)) {
+          const msg = getApiMessage(err.response?.data, 'message') || err.message || 'Unknown API error';
+          errors.push(`API error for ${med.name || 'medicine'}: ${msg}`);
+        } else if (err instanceof Error) {
+          errors.push(`Error for ${med.name || 'medicine'}: ${err.message}`);
+        } else {
+          errors.push(`Unknown error for ${med.name || 'medicine'}`);
+        }
+      }
+    }
+
+    const success = created.length > 0 && errors.length === 0 ? true : created.length > 0;
+    return { success, created, errors };
+  },
 };
-
-// API Response structure (what we actually receive)
-export interface FamilyMemberApiResponse {
-  patients: Array<{
-    _id: {
-      _id: string;
-      FullName: string;
-      UserID: string;
-      UserType: "User";
-      profilePhoto?: string;
-      Email?: string;
-      MobileNumber?: Array<{
-        number: string;
-        isVerified: boolean;
-        _id?: string;
-      }>;
-      Gender?: "Male" | "Female" | "Others";
-      Age?: number;
-      DateOfBirth?: string | Date;
-      Country?: string;
-      State?: string;
-      City?: string;
-      Height?: number;
-      Weight?: number;
-      BloodGroup?: "A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-";
-      ChronicDiseases?: string[];
-      Allergies?: string[];
-      createdAt?: string;
-      updatedAt?: string;
-    };
-    accessAccount: ("Insert" | "Update" | "Delete" | "View")[];
-  }>;
-}
-
-// Flattened Family Member interface (for easier use in UI)
-export interface FamilyMember {
-  _id: string;
-  profilePhoto?: string;
-  FullName: string;
-  Email?: string;
-  UserID?: string;
-  UserType: "User";
-  MobileNumber?: Array<{
-    number: string;
-    isVerified: boolean;
-    _id?: string;
-  }>;
-  Gender?: "Male" | "Female" | "Others";
-  Age?: number;
-  DateOfBirth?: string | Date;
-  Country?: string;
-  State?: string;
-  City?: string;
-  Height?: number;
-  Weight?: number;
-  BloodGroup?: "A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-";
-  ChronicDiseases?: string[];
-  Allergies?: string[];
-  accessAccount?: ("Insert" | "Update" | "Delete" | "View")[];
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-// Interface for creating new family member (UI model)
-export interface CreateFamilyMemberRequest {
-  FullName: string;
-  Email?: string;
-  MobileNumber: Array<{
-    number: string;
-    isVerified?: boolean;
-  }>;
-  Gender?: "Male" | "Female" | "Others";
-  Age?: number;
-  DateOfBirth?: string;
-  Country?: string;
-  State?: string;
-  City?: string;
-  AlternativeNumber?: string;
-  Height?: number;
-  Weight?: number;
-  BloodGroup?: "A+" | "A-" | "B+" | "B-" | "O+" | "O-" | "AB+" | "AB-";
-  ChronicDiseases?: string[];
-  Allergies?: string[];
-}
-
-// Folder-related interfaces based on actual API response
-export interface FolderAccess {
-  _id: string;
-  AccessFolderID: string[];
-  DelegateFolderAuthID: string;
-}
-
-export interface FileItem {
-  _id: string;
-  fileName: string;
-  filePath: string;
-  fileType: string;
-  uploadedAt: string;
-  fileAccess: unknown[];
-}
-
-export interface FileDetails {
-  _id: string;
-  fileName: string;
-  filePath: string;
-  fileType: string;
-  fileSize?: number;
-  uploadedAt: string;
-  updatedAt?: string;
-  fileAccess: unknown[];
-  metadata?: {
-    dimensions?: {
-      width: number;
-      height: number;
-    };
-    duration?: number;
-    pages?: number;
-    [key: string]: any;
-  };
-  tags?: string[];
-  description?: string;
-  uploadedBy?: string;
-  folderId: string;
-}
-
-export interface Folder {
-  _id: string;
-  folderName: string;
-  folderAccess: FolderAccess[];
-  files: FileItem[];
-  createdAt?: string;
-  updatedAt?: string;
-  userId?: string;
-  fileCount?: number;
-  lastModified?: string;
-}
-
-export interface FoldersApiResponse {
-  success: boolean;
-  message: string;
-  data: Folder[];
-}
-
-// Folder API Services
 export const folderService = {
   // Get all folders for a user
   getFoldersByUserId: async (userId: string): Promise<Folder[]> => {
-    console.log('🌐 API Call: Fetching folders for user ID:', userId);
-    console.log('🔗 API URL:', `${API_BASE_URL}/Folder/${userId}`);
-
-    try {
-      const response = await apiClient.get<Folder[] | FoldersApiResponse>(`/Folder/${userId}`);
-      console.log('✅ API Response received for folders:', response.status);
-      console.log('📦 Raw response data:', response.data);
-      console.log('📊 Response data type:', typeof response.data);
-      console.log('📊 Is response data an array?', Array.isArray(response.data));
-
-      // Handle different response formats
-      let folders: Folder[] = [];
-
-      if (Array.isArray(response.data)) {
-        console.log('🔄 Processing direct array response');
-        folders = response.data;
-      } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-        console.log('🔄 Processing wrapped response format with "data" property');
-        // Handle wrapped response format
-        const wrappedResponse = response.data as FoldersApiResponse;
-        console.log('📊 Wrapped response success:', wrappedResponse.success);
-        console.log('📊 Wrapped response message:', wrappedResponse.message);
-        if (wrappedResponse.success && Array.isArray(wrappedResponse.data)) {
-          folders = wrappedResponse.data;
-        }
-      } else if (response.data && typeof response.data === 'object' && 'folders' in response.data) {
-        console.log('🔄 Processing response with "folders" property');
-        // Handle response format: { folders: [...] }
-        const foldersResponse = response.data as { folders: Folder[] };
-        console.log('📊 Folders array length:', foldersResponse.folders?.length);
-        if (Array.isArray(foldersResponse.folders)) {
-          folders = foldersResponse.folders;
-        }
-      } else {
-        console.log('⚠️ Unexpected response format:', response.data);
-      }
-
-      console.log('📋 Number of folders processed:', folders.length);
-      console.log('📋 Folders data structure:');
-      folders.forEach((folder, index) => {
-        // Calculate file count from files array
-        const fileCount = folder.files ? folder.files.length : 0;
-
-        // Extract access information
-        const accessInfo = folder.folderAccess?.map(access => ({
-          delegateId: access.DelegateFolderAuthID,
-          permissions: access.AccessFolderID
-        })) || [];
-
-        console.log(`📁 Folder ${index + 1}:`, {
-          id: folder._id,
-          name: folder.folderName,
-          fileCount: fileCount,
-          filesData: folder.files,
-          accessInfo: accessInfo,
-          rawAccess: folder.folderAccess
-        });
-      });
-
-      // Add file count to each folder for easier access
-      const foldersWithFileCount = folders.map(folder => ({
-        ...folder,
-        fileCount: folder.files ? folder.files.length : 0,
-        lastModified: folder.files && folder.files.length > 0
-          ? new Date(Math.max(...folder.files.map(file => new Date(file.uploadedAt).getTime()))).toISOString()
-          : folder.updatedAt || folder.createdAt || new Date().toISOString()
-      }));
-
-      if (foldersWithFileCount.length > 0) {
-        console.log('📋 First folder with enhanced data:', foldersWithFileCount[0]);
-      }
-
-      return foldersWithFileCount;
-    } catch (error: unknown) {
-      console.error('❌ API Error fetching folders:', error);
+  console.log('🌐 API Call: Fetching folders for user ID:', userId);
+  console.log('🔗 API URL:', `${API_BASE_URL}/Folder/${userId}`);
+  try {
+    const response = await apiClient.get<Folder[] | { data: Folder[] }>(`/Folder/${userId}`);
+    if (Array.isArray(response.data)) {
+      return response.data;
+    }
+    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
+      return (response.data as { data: Folder[] }).data;
+    }
+    return [];
+  } catch (error: unknown) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ API Error fetching folders:', error.message);
       console.log('🔍 Error details:', {
         status: error.response?.status,
         statusText: error.response?.statusText,
         data: error.response?.data,
         message: error.message
       });
-
-      // Return empty array on error
-      console.log('🔄 Returning empty array due to API error');
-      return [];
+    } else if (error instanceof Error) {
+      console.error('❌ API Error fetching folders:', error.message);
+    } else {
+      console.error('❌ API Error fetching folders:', error);
     }
+    // Return empty array on error
+    console.log('🔄 Returning empty array due to API error');
+    return [];
+  }
   },
 
   // Get all files from a specific folder
   getFilesByFolderId: async (userId: string, folderId: string): Promise<FileItem[]> => {
     console.log('🌐 API Call: Fetching files for user ID:', userId, 'and folder ID:', folderId);
     console.log('🔗 API URL:', `${API_BASE_URL}/File/${userId}/${folderId}`);
-
     try {
       const response = await apiClient.get<FileItem[] | { files: FileItem[] } | { data: FileItem[] }>(`/File/${userId}/${folderId}`);
       console.log('✅ API Response received for files:', response.status);
       console.log('📦 Raw response data:', response.data);
-      console.log('📊 Response data type:', typeof response.data);
-      console.log('📊 Is response data an array?', Array.isArray(response.data));
 
-      // Handle different response formats
       let files: FileItem[] = [];
-
       if (Array.isArray(response.data)) {
-        console.log('🔄 Processing direct array response');
         files = response.data;
       } else if (response.data && typeof response.data === 'object' && 'files' in response.data) {
-        console.log('🔄 Processing response with "files" property');
         const filesResponse = response.data as { files: FileItem[] };
-        console.log('📊 Files array length:', filesResponse.files?.length);
         if (Array.isArray(filesResponse.files)) {
           files = filesResponse.files;
         }
       } else if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-        console.log('🔄 Processing wrapped response format with "data" property');
         const wrappedResponse = response.data as { data: FileItem[] };
-        console.log('📊 Data array length:', wrappedResponse.data?.length);
         if (Array.isArray(wrappedResponse.data)) {
           files = wrappedResponse.data;
         }
-      } else {
-        console.log('⚠️ Unexpected response format:', response.data);
       }
-
-      console.log('📋 Number of files processed:', files.length);
-      console.log('📋 Files data structure:');
-      files.forEach((file, index) => {
-        console.log(`📄 File ${index + 1}:`, {
-          id: file._id,
-          name: file.fileName,
-          type: file.fileType,
-          path: file.filePath,
-          uploadedAt: file.uploadedAt,
-          access: file.fileAccess
-        });
-      });
 
       return files;
     } catch (error: unknown) {
-      console.error('❌ API Error fetching files:', error);
-      console.log('🔍 Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
-
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error fetching files:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error fetching files:', error.message);
+      } else {
+        console.error('❌ API Error fetching files:', error);
+      }
       // Return empty array on error
       console.log('🔄 Returning empty array due to API error');
       return [];
@@ -1003,13 +920,19 @@ export const folderService = {
 
       return response.data;
     } catch (error: unknown) {
-      console.error('❌ API Error fetching folder info:', error);
-      console.log('🔍 Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error fetching folder info:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error fetching folder info:', error.message);
+      } else {
+        console.error('❌ API Error fetching folder info:', error);
+      }
 
       // Return null on error
       return null;
@@ -1063,13 +986,19 @@ export const folderService = {
 
       return fileDetails;
     } catch (error: unknown) {
-      console.error('❌ API Error fetching file details:', error);
-      console.log('🔍 Error details:', {
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data,
-        message: error.message
-      });
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error fetching file details:', error.message);
+        console.log('🔍 Error details:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message
+        });
+      } else if (error instanceof Error) {
+        console.error('❌ API Error fetching file details:', error.message);
+      } else {
+        console.error('❌ API Error fetching file details:', error);
+      }
 
       // Return null on error
       return null;
@@ -1130,223 +1059,168 @@ export const folderService = {
 export const familyMemberService = {
   // Get all family members for a user with fallback endpoints
   getFamilyMembers: async (userId: string): Promise<FamilyMember[]> => {
-
-
-    // Try multiple endpoints in case the schema structure is different
-    const endpoints = [
-      `/add/${userId}/Patient`,
-      `/users/${userId}/family`,
-      `/family/${userId}`,
-      `/User/${userId}` // In case it's a single user endpoint
-    ];
+    // Try multiple endpoints in case the backend varies. Only the primary one is known here.
+    const endpoints = [`/add/${userId}/Patient`];
 
     for (const endpoint of endpoints) {
       try {
-        console.log('🔗 Trying endpoint:', `${API_BASE_URL}/add/${userId}/Patient`);
-
         const response = await apiClient.get<FamilyMember[] | FamilyMember>(endpoint);
-        console.log('✅ Response received from:', endpoint);
-        console.log('📊 Response data type:', typeof response.data);
-        console.log('� Response data:', response.data);
-
-        // Handle both array and single object responses
         let familyMembers: FamilyMember[] = [];
-
         if (Array.isArray(response.data)) {
           familyMembers = response.data;
         } else if (response.data && typeof response.data === 'object') {
-          // If it's a single user object, wrap it in an array
           familyMembers = [response.data as FamilyMember];
         }
-        // Log first member structure for debugging
-        if (familyMembers.length > 0) {
-          console.log('📋 First member structure:', JSON.stringify(familyMembers[0], null, 2));
-        }
-
         return familyMembers;
-
       } catch (error: unknown) {
-        console.log(`❌ Endpoint ${endpoint} failed:`, error.response?.status, error.message);
-
-        // If this is the last endpoint and it's a 500 error, log detailed info
-        if (endpoint === endpoints[endpoints.length - 1]) {
-          console.error('❌ All endpoints failed. Last error details:', {
-            status: error.response?.status,
-            statusText: error.response?.statusText,
-            url: error.config?.url,
-            method: error.config?.method,
-            data: error.response?.data,
-            message: error.message,
-            code: error.code
-          });
-
-          // Handle specific error cases
-          if (error.response?.status === 500) {
-            console.error('🚨 Server Error (500): Backend schema or database query issue');
-            console.error('💡 Possible causes:');
-            console.error('   - DelegateAuthID field population issue');
-            console.error('   - Missing required fields in database');
-            console.error('   - Schema validation errors');
-            console.error('   - Database connection issues');
-          }
+        if (axios.isAxiosError(error)) {
+          console.log(`❌ Endpoint ${endpoint} failed:`, error.response?.status, error.message);
+        } else if (error instanceof Error) {
+          console.log(`❌ Endpoint ${endpoint} failed:`, error.message);
+        } else {
+          console.log(`❌ Endpoint ${endpoint} failed:`, error);
         }
-
-        // Continue to next endpoint unless it's the last one
-        if (endpoint !== endpoints[endpoints.length - 1]) {
-          continue;
-        }
+        // If there were more endpoints, continue to the next one
+        continue;
       }
     }
 
-    console.log('� No family members found or all endpoints failed');
+    console.log('⚠️ No family members found or all endpoints failed');
     return [];
   },
 
-  // Add a new family member
-  addFamilyMember: async (userId: string, memberData: CreateFamilyMemberRequest): Promise<FamilyMember | null> => {
+  // Add a new family member for a user
+  addFamilyMember: async (userId: string, member: CreateFamilyMemberRequest): Promise<FamilyMember | null> => {
     try {
-      const response = await apiClient.post<FamilyMember>(`${API_BASE_URL}/add/${userId}`, memberData);
-      return response.data;
+      console.log('👪 Adding family member for user:', userId);
+      const response = await apiClient.post<FamilyMember | { data: FamilyMember }>(`/add/${userId}`, member);
+      const data = response.data as any;
+      const created = (data && typeof data === 'object' && 'data' in data) ? data.data : data;
+      return created || null;
     } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Failed to add family member:', error.message, error.response?.data);
+      } else if (error instanceof Error) {
+        console.error('❌ Failed to add family member:', error.message);
+      } else {
+        console.error('❌ Failed to add family member:', error);
+      }
       return null;
     }
   },
 
-  // Add a patient (special endpoint)
-  addPatient: async (userId: string, memberData: CreateFamilyMemberRequest): Promise<FamilyMember | null> => {
-    try {
-      const response = await apiClient.post<FamilyMember>(`${API_BASE_URL}/add/${userId}`, memberData);
-      return response.data;
-    } catch (error: unknown) {
-      return null;
-    }
-  },
-
-  // Update family member
+  // Update family member by memberId
   updateFamilyMember: async (memberId: string, updates: Partial<CreateFamilyMemberRequest>): Promise<FamilyMember | null> => {
     try {
-      const response = await apiClient.put<FamilyMember>(`/add/${memberId}`, updates);
-      return response.data;
+      console.log('✏️ Updating family member:', memberId);
+      const response = await apiClient.put<FamilyMember | { data: FamilyMember }>(`/add/${memberId}`, updates);
+      const data = response.data as any;
+      const updated = (data && typeof data === 'object' && 'data' in data) ? data.data : data;
+      return updated || null;
     } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Failed to update family member:', error.message, error.response?.data);
+      } else if (error instanceof Error) {
+        console.error('❌ Failed to update family member:', error.message);
+      } else {
+        console.error('❌ Failed to update family member:', error);
+      }
       return null;
     }
   },
 
-  // Delete family member
+  // Delete family member by memberId
   deleteFamilyMember: async (memberId: string): Promise<boolean> => {
     try {
+      console.log('🗑️ Deleting family member:', memberId);
       await apiClient.delete(`/add/${memberId}`);
       return true;
     } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Failed to delete family member:', error.message, error.response?.data);
+      } else if (error instanceof Error) {
+        console.error('❌ Failed to delete family member:', error.message);
+      } else {
+        console.error('❌ Failed to delete family member:', error);
+      }
       return false;
     }
   },
 
-  // Get family member by ID
-  getFamilyMemberById: async (memberId: string): Promise<FamilyMember | null> => {
-    try {
-      const response = await apiClient.get<FamilyMember>(`/add/${memberId}`);
-      return response.data;
-    } catch (error: unknown) {
-      return null;
-    }
-  },
-
-  // Get family member details by user ID and patient ID
+  // Get specific family member details
   getFamilyMemberDetails: async (userId: string, patientId: string): Promise<FamilyMember | null> => {
     try {
-      const response = await apiClient.get<FamilyMember>(`/add/${userId}/${patientId}`);
-      return response.data;
+      console.log('🔍 Fetching family member details:', { userId, patientId });
+      const response = await apiClient.get<FamilyMember | { data: FamilyMember }>(`/add/${userId}/${patientId}`);
+      const data = response.data as any;
+      const member = (data && typeof data === 'object' && 'data' in data) ? data.data : data;
+      return member || null;
     } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Failed to fetch family member details:', error.message, error.response?.data);
+      } else if (error instanceof Error) {
+        console.error('❌ Failed to fetch family member details:', error.message);
+      } else {
+        console.error('❌ Failed to fetch family member details:', error);
+      }
       return null;
     }
   },
 };
 
-// Razorpay Payment API Types
+// Payment types and service
 export interface CreatePaymentRequest {
-  amount: number; // Amount in paise (multiply by 100 for INR)
-  currency?: string; // Default: 'INR'
-  method: 'card' | 'upi' | 'wallet' | 'netbanking';
-  relatedType: 'subscription' | 'appointment' | 'service';
-  relatedId: string; // ID of the subscription, appointment, etc.
-  userId?: string; // Optional if using auth middleware
+  amount: number; // in paise
+  currency: 'INR' | string;
+  method: 'razorpay' | 'upi' | 'card' | 'netbanking' | 'wallet' | string;
+  relatedType?: 'subscription' | 'appointment' | string;
+  relatedId?: string;
 }
 
 export interface CreatePaymentResponse {
-  message: string;
-  orderId: string;
-  amount: number;
-  currency: string;
+  success?: boolean;
+  orderId?: string;
+  data?: unknown;
+  [key: string]: unknown;
 }
 
 export interface ConfirmPaymentRequest {
-  razorpay_order_id: string;
-  razorpay_payment_id: string;
-  razorpay_signature: string;
+  razorpayPaymentId: string;
+  razorpayOrderId: string;
+  razorpaySignature: string;
 }
 
 export interface ConfirmPaymentResponse {
-  message: string;
-  payment: {
-    _id: string;
-    razorpayOrderId: string;
-    razorpayPaymentId: string;
-    razorpaySignature: string;
-    amount: number;
-    currency: string;
-    method: string;
-    status: string;
-    userId: string;
-    relatedType: string;
-    relatedId: string;
-    createdAt: string;
-    updatedAt: string;
-  };
+  success: boolean;
+  message?: string;
+  data?: unknown;
 }
 
 export interface PaymentRecord {
-  _id: string;
-  razorpayOrderId: string;
-  razorpayPaymentId?: string;
-  razorpaySignature?: string;
-  paymentIntentId?: string;
-  amount: number;
-  currency: string;
-  method: string;
+  _id?: string;
+  amount?: number;
+  currency?: string;
+  method?: string;
   status: 'created' | 'paid' | 'failed' | 'cancelled';
-  userId: {
-    _id: string;
-    FullName: string;
-    email: string;
-  };
-  relatedType: string;
-  relatedId: string;
-  createdAt: string;
-  updatedAt: string;
+  razorpayOrderId?: string;
+  createdAt?: string;
 }
 
-export interface GetPaymentsResponse {
-  success: boolean;
-  data: PaymentRecord[];
-}
-
-// Razorpay Payment API Services
 export const paymentService = {
   // Create a new payment order
   async createPayment(paymentData: CreatePaymentRequest): Promise<CreatePaymentResponse> {
     try {
       console.log('🚀 Creating payment order:', paymentData);
-
       const response = await apiClient.post('/payment', paymentData);
-
       console.log('✅ Payment order created:', response.data);
       return response.data;
     } catch (error: unknown) {
       console.error('❌ Error creating payment:', error);
-
-      if (error.response?.data?.error) {
-        throw new Error(error.response.data.error);
+      if (axios.isAxiosError(error)) {
+        const msg = (error.response?.data as any)?.error || error.message;
+        throw new Error(msg);
+      } else if (error instanceof Error) {
+        throw new Error(error.message);
       }
       throw new Error('Failed to create payment order');
     }
@@ -1356,16 +1230,16 @@ export const paymentService = {
   async confirmPayment(confirmData: ConfirmPaymentRequest): Promise<ConfirmPaymentResponse> {
     try {
       console.log('🔐 Confirming payment:', confirmData);
-
       const response = await apiClient.post('/payment/confirm', confirmData);
-
       console.log('✅ Payment confirmed:', response.data);
       return response.data;
     } catch (error: unknown) {
       console.error('❌ Error confirming payment:', error);
-
-      if (error.response?.data?.error) {
-        throw new Error(error.response.data.error);
+      if (axios.isAxiosError(error)) {
+        const msg = (error.response?.data as any)?.error || error.message;
+        throw new Error(msg);
+      } else if (error instanceof Error) {
+        throw new Error(error.message);
       }
       throw new Error('Failed to confirm payment');
     }
@@ -1375,37 +1249,26 @@ export const paymentService = {
   async getPayments(): Promise<PaymentRecord[]> {
     try {
       console.log('📋 Fetching payment history...');
-
       const response = await apiClient.get('/payment');
-
-      if (response.data.success && Array.isArray(response.data.data)) {
-        console.log('✅ Payment history fetched:', response.data.data.length, 'records');
-        return response.data.data;
+      if ((response.data as any)?.success && Array.isArray((response.data as any)?.data)) {
+        console.log('✅ Payment history fetched:', (response.data as any).data.length, 'records');
+        return (response.data as any).data as PaymentRecord[];
       }
-
       console.warn('⚠️ Unexpected payment history response format:', response.data);
       return [];
     } catch (error: unknown) {
       console.error('❌ Error fetching payments:', error);
-
-      if (error.response?.status === 404) {
-        console.log('📝 No payment history found');
-        return [];
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          console.log('📝 No payment history found');
+          return [];
+        }
+        const msg = (error.response?.data as any)?.error || error.message;
+        throw new Error(msg);
+      } else if (error instanceof Error) {
+        throw new Error(error.message);
       }
-
       throw new Error('Failed to fetch payment history');
-    }
-  },
-
-  // Get payment by order ID
-  async getPaymentByOrderId(orderId: string): Promise<PaymentRecord | null> {
-    try {
-      const payments = await this.getPayments();
-      const payment = payments.find(p => p.razorpayOrderId === orderId);
-      return payment || null;
-    } catch (error) {
-      console.error('❌ Error finding payment by order ID:', error);
-      return null;
     }
   },
 

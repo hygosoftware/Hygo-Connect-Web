@@ -8,6 +8,7 @@ interface TypographyProps {
   className?: string;
   as?: keyof React.JSX.IntrinsicElements;
   style?: React.CSSProperties;
+  onClick?: React.MouseEventHandler<HTMLElement>;
 }
 
 const Typography: React.FC<TypographyProps> = ({
@@ -18,6 +19,7 @@ const Typography: React.FC<TypographyProps> = ({
   className = '',
   as,
   style,
+  onClick,
 }) => {
   const variantClasses = {
     h1: 'text-4xl font-bold',
@@ -67,7 +69,7 @@ const Typography: React.FC<TypographyProps> = ({
   const Component = as || (defaultElements[variant] as keyof React.JSX.IntrinsicElements);
   const classes = `${variantClasses[variant]} ${colorClasses[color]} ${alignClasses[align]} ${className}`;
 
-  return React.createElement(Component, { className: classes, style }, children);
+  return React.createElement(Component, { className: classes, style, onClick }, children);
 };
 
 export default Typography;
