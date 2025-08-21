@@ -23,6 +23,8 @@ const RecordsPage: React.FC = () => {
   const [folders, setFolders] = useState<RecordFolder[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isAddFolderOpen, setIsAddFolderOpen] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
 
   // Get user ID from auth context
   const { userId, accessToken, userInfo } = TokenManager.getTokens();
@@ -141,6 +143,47 @@ const RecordsPage: React.FC = () => {
       day: 'numeric',
       year: 'numeric'
     });
+  };
+
+  const handleAddFolder = async () => {
+    if (!newFolderName.trim()) return;
+    if (!userId) {
+      setError('User not authenticated');
+      return;
+    }
+    
+    try {
+      // Call your folder creation API here
+      const newFolder = await folderService.createFolder(
+        userId, // First argument: userId
+        newFolderName  // Second argument: folderName
+      );
+      
+      if (!newFolder) {
+        throw new Error('Failed to create folder');
+      }
+      
+      // Add the new folder to the local state
+      setFolders(prev => [
+        ...prev,
+        {
+          id: newFolder._id,
+          name: newFolder.folderName,
+          usersWithAccess: 1,
+          sharedWith: [],
+          sharedWithNames: [],
+          lastUpdated: new Date().toISOString().split('T')[0],
+          fileCount: 0
+        }
+      ]);
+      
+      // Reset and close the popup
+      setNewFolderName('');
+      setIsAddFolderOpen(false);
+    } catch (err) {
+      console.error('Error creating folder:', err);
+      setError('Failed to create folder. Please try again.');
+    }
   };
 
   return (
@@ -419,13 +462,71 @@ const RecordsPage: React.FC = () => {
 
         {/* Enhanced Floating Action Button */}
         <div className="fixed bottom-6 right-6 z-50">
-          <button className="group bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white p-4 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 animate-pulse-gentle">
+          <button 
+            onClick={() => setIsAddFolderOpen(true)}
+            className="group bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white p-4 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 animate-pulse-gentle"
+          >
             <Icon name="plus" size="small" color="white" />
             <div className="absolute -top-12 right-0 bg-gray-800 text-white text-sm px-3 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
               Add New Folder
             </div>
           </button>
         </div>
+
+        {/* Add Folder Modal */}
+        {isAddFolderOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-fadeInUp">
+              <div className="flex justify-between items-center mb-4">
+                <Typography variant="h6" className="font-bold text-gray-800">
+                  Create New Folder
+                </Typography>
+                <button 
+                  onClick={() => {
+                    setIsAddFolderOpen(false);
+                    setNewFolderName('');
+                  }}
+                  className="text-gray-500 hover:text-gray-700"
+                >
+                  <Icon name="close" size="small" />
+                </button>
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Folder Name
+                </label>
+                <input
+                  type="text"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  placeholder="e.g., Medical Reports, Prescriptions"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  autoFocus
+                />
+              </div>
+              
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => {
+                    setIsAddFolderOpen(false);
+                    setNewFolderName('');
+                  }}
+                  className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleAddFolder}
+                  disabled={!newFolderName.trim()}
+                  className="px-5 py-2.5 text-white bg-[#0E3293] hover:bg-[#0A2470] rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Create Folder
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </>
   );
