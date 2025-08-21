@@ -132,7 +132,7 @@ const Header: React.FC<HeaderProps> = ({
 
       {/* Location Selection Modal - Placeholder for now */}
       {showLocationModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg p-6 m-4 max-w-md w-full">
             <Typography variant="h5" className="mb-4">Select Location</Typography>
             <Typography variant="body1" className="mb-4">

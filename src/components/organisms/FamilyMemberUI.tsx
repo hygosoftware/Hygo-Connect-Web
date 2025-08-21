@@ -493,7 +493,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
 
       {/* Add/Edit Modal */}
       {showAddMember && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+        <div className="fixed inset-0 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-xl">
             <h2 className="text-xl font-bold text-[#0e3293] mb-4 text-center">
               {editingMemberId ? 'Edit Family Member' : 'Add Family Member'}

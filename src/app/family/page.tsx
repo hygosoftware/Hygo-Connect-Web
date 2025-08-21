@@ -31,23 +31,90 @@ const convertApiToUiMember = (apiResponse: ApiMemberEnvelope): FamilyMember => {
   // The structure can be: { patientDetails: { patientInfo: {...} } } or direct member object
   const member = (apiResponse?.patientDetails?.patientInfo as ApiMemberEnvelope | undefined) ?? apiResponse;
 
+  // Some payloads embed the real patient in _id as an object:
+  // { _id: { _id: '...', FullName: '...', ... }, accessAccount: [...] }
+  const source: any = (member && typeof (member as any)._id === 'object') ? (member as any)._id : member;
+
+  // Normalize ID (handle variations)
+  const id =
+    (source as any)?._id ||
+    (source as any)?.id ||
+    (source as any)?.patientId ||
+    (member as any)?._id ||
+    (apiResponse as any)?._id || '';
+
+  // Normalize Name (handle variations: FullName/fullName/Name/name/first+last)
+  const firstName = (source as any)?.firstName || (source as any)?.FirstName;
+  const lastName = (source as any)?.lastName || (source as any)?.LastName;
+  const composed = [firstName, lastName].filter(Boolean).join(' ').trim();
+  const name =
+    (source as any)?.FullName ||
+    (source as any)?.fullName ||
+    (source as any)?.Name ||
+    (source as any)?.name ||
+    (source as any)?.PatientName ||
+    (source as any)?.patientName ||
+    (composed || 'Unknown');
+
+  // Normalize relation if backend provides it
+  const relation =
+    (source as any)?.Relation ||
+    (source as any)?.relation ||
+    (member as any)?.Relation ||
+    (member as any)?.relation ||
+    (apiResponse as any)?.Relation ||
+    (apiResponse as any)?.relation ||
+    'Family Member';
+
+  // Normalize age
+  const ageVal = (source as any)?.Age ?? (source as any)?.age;
+
+  // Normalize profile photo
+  const profileImage = (source as any)?.profilePhoto || (source as any)?.profileImage || (source as any)?.avatar;
+
+  // Normalize mobile
+  let mobileNumber: string | undefined;
+  const m = (source as any)?.MobileNumber ?? (source as any)?.mobileNumber ?? (source as any)?.phone;
+  if (Array.isArray(m) && m.length > 0) {
+    const first = m[0];
+    if (typeof first === 'object' && first !== null && 'number' in first) {
+      mobileNumber = String((first as any).number).replace(/^\+\d{1,3}/, '');
+    } else {
+      mobileNumber = String(first).replace(/^\+\d{1,3}/, '');
+    }
+  } else if (typeof m === 'string' && m.trim()) {
+    mobileNumber = m.replace(/^\+\d{1,3}/, '');
+  }
+
+  // Normalize email
+  const email = (source as any)?.Email || (source as any)?.email;
+
+  // Normalize DOB
+  const dobRaw =
+    (source as any)?.DateOfBirth ||
+    (source as any)?.dateOfBirth ||
+    (source as any)?.DOB ||
+    (source as any)?.dob;
+  const dateOfBirth = dobRaw ? new Date(dobRaw).toISOString().split('T')[0] : undefined;
+
+  // Normalize blood group
+  const bloodGroup = (source as any)?.BloodGroup || (source as any)?.bloodGroup;
+
+  // Normalize allergies
+  const allergies = (source as any)?.Allergies || (source as any)?.allergies || [];
+
   return {
-    id: member._id || member.id || 'unknown',
-    name: member.FullName || (member as Partial<{ name?: string }>).name || 'Unknown',
-    relation: 'Family Member', // You might want to add a relation field to your schema
-    age: member.Age?.toString() || '',
-    profileImage: member.profilePhoto,
-    mobileNumber: Array.isArray(member.MobileNumber)
-      ? (member.MobileNumber[0] as { number?: string } | string | undefined &&
-        typeof member.MobileNumber[0] === 'object'
-          ? (member.MobileNumber[0] as { number?: string }).number?.replace(/^\+\d{1,3}/, '')
-          : String(member.MobileNumber[0]).replace(/^\+\d{1,3}/, ''))
-      : undefined,
-    email: member.Email,
-    dateOfBirth: member.DateOfBirth ? new Date(member.DateOfBirth).toISOString().split('T')[0] : undefined,
-    bloodGroup: member.BloodGroup,
-    allergies: member.Allergies || [],
-    medications: [] // You might want to add this to your schema or get from pill reminders
+    id: id || 'unknown',
+    name,
+    relation,
+    age: typeof ageVal === 'number' ? String(ageVal) : (ageVal || ''),
+    profileImage,
+    mobileNumber,
+    email,
+    dateOfBirth,
+    bloodGroup,
+    allergies,
+    medications: []
   };
 };
 
@@ -67,7 +134,7 @@ const FamilyPage: React.FC = () => {
   const router = useRouter();
 
   // State
-  const [selectedMember, setSelectedMember] = useState('self');
+  const [selectedMember, setSelectedMember] = useState('');
 const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
@@ -98,21 +165,12 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
       // familyMemberService.getFamilyMembers returns a normalized array of members
       const uiMembers = apiResponse.map(convertApiToUiMember);
 
-      // Add self as first member (you might want to get this from user profile)
-      const selfMember: FamilyMember = {
-        id: 'self',
-        name: 'Myself',
-        relation: 'Self',
-        age: '28',
-        email: 'myself@email.com',
-        mobileNumber: '9876543210',
-        bloodGroup: 'O+',
-        allergies: ['Peanuts', 'Shellfish'],
-        medications: ['Vitamin D', 'Multivitamin']
-      };
-
-      const allMembers = [selfMember, ...uiMembers];
-      setFamilyMembers(allMembers);
+      setFamilyMembers(uiMembers);
+      if (uiMembers.length > 0) {
+        const firstWithId = uiMembers.find(m => m.id && m.id !== 'unknown');
+        if (firstWithId?.id) setSelectedMember(firstWithId.id);
+        else setSelectedMember(uiMembers[0].id);
+      }
 
       if (uiMembers.length === 0) {
         setError('No family members found. You can add new members using the + button.');
@@ -200,6 +258,9 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
           uiMember.relation = newMemberRelation.trim(); // Set the relation from form
 
           setFamilyMembers([...familyMembers, uiMember]);
+          if (!selectedMember) {
+            setSelectedMember(uiMember.id);
+          }
           setNewMemberName('');
           // removed unused age field
           setNewMemberRelation('');
@@ -216,35 +277,24 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
   };
 
   const handleDeleteMember = async (memberId: string) => {
-    if (memberId !== 'self') {
-      try {
-        const success = await familyMemberService.deleteFamilyMember(memberId);
+    try {
+      const success = await familyMemberService.deleteFamilyMember(memberId);
 
-        if (success) {
-          setFamilyMembers(familyMembers.filter(member => member.id !== memberId));
-          if (selectedMember === memberId) {
-            setSelectedMember('self');
-          }
-        } else {
-          setError('Failed to delete family member');
+      if (success) {
+        const nextList = familyMembers.filter(member => member.id !== memberId);
+        setFamilyMembers(nextList);
+        if (selectedMember === memberId) {
+          setSelectedMember(nextList[0]?.id || '');
         }
-      } catch (error) {
+      } else {
         setError('Failed to delete family member');
       }
+    } catch (error) {
+      setError('Failed to delete family member');
     }
   };
 
   const handleEditMember = async (memberId: string, updatedData: Partial<FamilyMember>) => {
-    if (memberId === 'self') {
-      // Handle self update locally for now
-      setFamilyMembers(familyMembers.map(member =>
-        member.id === memberId
-          ? { ...member, ...updatedData }
-          : member
-      ));
-      return;
-    }
-
     try {
       // Guard: ensure user is logged in
       if (!userId) {

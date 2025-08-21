@@ -1066,11 +1066,23 @@ export const familyMemberService = {
       try {
         const response = await apiClient.get<FamilyMember[] | FamilyMember>(endpoint);
         let familyMembers: FamilyMember[] = [];
-        if (Array.isArray(response.data)) {
-          familyMembers = response.data;
-        } else if (response.data && typeof response.data === 'object') {
-          familyMembers = [response.data as FamilyMember];
-        }
+        console.log('✅ API Response received for family members:', response.data);
+        // Some backends return { patients: [...] }
+        const data: any = response.data as any;
+        const list: any[] = Array.isArray(data)
+          ? data
+          : (data && typeof data === 'object' && Array.isArray(data.patients))
+            ? data.patients
+            : (data ? [data] : []);
+
+        // Flatten entries where _id is an embedded object holding the actual member fields
+        familyMembers = list.map((item: any) => {
+          if (item && item._id && typeof item._id === 'object') {
+            // If the embedded object has the real patient fields, use it directly
+            return { ...(item._id as any) } as FamilyMember;
+          }
+          return item as FamilyMember;
+        });
         return familyMembers;
       } catch (error: unknown) {
         if (axios.isAxiosError(error)) {
@@ -1151,10 +1163,40 @@ export const familyMemberService = {
   getFamilyMemberDetails: async (userId: string, patientId: string): Promise<FamilyMember | null> => {
     try {
       console.log('🔍 Fetching family member details:', { userId, patientId });
-      const response = await apiClient.get<FamilyMember | { data: FamilyMember }>(`/add/${userId}/${patientId}`);
-      const data = response.data as any;
-      const member = (data && typeof data === 'object' && 'data' in data) ? data.data : data;
-      return member || null;
+      // Fetch full list for the user and search locally, because API endpoint for single member may vary
+      const listResponse = await apiClient.get<FamilyMember[] | FamilyMember>(`/add/${userId}/Patient`);
+      const raw = listResponse.data as unknown;
+
+      // Normalize to array
+      const rawObj: any = raw as any;
+      const list: any[] = Array.isArray(rawObj)
+        ? rawObj
+        : (rawObj && typeof rawObj === 'object' && Array.isArray(rawObj.patients))
+          ? rawObj.patients
+          : (rawObj ? [rawObj] : []);
+
+      // Try to find by common shapes
+      const found = list.find((item: any) => {
+        // Cases:
+        // - item._id is string (direct)
+        // - item._id is object with actual patient { _id, FullName, ... }
+        const directId = (typeof item?._id === 'object') ? (item?._id?._id || item?._id?.id) : (item?._id || item?.id);
+        const nestedId = item?.patientDetails?.patientInfo?._id || item?.patientDetails?.patientInfo?.id;
+        return directId === patientId || nestedId === patientId;
+      });
+
+      if (!found) {
+        console.warn('⚠️ Family member not found in list for patientId:', patientId);
+        return null;
+      }
+
+      // Return either nested patientInfo or direct item as FamilyMember
+      let member: any = found?.patientDetails?.patientInfo ? found.patientDetails.patientInfo : found;
+      // If member has embedded _id object with actual fields, unwrap it
+      if (member && typeof member._id === 'object') {
+        member = member._id;
+      }
+      return member as FamilyMember;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         console.error('❌ Failed to fetch family member details:', error.message, error.response?.data);

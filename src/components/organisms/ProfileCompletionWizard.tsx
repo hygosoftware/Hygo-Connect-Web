@@ -233,30 +233,36 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     </div>
   );
 
+  // Component return UI
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+    <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
+      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold">Complete Your Profile</h2>
-            <button onClick={onClose} className="text-white hover:text-gray-200">
-              <X className="w-6 h-6" />
-            </button>
+        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Complete Your Profile</h2>
           </div>
-          <div className="text-blue-100">
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">
+            <X className="w-5 h-5 text-gray-500" />
+          </button>
+        </div>
+
+        {/* Top Progress Summary */}
+        <div className="px-6 pt-4">
+          <div className="text-blue-600 text-sm mb-2">
             Step {currentStep + 1} of {steps.length} • {currentCompletion}% Complete
           </div>
         </div>
 
         {/* Progress Steps */}
-        <div className="p-6 border-b border-gray-200">
+        <div className="p-6 pt-2 border-b border-gray-200">
           <div className="flex items-center justify-between">
             {steps.map((step, index) => (
               <div key={step.id} className="flex items-center">
                 <div className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                  index === currentStep 
-                    ? 'border-blue-600 bg-blue-600 text-white' 
+                  index === currentStep
+                    ? 'border-blue-600 bg-blue-600 text-white'
                     : isStepComplete(index)
                     ? 'border-green-500 bg-green-500 text-white'
                     : 'border-gray-300 bg-white text-gray-400'
@@ -291,8 +297,8 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
                 <span className="text-sm font-medium text-blue-600">{getStepCompletion(currentStep)}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                   style={{ width: `${getStepCompletion(currentStep)}%` }}
                 />
               </div>
