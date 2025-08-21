@@ -42,7 +42,7 @@ export interface BookingState {
   error: string | null;
   
   // Payment
-  paymentMethod: 'card' | 'upi' | 'wallet' | null;
+  paymentMethod: 'card' | 'upi' | 'wallet' | 'cash' | null;
   paymentStatus: 'pending' | 'processing' | 'success' | 'failed' | null;
 }
 

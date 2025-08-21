@@ -2,6 +2,69 @@
 @media (max-width: 640px) {
   .doctor-details-mobile {
     padding: 0.5rem !important;
+    background: #f7faff !important;
+  }
+  .doctor-details-mobile .doctor-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 1rem !important;
+    box-shadow: 0 2px 16px 0 rgba(34, 60, 80, 0.08);
+    border-radius: 1.2rem !important;
+    margin-bottom: 1rem !important;
+  }
+  .doctor-details-mobile .doctor-img {
+    margin: 0 auto 1rem auto !important;
+    width: 100px !important;
+    height: 100px !important;
+    border-radius: 50% !important;
+    box-shadow: 0 2px 8px 0 rgba(34,60,80,0.10);
+  }
+  .doctor-details-mobile .doctor-info {
+    width: 100% !important;
+    margin-bottom: 1rem !important;
+    text-align: left !important;
+  }
+  .doctor-details-mobile .book-btn-row {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    margin-top: 1.5rem !important;
+    margin-bottom: 0 !important;
+  }
+  .doctor-details-mobile .sticky-book-btn {
+    position: sticky;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 50;
+    background: #fff;
+    box-shadow: 0 -2px 8px 0 rgba(34,60,80,0.08);
+    padding: 1rem 0.75rem;
+    border-radius: 0 0 1.2rem 1.2rem;
+  }
+  .doctor-details-mobile .section {
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+    border-radius: 1.2rem !important;
+    box-shadow: 0 1px 8px 0 rgba(34,60,80,0.06);
+  }
+  .doctor-details-mobile .status-lang-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 0.5rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+  .doctor-details-mobile .consult-fee-box {
+    margin-top: 1rem !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+    text-align: left !important;
+    padding: 1rem !important;
+    border-radius: 1rem !important;
+    background: #f0f6ff !important;
+  }
+
+  .doctor-details-mobile {
+    padding: 0.5rem !important;
   }
   .doctor-details-mobile .doctor-card {
     flex-direction: column !important;

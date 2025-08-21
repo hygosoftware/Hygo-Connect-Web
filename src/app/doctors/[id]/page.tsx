@@ -152,7 +152,7 @@ const DoctorDetailsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 doctor-details-mobile">
       <UniversalHeader
         title={`Dr. ${doctor.fullName.replace(/^Dr\.\s*/i, '')}`}
         subtitle={doctor.specializations?.join(', ') || 'Medical Professional'}
@@ -164,8 +164,8 @@ const DoctorDetailsPage: React.FC = () => {
       
       <div className="p-6 space-y-6">
         {/* Doctor Profile Card */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
-          <div className="flex items-start mb-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 section doctor-card">
+          <div className="flex flex-col sm:flex-row items-center sm:items-stretch mb-6 gap-4">
             {/* Doctor Image */}
             <div className="relative mr-4 flex-shrink-0 doctor-img">
               <img
@@ -182,7 +182,7 @@ const DoctorDetailsPage: React.FC = () => {
             </div>
 
             {/* Doctor Info */}
-            <div className="flex-1">
+            <div className="flex-1 text-center">
               <Typography variant="h5" className="font-bold text-gray-800 mb-2">
                 {doctor.fullName}
               </Typography>
@@ -256,10 +256,10 @@ const DoctorDetailsPage: React.FC = () => {
           </div>
 
           {/* Book Appointment Button */}
-          <div className="flex justify-center book-btn-row">
+          <div className="sticky-book-btn flex flex-col sm:flex-row justify-center book-btn-row gap-2">
             <button
               onClick={handleBookAppointment}
-              className="px-6 py-2 bg-gradient-to-r from-[#0E3293] to-blue-600 text-white rounded-lg font-medium hover:from-[#0A2470] hover:to-blue-700 transition-all duration-300 text-sm"
+              className="w-full sm:w-auto px-6 py-2 bg-gradient-to-r from-[#0E3293] to-blue-600 text-white rounded-lg font-medium hover:from-[#0A2470] hover:to-blue-700 transition-all duration-300 text-sm"
             >
               Book Appointment
             </button>
@@ -268,7 +268,7 @@ const DoctorDetailsPage: React.FC = () => {
 
         {/* Bio Section */}
         {doctor.bio && (
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 section">
             <Typography variant="h6" className="font-bold text-gray-800 mb-3">
               About {doctor.fullName.split(' ').pop()}
             </Typography>
@@ -279,7 +279,7 @@ const DoctorDetailsPage: React.FC = () => {
         )}
 
         {/* Qualifications */}
-        <div className="bg-white rounded-2xl shadow-lg p-6">
+        <div className="bg-white rounded-2xl shadow-lg p-6 section">
           <Typography variant="h6" className="font-bold text-gray-800 mb-4">
             Qualifications
           </Typography>
@@ -302,7 +302,7 @@ const DoctorDetailsPage: React.FC = () => {
 
         {/* Availability Schedule - Compact Clinic-wise */}
         {doctor.availability && doctor.availability.length > 0 && (
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 section">
             <Typography variant="h6" className="font-bold text-gray-800 mb-4">
               Availability Schedule
             </Typography>
@@ -392,7 +392,7 @@ const DoctorDetailsPage: React.FC = () => {
 
         {/* Home Service */}
         {doctor.HomeService && (
-          <div className="bg-white rounded-2xl shadow-lg p-6">
+          <div className="bg-white rounded-2xl shadow-lg p-6 section">
             <Typography variant="h6" className="font-bold text-gray-800 mb-4">
               Home Service
             </Typography>
