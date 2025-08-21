@@ -57,7 +57,7 @@ const BookingDetailsForm: React.FC = () => {
 
   return (
     <div className="flex-1 bg-gray-50 overflow-auto">
-      <div className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto p-4 sm:p-6">
         {/* Header */}
         <div className="mb-6">
           <Typography variant="h4" className="text-gray-900 font-bold mb-2">
@@ -68,13 +68,13 @@ const BookingDetailsForm: React.FC = () => {
           </Typography>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
           {/* Patient Type Selection */}
-          <div className="mb-6">
+          <div className="mb-4 sm:mb-6">
             <Typography variant="body1" className="text-gray-900 font-medium mb-3">
               Who is this appointment for?
             </Typography>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <button
                 onClick={() => setPatientType('self')}
                 className={`p-4 rounded-xl border-2 transition-all duration-200 ${
@@ -144,7 +144,7 @@ const BookingDetailsForm: React.FC = () => {
               <select
                 value={selectedFamilyMember}
                 onChange={(e) => setSelectedFamilyMember(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0e3293] focus:border-[#0e3293] bg-white"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0e3293] focus:border-[#0e3293] bg-white text-base sm:text-sm"
               >
                 <option value="">Choose a family member</option>
                 {mockFamilyMembers.map((member) => (
@@ -157,7 +157,7 @@ const BookingDetailsForm: React.FC = () => {
           )}
 
           {/* Selected Patient Summary */}
-          <div className="bg-gray-50 rounded-lg p-4">
+          <div className="bg-gray-50 rounded-lg p-3 sm:p-4 mt-4">
             <Typography variant="body2" className="text-gray-600 mb-2">
               Appointment will be booked for:
             </Typography>
@@ -188,11 +188,11 @@ const BookingDetailsForm: React.FC = () => {
           </div>
 
           {/* Submit Button */}
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-6 sm:mt-8 pt-6 border-t border-gray-200">
             <Button
               onClick={handleSubmit}
               disabled={patientType === 'family' && !selectedFamilyMember}
-              className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 px-6 rounded-xl font-medium transition-colors"
+              className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 sm:py-3 px-4 sm:px-6 rounded-xl font-medium text-base sm:text-lg transition-colors"
             >
               Continue to Review
             </Button>
@@ -200,7 +200,7 @@ const BookingDetailsForm: React.FC = () => {
         </div>
 
         {/* Information Note */}
-        <div className="mt-6 p-4 bg-white rounded-lg border border-blue-200">
+        <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-white rounded-lg border border-blue-200">
           <div className="flex items-start">
             <Icon name="info" size="small" color="#3b82f6" className="mr-3 mt-0.5" />
             <div>

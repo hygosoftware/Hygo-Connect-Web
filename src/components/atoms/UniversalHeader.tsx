@@ -13,6 +13,7 @@ interface UniversalHeaderProps {
   variant?: 'default' | 'gradient' | 'home';
   icon?: React.ComponentProps<typeof Icon>['name'];
   subtitle?: string;
+  showMenuButton?: boolean;
 }
 
 const UniversalHeader: React.FC<UniversalHeaderProps> = ({
@@ -24,6 +25,7 @@ const UniversalHeader: React.FC<UniversalHeaderProps> = ({
   variant = 'default',
   icon,
   subtitle,
+  showMenuButton = true,
 }) => {
   const { onBackPress: contextBackPress, shouldShowBackButton, getPageTitle, onMobileMenuToggle } = useHeader();
 
@@ -65,17 +67,19 @@ const UniversalHeader: React.FC<UniversalHeaderProps> = ({
       {/* Consistent height and padding across all variants */}
       <div className="h-16 px-4 flex items-center justify-between relative">
             <div className="flex items-center flex-1 min-w-0">
-              {/* Mobile Menu Button for home variant */}
-              {variant === 'home' && (
+              {/* Mobile Menu Button - controllable via prop */}
+              {showMenuButton && (
                 <button
-                  className="md:hidden w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mr-3 hover:bg-white/30 transition-colors duration-200"
+                  className={`md:hidden w-8 h-8 rounded-lg flex items-center justify-center mr-3 transition-colors duration-200
+                    ${variant === 'gradient' || variant === 'home' ? 'bg-white/20 hover:bg-white/30' : 'bg-gray-100 hover:bg-gray-200'}`}
                   onClick={onMobileMenuToggle}
+                  aria-label="Open menu"
                 >
-                  <Icon name="menu" size="small" color="white" />
+                  <Icon name="menu" size="small" color={variant === 'gradient' || variant === 'home' ? 'white' : '#0e3293'} />
                 </button>
               )}
 
-              {/* Back Button for other variants */}
+              {/* Back Button (if applicable) */}
               {shouldShow && variant !== 'home' && (
                 <BackButton
                   onClick={handleBackPress}

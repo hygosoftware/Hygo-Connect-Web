@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Typography } from './';
 
 interface BannerItem {
@@ -68,6 +69,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
   };
 
   const renderBannerItem = (item: BannerItem, index: number) => {
+    const [imageError, setImageError] = useState(false);
     return (
       <div
         key={item.id}
@@ -76,15 +78,17 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
         }`}
       >
         <div className="relative w-full h-40 rounded-xl overflow-hidden">
-          <img
+          {/* Show fallback background only if image fails */}
+          {imageError && (
+            <div className="absolute inset-0" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}} />
+          )}
+          <Image
             src={item.imageUri}
             alt={item.title}
-            className="absolute inset-0 w-full h-full object-cover"
-            onError={(e) => {
-              // Fallback to a gradient background if image fails to load
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-            }}
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+            onError={() => setImageError(true)}
           />
           <div className="absolute inset-0 bg-black bg-opacity-30 rounded-xl p-4 flex flex-col justify-between">
             <div>

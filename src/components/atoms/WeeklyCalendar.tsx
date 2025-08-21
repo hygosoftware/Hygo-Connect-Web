@@ -1,4 +1,5 @@
 'use client';
+import '../atoms/pillpal-responsive.css';
 
 import React, { useState, useMemo } from 'react';
 import { Typography, Icon } from './';
@@ -109,7 +110,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 ${className}`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 weekly-calendar-mobile ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <button
@@ -138,7 +139,7 @@ const WeeklyCalendar: React.FC<WeeklyCalendarProps> = ({
 
       {/* Calendar Grid */}
       <div className="overflow-x-auto">
-        <div className="min-w-full">
+        <div className="min-w-full calendar-grid">
           {/* Day Headers */}
           <div className="grid grid-cols-8 border-b border-gray-200">
             <div className="p-3 text-center border-r border-gray-200">

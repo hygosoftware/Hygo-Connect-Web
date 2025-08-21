@@ -1,4 +1,5 @@
 'use client';
+import './doctor-details-responsive.css';
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
@@ -95,7 +96,7 @@ const DoctorDetailsPage: React.FC = () => {
           <div className="bg-white rounded-2xl shadow-lg p-6 animate-pulse">
             <div className="flex items-center mb-6">
               <div className="w-24 h-24 bg-gray-200 rounded-full mr-4"></div>
-              <div className="flex-1">
+              <div className="flex-1 doctor-info">
                 <div className="h-6 bg-gray-200 rounded mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                 <div className="h-4 bg-gray-200 rounded w-1/2"></div>
@@ -166,7 +167,7 @@ const DoctorDetailsPage: React.FC = () => {
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <div className="flex items-start mb-6">
             {/* Doctor Image */}
-            <div className="relative mr-4 flex-shrink-0">
+            <div className="relative mr-4 flex-shrink-0 doctor-img">
               <img
                 src={doctorHelpers.getFullImageUrl(doctor.profileImage)}
                 alt={doctor.fullName}
@@ -238,7 +239,7 @@ const DoctorDetailsPage: React.FC = () => {
           </div>
 
           {/* Status and Languages */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 status-lang-row">
             <div className="flex items-center">
               <div className={`px-3 py-1 rounded-full text-sm font-medium ${
                 doctor.isAvailableNow 
@@ -255,7 +256,7 @@ const DoctorDetailsPage: React.FC = () => {
           </div>
 
           {/* Book Appointment Button */}
-          <div className="flex justify-center">
+          <div className="flex justify-center book-btn-row">
             <button
               onClick={handleBookAppointment}
               className="px-6 py-2 bg-gradient-to-r from-[#0E3293] to-blue-600 text-white rounded-lg font-medium hover:from-[#0A2470] hover:to-blue-700 transition-all duration-300 text-sm"
@@ -405,7 +406,7 @@ const DoctorDetailsPage: React.FC = () => {
                 </Typography>
               </div>
               {doctor.HomeService.offered === 'Yes' && doctor.HomeService.fee > 0 && (
-                <div className="text-right">
+                <div className="text-right consult-fee-box">
                   <Typography variant="body1" className="font-bold text-blue-600">
                     ₹{doctor.HomeService.fee}
                   </Typography>

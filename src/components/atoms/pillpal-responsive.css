@@ -1,0 +1,57 @@
+/* Responsive styles for WeeklyCalendar and AddMedicineModal */
+.weekly-calendar-mobile {
+  overflow-x: auto;
+  min-width: 0;
+}
+.weekly-calendar-mobile .calendar-grid {
+  min-width: 600px;
+}
+@media (max-width: 640px) {
+  .weekly-calendar-mobile {
+    padding: 0.25rem;
+    border-radius: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    background: #fff;
+    overflow-x: unset;
+  }
+  .calendar-grid {
+    display: flex;
+    flex-direction: column;
+    min-width: unset;
+    width: 100%;
+  }
+  .calendar-grid .grid-cols-8 {
+    display: flex;
+    flex-direction: row;
+    overflow-x: auto;
+    width: 100%;
+  }
+  .calendar-grid .grid-cols-8 > div {
+    min-width: 80px;
+    flex: 1 0 80px;
+    text-align: center;
+  }
+  .calendar-grid .border-b {
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .calendar-grid .border-r {
+    border-right: 1px solid #e5e7eb;
+  }
+  .calendar-grid .p-3 {
+    padding: 0.5rem;
+  }
+  .calendar-grid .p-1 {
+    padding: 0.25rem;
+  }
+  .add-medicine-modal-mobile {
+    padding: 0 !important;
+  }
+  .add-medicine-modal-mobile .modal-content {
+    padding: 1rem !important;
+  }
+  .add-medicine-modal-mobile .modal-footer {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem !important;
+  }
+}

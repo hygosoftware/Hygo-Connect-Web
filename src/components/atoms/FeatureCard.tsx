@@ -21,6 +21,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
   return (
     <button
       className={`flex flex-col items-center mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95 ${className}`}
+      title={title}
       onClick={onPress}
     >
       <div className={`${bgColor} w-16 h-16 rounded-xl flex items-center justify-center shadow-sm relative transition-all duration-200 hover:shadow-md`}>
@@ -31,7 +32,14 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
       </div>
       <Typography 
         variant="caption" 
-        className="text-gray-700 mt-1 text-center max-w-[64px] leading-tight"
+        className="text-gray-700 mt-1 text-center leading-tight whitespace-normal break-words max-w-[72px] sm:max-w-[80px]"
+        style={{
+          display: '-webkit-box',
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: 'vertical',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}
       >
         {title}
       </Typography>

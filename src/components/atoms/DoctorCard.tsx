@@ -100,12 +100,10 @@ const DoctorCard: React.FC<DoctorCardProps> = ({
             variant="body1"
             className="font-semibold text-center text-sm leading-tight px-1"
             style={{
-              display: '-webkit-box',
-              WebkitLineClamp: 2,
-              WebkitBoxOrient: 'vertical',
+              display: 'block',
+              whiteSpace: 'nowrap',
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              maxHeight: '2.5rem'
+              textOverflow: 'ellipsis'
             }}
           >
             {fullName}

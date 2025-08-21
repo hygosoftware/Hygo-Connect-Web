@@ -4,6 +4,14 @@ const nextConfig = {
     'http://192.168.29.127:3000', // must match the browser address exactly
   ],
   images: {
+    // Domains list for compatibility alongside remotePatterns
+    domains: [
+      'hygo-backend.onrender.com',
+      'images.unsplash.com',
+      'newsinhealth.nih.gov',
+      'res.cloudinary.com',
+      'ui-avatars.com',
+    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -14,6 +22,12 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'newsinhealth.nih.gov',
         port: '',
         pathname: '/**',
       },

@@ -86,9 +86,10 @@ const BookingContent: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <UniversalHeader
         title="Book Appointment"
-        variant="default"
+        variant="gradient"
         showBackButton={true}
         onBackPress={handleGoBack}
+        showMenuButton={false}
       />
 
       <div className="max-w-7xl mx-auto">

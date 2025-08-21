@@ -51,7 +51,8 @@ const BookingPayment: React.FC = () => {
       currentStep: state.currentStep
     });
   }, [state, isBookingComplete]);
-  const [selectedMethod, setSelectedMethod] = useState<'card' | 'upi' | 'wallet' | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<'card' | 'upi' | 'wallet' | 'cash' | null>(null); // 'cash' now included in type
+const [showCashConfirm, setShowCashConfirm] = useState(false);
 
   const [isDesktop, setIsDesktop] = useState(false);
   const [showQR, setShowQR] = useState(false);
@@ -83,7 +84,7 @@ const BookingPayment: React.FC = () => {
 
   const totalAmount = state.selectedDoctor ? state.selectedDoctor.consultationFee + 50 : 0;
 
-  const handlePaymentMethodSelect = (method: 'card' | 'upi' | 'wallet') => {
+  const handlePaymentMethodSelect = (method: 'card' | 'upi' | 'wallet' | 'cash') => {
     setSelectedMethod(method);
     setPaymentMethod(method);
   };
@@ -311,8 +312,8 @@ const BookingPayment: React.FC = () => {
   };
 
   const PaymentMethodCard: React.FC<{
-    method: 'card' | 'upi' | 'wallet';
-    icon: 'credit-card' | 'smartphone' | 'wallet';
+    method: 'card' | 'upi' | 'wallet' | 'cash';
+    icon: 'credit-card' | 'smartphone' | 'wallet' | 'hospital'; // Use 'hospital' icon for cash
     title: string;
     description: string;
   }> = ({ method, icon, title, description }) => (
@@ -526,6 +527,13 @@ const BookingPayment: React.FC = () => {
                   title="Digital Wallet"
                   description="Pay using digital wallets"
                 />
+
+                <PaymentMethodCard
+                  method="cash"
+                  icon="hospital"
+                  title="Cash at Clinic"
+                  description="Pay in cash at the clinic front desk"
+                />
               </div>
             </div>
 
@@ -631,7 +639,23 @@ const BookingPayment: React.FC = () => {
             )}
 
             {/* Pay Button */}
-            {selectedMethod && !showQR && (
+            {selectedMethod === 'cash' && !showQR && (
+              <Button
+                onClick={() => setShowCashConfirm(true)}
+                disabled={state.loading}
+                className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 disabled:bg-gray-400 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
+              >
+                {state.loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </div>
+                ) : (
+                  `Book & Pay at Clinic`
+                )}
+              </Button>
+            )}
+            {selectedMethod && selectedMethod !== 'cash' && !showQR && (
               <Button
                 onClick={() => { void handlePayment(); }}
                 disabled={state.loading}
@@ -646,6 +670,44 @@ const BookingPayment: React.FC = () => {
                   `Pay ₹${totalAmount}`
                 )}
               </Button>
+            )}
+
+            {/* Cash confirmation popup */}
+            {showCashConfirm && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+                  <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
+                    Confirm Cash Payment
+                  </Typography>
+                  <Typography variant="body2" className="text-gray-700 mb-6">
+                    Are you sure you want to pay in cash at the clinic? Your appointment will be reserved, but payment must be made at the front desk.
+                  </Typography>
+                  <div className="flex justify-end gap-3">
+                    <Button
+                      onClick={() => setShowCashConfirm(false)}
+                      className="bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-lg"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={async () => {
+                        setShowCashConfirm(false);
+                        setPaymentMethod('cash' as any); // TypeScript: cast as any since context may expect only old types
+                        setPaymentStatus('success');
+                        showToast({
+                          type: 'success',
+                          title: 'Appointment Booked!',
+                          message: 'Please pay in cash at the clinic.'
+                        });
+                        setStep('confirmation');
+                      }}
+                      className="bg-[#0e3293] text-white hover:bg-[#0e3293]/90 px-4 py-2 rounded-lg"
+                    >
+                      Confirm & Book
+                    </Button>
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}

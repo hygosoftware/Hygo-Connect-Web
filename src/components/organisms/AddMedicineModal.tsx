@@ -1,4 +1,5 @@
 'use client';
+import '../atoms/pillpal-responsive.css';
 
 import React, { useState } from 'react';
 import { Typography, Icon, BackButton, UniversalHeader } from '../atoms';
@@ -110,8 +111,8 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-[9999] p-4">
-      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[95vh] overflow-hidden shadow-2xl border border-gray-100">
+    <div className="fixed inset-0 flex items-center justify-center z-[9999] p-4 add-medicine-modal-mobile">
+      <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[95vh] overflow-hidden shadow-2xl border border-gray-100 modal-content">
         {/* Header with Back Arrow */}
         <div className="bg-gradient-to-r from-[#0E3293] to-[#1a4bb8] rounded-t-3xl">
           <div className="h-16 px-4 flex items-center justify-between">
@@ -429,7 +430,7 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-8 py-6 flex items-center justify-between">
+        <div className="bg-gray-50 px-8 py-6 flex items-center justify-between modal-footer">
           <Typography variant="body2" className="text-gray-600">
             {medicines.length} medicine{medicines.length > 1 ? 's' : ''} configured
           </Typography>

@@ -45,6 +45,7 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   className = '',
   isSidebarExpanded: isSidebarExpandedProp = true,
   onSidebarToggle,
+  isMobileMenuOpen: isMobileMenuOpenProp,
 }) => {
   // Sidebar expansion state (controlled internally)
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(isSidebarExpandedProp);
@@ -94,6 +95,25 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
     setIsMobileMenuOpen(false);
     if (onClose) onClose();
   };
+
+  // Sync internal mobile menu state with external prop (controlled mode on mobile)
+  useEffect(() => {
+    if (typeof isMobileMenuOpenProp === 'boolean') {
+      setIsMobileMenuOpen(isMobileMenuOpenProp);
+    }
+  }, [isMobileMenuOpenProp]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const body = document.body;
+    if (isMobileMenuOpen) {
+      const original = body.style.overflow;
+      body.style.overflow = 'hidden';
+      return () => { body.style.overflow = original; };
+    }
+    return;
+  }, [isMobileMenuOpen]);
   // Logout
   const handleLogout = async () => {
     try {
@@ -239,9 +259,9 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   const MobileOverlay = () => (
     isMobileMenuOpen ? (
       <div className="md:hidden fixed inset-0 z-50">
-        {/* Backdrop (click-capture without darkening) */}
+        {/* Backdrop */}
         <div
-          className="absolute inset-0"
+          className="absolute inset-0 bg-black/30"
           onClick={handleCloseMobileMenu}
         />
         {/* Side Menu */}

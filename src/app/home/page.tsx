@@ -80,7 +80,7 @@ const HomePage: React.FC = () => {
     },
     {
       iconName: 'family',
-      title: 'Family Details',
+      title: 'Family',
       onPress: () => router.push('/family'),
     },
     {
@@ -122,7 +122,7 @@ const HomePage: React.FC = () => {
       id: '1',
       title: 'Vaccination',
       description: 'Schedule your COVID-19 vaccination or booster today',
-      imageUri: 'https://newsinhealth.nih.gov/sites/newsinhealth/files/2021/August/aug-2021-capsule1-young-man-getting-vaccination-hospital.jpg',
+      imageUri: 'https://images.unsplash.com/photo-1601132359864-c974e79890b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
       actionText: 'Book Now',
       onPress: () => handleFeaturePress('Vaccination'),
     },
