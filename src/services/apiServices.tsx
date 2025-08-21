@@ -107,7 +107,7 @@ export interface DoctorsApiResponse {
 }
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://backend.thehygo.com/api/V0/';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ;
 
 // File/Folder types used by folderService
 export interface Folder {

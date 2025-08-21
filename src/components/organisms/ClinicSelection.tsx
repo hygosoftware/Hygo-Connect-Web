@@ -265,7 +265,7 @@ const ClinicSelection: React.FC = () => {
         <div className="mb-6">
           <Typography variant="h4" className="text-gray-900 font-bold mb-2">
             {state.bookingFlow === 'doctor' && state.selectedDoctor 
-              ? `Clinics for Dr. ${state.selectedDoctor.fullName}`
+              ? `Clinics for ${state.selectedDoctor.fullName}`
               : 'Select a Clinic'
             }
           </Typography>
