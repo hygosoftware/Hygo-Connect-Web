@@ -71,7 +71,7 @@ const HomePage: React.FC = () => {
     loadAppointments();
   }, [loadDoctors, loadAppointments]);
 
-  // Feature items with icon names
+  // Feature items with icon names..
   const featureItems: { iconName: IconName; title: string; onPress: () => void; hasNotification?: boolean }[] = [
     {
       iconName: 'pills',
