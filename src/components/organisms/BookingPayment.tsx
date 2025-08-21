@@ -121,7 +121,7 @@ const BookingPayment: React.FC = () => {
         ...config,
         amount: totalAmount * 100, // Amount in paise
         order_id: order.id,
-        description: `Appointment with Dr. ${state.selectedDoctor?.fullName}`,
+        description: `Appointment with ${(state.selectedDoctor?.fullName || '').replace(/^Dr\.\s*/i, '')}`,
         handler: async function (response: import('../../lib/razorpay').RazorpayPaymentData) {
           try {
             // Verify payment (in production, this should be done on your backend)

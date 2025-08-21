@@ -366,8 +366,8 @@ const DateTimeSelection: React.FC = () => {
                 {availableDates.length === 0 && (
                   <Typography variant="caption" className="text-gray-500 mt-2 block">
                     {state.selectedClinic ? 
-                      `No available dates found for Dr. ${state.selectedDoctor?.fullName} at ${state.selectedClinic.clinicName}.` : 
-                      `No available dates found for Dr. ${state.selectedDoctor?.fullName} at any clinic.`}
+                      `No available dates found for ${state.selectedDoctor?.fullName} at ${state.selectedClinic.clinicName}.` : 
+                      `No available dates found for ${state.selectedDoctor?.fullName} at any clinic.`}
                   </Typography>
                 )}
               </div>

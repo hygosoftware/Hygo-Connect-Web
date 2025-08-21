@@ -169,12 +169,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
 
   const doctorName = (() => {
     const name = doctor?.fullName || 'Unknown Doctor';
-    if (name.startsWith('Dr. ')) {
-      const parts = name.split(' ');
-      if (parts.length >= 2) {
-        return `${parts[0]} ${parts[1]}`;
-      }
-    }
     return name;
   })();
 

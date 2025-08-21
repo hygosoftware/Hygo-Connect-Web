@@ -163,41 +163,7 @@ const HomePage: React.FC = () => {
   }));
 
   // Sample appointment data
-  const sampleAppointments = [
-    {
-      doctor: {
-        fullName: 'Dr. Sarah Johnson',
-        specializations: ['Cardiology'],
-        rating: 4.8,
-      },
-      date: '2024-01-25',
-      actualStartTime: '10:00 AM',
-      actualEndTime: '10:30 AM',
-      mode: 'VideoCall' as const,
-      status: 'upcoming' as const,
-      clinic: {
-        clinicName: 'Heart Care Center',
-        clinicAddress: { city: 'New York' }
-      },
-      appointmentId: '1'
-    },
-    {
-      doctor: {
-        fullName: 'Dr. Michael Chen',
-        specializations: ['Dermatology'],
-        rating: 4.9,
-      },
-      date: '2024-01-26',
-      actualStartTime: '2:00 PM',
-      actualEndTime: '2:45 PM',
-      mode: 'InPerson' as const,
-      status: 'upcoming' as const,
-      clinicName: 'Skin Health Clinic',
-      clinicCity: 'Brooklyn',
-      qrCode: 'sample-qr-code-inperson',
-      appointmentId: '2'
-    }
-  ];
+  
 
   return (
     <div className="min-h-screen bg-white">

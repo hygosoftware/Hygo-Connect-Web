@@ -1,6 +1,7 @@
 'use client'
-import React, { useState } from 'react';
-import { CheckCircle2, Circle, ArrowRight, ArrowLeft, X, User, Heart, Phone, Shield, Award } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+
+import { CheckCircle2, ArrowRight, ArrowLeft, X, User, Heart, Phone, Shield, Award } from 'lucide-react';
 
 interface ProfileCompletionWizardProps {
   onClose: () => void;
@@ -17,6 +18,35 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
 }) => {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState(profileData);
+
+  // Helper: Convert to dd-mm-yyyy if possible; pass-through otherwise
+  const toDDMMYYYY = (value: string | undefined | null): string => {
+    if (!value) return '';
+    const str = String(value).trim();
+    if (/^\d{2}-\d{2}-\d{4}$/.test(str)) return str;
+    const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (isoMatch) {
+      const [, y, m, d] = isoMatch;
+      return `${d}-${m}-${y}`;
+    }
+    return str;
+  };
+
+  // Helper: mask input to dd-mm-yyyy while typing
+  const formatDOBInput = (raw: string): string => {
+    const digits = raw.replace(/[^0-9]/g, '').slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0,2)}-${digits.slice(2)}`;
+    return `${digits.slice(0,2)}-${digits.slice(2,4)}-${digits.slice(4)}`;
+  };
+
+  // Normalize initial DOB once on mount to dd-mm-yyyy
+  useEffect(() => {
+    setFormData((prev: any) => ({
+      ...prev,
+      DateOfBirth: toDDMMYYYY(prev?.DateOfBirth)
+    }));
+  }, []);
 
   const steps = [
     {
@@ -83,6 +113,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
       ...formData,
       MobileNumber: formatMobileNumber(formData.MobileNumber || ''),
       AlternativeNumber: formatMobileNumber(formData.AlternativeNumber || ''),
+      DateOfBirth: toDDMMYYYY(formData.DateOfBirth || ''),
     };
 
     onUpdateProfile(formattedData);
@@ -114,8 +145,9 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
             <Input 
               label="Date of Birth" 
               value={formData.DateOfBirth || ''} 
-              onChange={v => handleInputChange('DateOfBirth', v)} 
-              type="date"
+              onChange={v => handleInputChange('DateOfBirth', formatDOBInput(v))} 
+              type="text"
+              placeholder="dd-mm-yyyy"
             />
             <Input 
               label="Age" 
@@ -195,11 +227,12 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
     }
   };
 
-  const Input = ({ label, value, onChange, type = 'text' }: {
+  const Input = ({ label, value, onChange, type = 'text', placeholder }: {
     label: string;
     value: string;
     onChange: (v: string) => void;
     type?: string;
+    placeholder?: string;
   }) => (
     <div>
       <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
@@ -208,6 +241,7 @@ const ProfileCompletionWizard: React.FC<ProfileCompletionWizardProps> = ({
         value={value}
         onChange={e => onChange(e.target.value)}
         className="w-full border border-gray-300 rounded-xl px-4 py-3 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
+        placeholder={placeholder}
       />
     </div>
   );

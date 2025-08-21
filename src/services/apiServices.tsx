@@ -113,7 +113,10 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://backend.th
 export interface Folder {
   _id: string;
   folderName: string;
-  folderAccess?: Array<{ DelegateFolderAuthID: string } | string>;
+  folderAccess?: Array<{
+    DelegateFolderAuthID: string;
+    AccessFolderID: string[];
+  }>;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -329,8 +332,8 @@ export interface ProfileApiResponse {
 export interface UpdateProfileRequest {
   FullName?: string;
   Email?: string;
-  MobileNumber?: string;
-  AlternativeNumber?: string;
+  MobileNumber?: string | Array<{ number: string; isVerified?: boolean }>;
+  AlternativeNumber?: string | Array<{ number: string; isVerified?: boolean }>;
   Gender?: string;
   Age?: string;
   DateOfBirth?: string;
@@ -394,6 +397,43 @@ export const profileService = {
     console.log('📊 Update data:', profileData);
 
     try {
+      // If profilePhoto is a base64 data URL, send multipart/form-data to avoid size bloat and server 413
+      const isDataUrl = (v: unknown): v is string => typeof v === 'string' && v.startsWith('data:');
+
+      if (isDataUrl((profileData as any)?.profilePhoto)) {
+        const form = new FormData();
+
+        for (const [key, value] of Object.entries(profileData)) {
+          if (value === undefined || value === null) continue;
+          if (key === 'profilePhoto' && isDataUrl(value)) {
+            // Convert data URL to Blob and append with a filename
+            const blob = await fetch(value).then(r => r.blob());
+            const mime = value.substring(5, value.indexOf(';')) || 'image/png';
+            const ext = mime.split('/')[1] || 'png';
+            form.append('profilePhoto', blob, `profile.${ext}`);
+          } else if (typeof value === 'object') {
+            form.append(key, JSON.stringify(value));
+          } else {
+            form.append(key, String(value));
+          }
+        }
+
+        const response = await apiClient.put<ProfileData | ProfileApiResponse>(`/${userId}`, form, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+
+        console.log('✅ Profile updated (multipart):', response.data);
+
+        if (response.data && typeof response.data === 'object') {
+          if ('success' in response.data && 'data' in response.data) {
+            const apiResponse = response.data as ProfileApiResponse;
+            return apiResponse.success ? apiResponse.data : null;
+          }
+          return response.data as ProfileData;
+        }
+        return null;
+      }
+
       const response = await apiClient.put<ProfileData | ProfileApiResponse>(`/${userId}`, profileData);
       console.log('✅ Profile updated:', response.data);
 
@@ -836,11 +876,19 @@ export const folderService = {
   console.log('🔗 API URL:', `${API_BASE_URL}/Folder/${userId}`);
   try {
     const response = await apiClient.get<Folder[] | { data: Folder[] }>(`/Folder/${userId}`);
-    if (Array.isArray(response.data)) {
-      return response.data;
+    console.log('✅ API Response received for folders:', response.status);
+    console.log('📦 Raw response data:', response.data);
+    // Normalize various possible response shapes
+    const raw = response.data as unknown;
+    if (Array.isArray(raw)) {
+      return raw as Folder[];
     }
-    if (response.data && typeof response.data === 'object' && 'data' in response.data) {
-      return (response.data as { data: Folder[] }).data;
+    if (raw && typeof raw === 'object') {
+      const obj = raw as Record<string, unknown>;
+      // Common wrappers
+      if (Array.isArray(obj.data)) return obj.data as Folder[];
+      if (Array.isArray((obj as any).folders)) return (obj as any).folders as Folder[];
+      if (Array.isArray((obj as any).Folders)) return (obj as any).Folders as Folder[];
     }
     return [];
   } catch (error: unknown) {
@@ -1005,21 +1053,60 @@ export const folderService = {
     }
   },
 
-  // Create a new folder for a user
-  createFolder: async (userId: string, folderName: string): Promise<Folder | null> => {
-    console.log('🌐 API Call: Creating folder for user ID:', userId);
-    console.log('📁 Folder name:', folderName);
-
+  // Create a new folder for a user. If sharing at creation, provide delegates with permissions.
+  createFolder: async (
+    userId: string,
+    folderName: string,
+    delegates: Array<{ userId: string; access: string[] }> = []
+  ): Promise<Folder | null> => {
     try {
-      const response = await apiClient.post<Folder>(`/Folder/${userId}`, {
+      const payload = {
         folderName,
-        folderAccess: [userId] // Default access to the user who created it
-      });
+        folderAccess: delegates.map((d) => ({
+          DelegateFolderAuthID: d.userId,
+          AccessFolderID: d.access,
+        })),
+      };
+
+      const response = await apiClient.post<Folder>(`/Folder/${userId}`, payload);
 
       console.log('✅ Folder created successfully:', response.data);
       return response.data;
     } catch (error: unknown) {
-      console.error('❌ API Error creating folder:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error creating folder:', error.message, error.response?.data);
+      } else if (error instanceof Error) {
+        console.error('❌ API Error creating folder:', error.message);
+      } else {
+        console.error('❌ API Error creating folder:', error);
+      }
+      return null;
+    }
+  },
+
+  // Grant access to an existing folder
+  grantFolderAccess: async (
+    userId: string,
+    folderId: string,
+    userIdToGrant: string,
+    accessType: string[]
+  ): Promise<Folder | null> => {
+    try {
+      const response = await apiClient.post<{ message: string; folder: Folder }>(`/Folder/${userId}`, {
+        folderId,
+        userIdToGrant,
+        accessType,
+      });
+      console.log('✅ Access granted:', response.data);
+      return response.data.folder || null;
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ API Error granting access:', error.message, error.response?.data);
+      } else if (error instanceof Error) {
+        console.error('❌ API Error granting access:', error.message);
+      } else {
+        console.error('❌ API Error granting access:', error);
+      }
       return null;
     }
   },
@@ -1163,11 +1250,35 @@ export const familyMemberService = {
   getFamilyMemberDetails: async (userId: string, patientId: string): Promise<FamilyMember | null> => {
     try {
       console.log('🔍 Fetching family member details:', { userId, patientId });
-      // Fetch full list for the user and search locally, because API endpoint for single member may vary
+      // First try the direct endpoint provided by backend
+      const directResp = await apiClient.get<FamilyMember | FamilyMember[] | { data?: FamilyMember }>(`/add/${userId}/${patientId}`);
+      const data: any = directResp.data as any;
+      console.log('📦 Raw response data:', directResp.data);
+
+      // If wrapped in { data }
+      let member: any = (data && typeof data === 'object' && 'data' in data) ? (data as any).data : data;
+
+      // If array is returned, try to locate by id
+      if (Array.isArray(member)) {
+        member = member.find((item: any) => {
+          const directId = (typeof item?._id === 'object') ? (item?._id?._id || item?._id?.id) : (item?._id || item?.id);
+          const nestedId = item?.patientDetails?.patientInfo?._id || item?.patientDetails?.patientInfo?.id;
+          return directId === patientId || nestedId === patientId;
+        }) || member[0];
+      }
+
+      // Unwrap common nesting
+      if (member?.patientDetails?.patientInfo) member = member.patientDetails.patientInfo;
+      if (member && typeof member._id === 'object') member = member._id;
+
+      if (member && (member._id || member.id)) {
+        return member as FamilyMember;
+      }
+
+      // Fallback: fetch full list and search locally (handles older deployments)
+      console.warn('⚠️ Direct endpoint did not return a single member. Falling back to list search.');
       const listResponse = await apiClient.get<FamilyMember[] | FamilyMember>(`/add/${userId}/Patient`);
       const raw = listResponse.data as unknown;
-
-      // Normalize to array
       const rawObj: any = raw as any;
       const list: any[] = Array.isArray(rawObj)
         ? rawObj
@@ -1175,11 +1286,7 @@ export const familyMemberService = {
           ? rawObj.patients
           : (rawObj ? [rawObj] : []);
 
-      // Try to find by common shapes
       const found = list.find((item: any) => {
-        // Cases:
-        // - item._id is string (direct)
-        // - item._id is object with actual patient { _id, FullName, ... }
         const directId = (typeof item?._id === 'object') ? (item?._id?._id || item?._id?.id) : (item?._id || item?.id);
         const nestedId = item?.patientDetails?.patientInfo?._id || item?.patientDetails?.patientInfo?.id;
         return directId === patientId || nestedId === patientId;
@@ -1190,13 +1297,9 @@ export const familyMemberService = {
         return null;
       }
 
-      // Return either nested patientInfo or direct item as FamilyMember
-      let member: any = found?.patientDetails?.patientInfo ? found.patientDetails.patientInfo : found;
-      // If member has embedded _id object with actual fields, unwrap it
-      if (member && typeof member._id === 'object') {
-        member = member._id;
-      }
-      return member as FamilyMember;
+      let fallbackMember: any = found?.patientDetails?.patientInfo ? found.patientDetails.patientInfo : found;
+      if (fallbackMember && typeof fallbackMember._id === 'object') fallbackMember = fallbackMember._id;
+      return fallbackMember as FamilyMember;
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         console.error('❌ Failed to fetch family member details:', error.message, error.response?.data);

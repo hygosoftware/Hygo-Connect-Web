@@ -1,6 +1,6 @@
 // Modern Profile Page - Database Schema Aligned
 'use client'
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { UniversalHeader } from '../../components/atoms';
 import { useAuth } from '../../hooks/useAuth';
@@ -48,6 +48,50 @@ const defaultProfileData: ProfileData = {
   Allergies: [],
 };
 
+// Helpers for DOB formatting
+const toDDMMYYYY = (value: string | undefined | null): string => {
+  if (!value) return '';
+  const str = String(value).trim();
+  // already dd-mm-yyyy
+  if (/^\d{2}-\d{2}-\d{4}$/.test(str)) return str;
+  // ISO yyyy-mm-dd or yyyy-mm-ddTHH:MM:SS
+  const isoMatch = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const [, y, m, d] = isoMatch;
+    return `${d}-${m}-${y}`;
+  }
+  // Fallback: try Date parse
+  const dt = new Date(str);
+  if (!isNaN(dt.getTime())) {
+    const d = String(dt.getDate()).padStart(2, '0');
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const y = String(dt.getFullYear());
+    return `${d}-${m}-${y}`;
+  }
+  return str; // leave as-is
+};
+
+const formatDOBInput = (raw: string): string => {
+  // keep only digits; insert dashes as DD-MM-YYYY
+  const digits = raw.replace(/[^0-9]/g, '').slice(0, 8);
+  const parts = [] as string[];
+  if (digits.length <= 2) return digits;
+  parts.push(digits.slice(0, 2));
+  if (digits.length <= 4) return `${parts[0]}-${digits.slice(2)}`;
+  parts.push(digits.slice(2, 4));
+  return `${parts[0]}-${parts[1]}-${digits.slice(4)}`;
+};
+
+const isValidDOB = (value: string): boolean => {
+  if (!value) return true; // allow empty
+  if (!/^\d{2}-\d{2}-\d{4}$/.test(value)) return false;
+  const [dd, mm, yyyy] = value.split('-').map(v => parseInt(v, 10));
+  if (mm < 1 || mm > 12) return false;
+  const daysInMonth = new Date(yyyy, mm, 0).getDate();
+  if (dd < 1 || dd > daysInMonth) return false;
+  return true;
+};
+
 const TABS = [
   { id: 'overview', label: 'Overview', icon: <Activity className="w-4 h-4" /> },
   { id: 'personal', label: 'Personal', icon: <User className="w-4 h-4" /> },
@@ -66,6 +110,33 @@ const ProfileScreen: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [showCompletionWizard, setShowCompletionWizard] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const onChangeProfilePhotoClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleProfilePhotoSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // Simple validation: image type and max ~5MB
+    if (!file.type.startsWith('image/')) {
+      setError('Please select a valid image file.');
+      return;
+    }
+    const MAX_BYTES = 5 * 1024 * 1024;
+    if (file.size > MAX_BYTES) {
+      setError('Image is too large. Please select an image under 5 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result as string;
+      setProfileData(prev => ({ ...prev, profilePhoto: base64 }));
+      if (!isEditing) setIsEditing(true);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Fetch profile data
   useEffect(() => {
@@ -92,6 +163,7 @@ const ProfileScreen: React.FC = () => {
             Weight: apiProfileData?.Weight !== undefined ? String(apiProfileData.Weight) : '',
             ChronicDiseases: Array.isArray(apiProfileData?.ChronicDiseases) ? apiProfileData!.ChronicDiseases : [],
             Allergies: Array.isArray(apiProfileData?.Allergies) ? apiProfileData!.Allergies : [],
+            DateOfBirth: toDDMMYYYY(apiProfileData?.DateOfBirth || ''),
           });
         }
       } catch (e: any) {
@@ -135,15 +207,27 @@ const ProfileScreen: React.FC = () => {
           return;
         }
 
-        // Build payload to match UpdateProfileRequest (strings for numbers, plain strings for phones)
+        // Validate DOB format (dd-mm-yyyy)
+        if (profileData.DateOfBirth && !isValidDOB(profileData.DateOfBirth)) {
+          setError('Date of Birth must be in dd-mm-yyyy format.');
+          return;
+        }
+
+        // Helper to format phone as array of objects per backend
+        const toPhoneArray = (num?: string) => {
+          const n = (num || '').trim();
+          return n ? [{ number: n, isVerified: false }] : undefined;
+        };
+
+        // Build payload to match UpdateProfileRequest
         const dataToSend: UpdateProfileRequest = {
           FullName: profileData.FullName || undefined,
           Email: profileData.Email || undefined,
-          MobileNumber: profileData.MobileNumber?.trim() || undefined,
-          AlternativeNumber: profileData.AlternativeNumber?.trim() || undefined,
+          MobileNumber: toPhoneArray(profileData.MobileNumber),
+          AlternativeNumber: toPhoneArray(profileData.AlternativeNumber),
           Gender: profileData.Gender || undefined,
           Age: profileData.Age?.trim() || undefined,
-          DateOfBirth: profileData.DateOfBirth || undefined,
+          DateOfBirth: profileData.DateOfBirth ? toDDMMYYYY(profileData.DateOfBirth) : undefined,
           Country: profileData.Country || undefined,
           State: profileData.State || undefined,
           City: profileData.City || undefined,
@@ -259,7 +343,14 @@ const ProfileScreen: React.FC = () => {
                   { value: 'Others', label: 'Others' }
                 ]}
               />
-              <Input label="Date of Birth" value={profileData.DateOfBirth} onChange={v => handleInputChange('DateOfBirth', v)} disabled={!isEditing} type="date" />
+              <Input
+                label="Date of Birth"
+                value={profileData.DateOfBirth}
+                onChange={v => handleInputChange('DateOfBirth', formatDOBInput(v))}
+                disabled={!isEditing}
+                type="text"
+                placeholder="dd-mm-yyyy"
+              />
               <Input label="Age" value={profileData.Age} onChange={v => handleInputChange('Age', v)} disabled={!isEditing} type="number" />
             </SectionCard>
           </div>
@@ -382,10 +473,17 @@ const ProfileScreen: React.FC = () => {
                 />
               </div>
               {isEditing && (
-                <button className="absolute bottom-2 right-2 text-white rounded-full p-3 shadow-lg hover:opacity-90 transition-all" style={{ backgroundColor: '#0e3293' }}>
+                <button onClick={onChangeProfilePhotoClick} className="absolute bottom-2 right-2 text-white rounded-full p-3 shadow-lg hover:opacity-90 transition-all" style={{ backgroundColor: '#0e3293' }}>
                   <Camera className="w-4 h-4" />
                 </button>
               )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleProfilePhotoSelected}
+              />
             </div>
 
             {/* Profile Info */}
@@ -587,7 +685,8 @@ const Input: React.FC<{
   onChange: (v: string) => void;
   disabled?: boolean;
   type?: string;
-}> = ({ label, value, onChange, disabled, type = 'text' }) => (
+  placeholder?: string;
+}> = ({ label, value, onChange, disabled, type = 'text', placeholder }) => (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
     <input
@@ -602,6 +701,7 @@ const Input: React.FC<{
       onChange={e => onChange(e.target.value)}
       disabled={disabled}
       type={type}
+      placeholder={placeholder}
     />
   </div>
 );

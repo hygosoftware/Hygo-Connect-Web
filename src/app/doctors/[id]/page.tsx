@@ -153,7 +153,7 @@ const DoctorDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <UniversalHeader
-        title={`Dr. ${doctor.fullName}`}
+        title={`Dr. ${doctor.fullName.replace(/^Dr\.\s*/i, '')}`}
         subtitle={doctor.specializations?.join(', ') || 'Medical Professional'}
         variant="gradient"
         icon="user"
@@ -269,7 +269,7 @@ const DoctorDetailsPage: React.FC = () => {
         {doctor.bio && (
           <div className="bg-white rounded-2xl shadow-lg p-6">
             <Typography variant="h6" className="font-bold text-gray-800 mb-3">
-              About Dr. {doctor.fullName.split(' ').pop()}
+              About {doctor.fullName.split(' ').pop()}
             </Typography>
             <Typography variant="body2" className="text-gray-700 leading-relaxed whitespace-pre-line">
               {doctor.bio}

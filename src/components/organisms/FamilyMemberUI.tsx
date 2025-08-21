@@ -7,13 +7,28 @@ interface FamilyMember {
   id: string;
   name: string;
   relation: string;
+  age?: string;
 
   profileImage?: string;
   mobileNumber?: string;
+  altMobileNumber?: string;
   email?: string;
+  dateOfBirth?: string;
   bloodGroup?: string;
   allergies?: string[];
   medications?: string[];
+  chronicDiseases?: string[];
+  gender?: string;
+  height?: string | number;
+  weight?: string | number;
+  country?: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  userType?: string;
+  subscription?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 interface ToastProps {
@@ -391,8 +406,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
           {/* Right: Member Details */}
           <div className="flex-1 overflow-y-auto p-8">
             {selectedMemberData ? (
-              <div className="max-w-xl mx-auto bg-white shadow-lg rounded-xl p-6">
-                {/* You can customize this detail view as needed */}
+              <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-xl p-6">
                 <div className="flex items-center gap-6 mb-6">
                   <div className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                     {selectedMemberData.profileImage ? (
@@ -406,38 +420,180 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
                     <div className="text-gray-500 text-sm">{selectedMemberData.relation}</div>
                   </div>
                 </div>
-                <div className="space-y-3">
-                  {selectedMemberData.email && (
-                    <div className="flex items-center text-base">
-                      <span className="font-semibold text-gray-900 w-32">Email:</span>
-                      <span className="text-gray-700">{selectedMemberData.email}</span>
+
+                {/* Contact */}
+                {(selectedMemberData.email || selectedMemberData.mobileNumber || selectedMemberData.altMobileNumber) && (
+                  <div className="mb-6">
+                    <div className="text-sm font-semibold text-gray-500 mb-2">Contact</div>
+                    <div className="space-y-2">
+                      {selectedMemberData.email && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Email:</span>
+                          <span className="text-gray-700 break-all">{selectedMemberData.email}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.mobileNumber && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Mobile:</span>
+                          <span className="text-gray-700">{selectedMemberData.mobileNumber}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.altMobileNumber && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Alt. Mobile:</span>
+                          <span className="text-gray-700">{selectedMemberData.altMobileNumber}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {selectedMemberData.mobileNumber && (
-                    <div className="flex items-center text-base">
-                      <span className="font-semibold text-gray-900 w-32">Mobile:</span>
-                      <span className="text-gray-700">{selectedMemberData.mobileNumber}</span>
+                  </div>
+                )}
+
+                {/* Personal */}
+                {(selectedMemberData.gender || selectedMemberData.dateOfBirth || selectedMemberData.age) && (
+                  <div className="mb-6">
+                    <div className="text-sm font-semibold text-gray-500 mb-2">Personal</div>
+                    <div className="space-y-2">
+                      {selectedMemberData.gender && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Gender:</span>
+                          <span className="text-gray-700">{selectedMemberData.gender}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.dateOfBirth && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Date of Birth:</span>
+                          <span className="text-gray-700">{selectedMemberData.dateOfBirth}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.age && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Age:</span>
+                          <span className="text-gray-700">{selectedMemberData.age}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {selectedMemberData.bloodGroup && (
-                    <div className="flex items-center text-base">
-                      <span className="font-semibold text-gray-900 w-32">Blood Group:</span>
-                      <span className="text-gray-700">{selectedMemberData.bloodGroup}</span>
+                  </div>
+                )}
+
+                {/* Medical */}
+                {(selectedMemberData.bloodGroup || (selectedMemberData.allergies && selectedMemberData.allergies.length) || (selectedMemberData.chronicDiseases && selectedMemberData.chronicDiseases.length) || (selectedMemberData.medications && selectedMemberData.medications.length)) && (
+                  <div className="mb-6">
+                    <div className="text-sm font-semibold text-gray-500 mb-2">Medical</div>
+                    <div className="space-y-2">
+                      {selectedMemberData.bloodGroup && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Blood Group:</span>
+                          <span className="text-gray-700">{selectedMemberData.bloodGroup}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.allergies && selectedMemberData.allergies.length > 0 && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Allergies:</span>
+                          <span className="text-gray-700">{selectedMemberData.allergies.join(', ')}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.chronicDiseases && selectedMemberData.chronicDiseases.length > 0 && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Chronic Diseases:</span>
+                          <span className="text-gray-700">{selectedMemberData.chronicDiseases.join(', ')}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.medications && selectedMemberData.medications.length > 0 && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Medications:</span>
+                          <span className="text-gray-700">{selectedMemberData.medications.join(', ')}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {selectedMemberData.allergies && selectedMemberData.allergies.length > 0 && (
-                    <div className="flex items-center text-base">
-                      <span className="font-semibold text-gray-900 w-32">Allergies:</span>
-                      <span className="text-gray-700">{selectedMemberData.allergies.join(', ')}</span>
+                  </div>
+                )}
+
+                {/* Body Metrics */}
+                {(selectedMemberData.height || selectedMemberData.weight) && (
+                  <div className="mb-6">
+                    <div className="text-sm font-semibold text-gray-500 mb-2">Body Metrics</div>
+                    <div className="space-y-2">
+                      {selectedMemberData.height && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Height:</span>
+                          <span className="text-gray-700">{selectedMemberData.height}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.weight && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Weight:</span>
+                          <span className="text-gray-700">{selectedMemberData.weight}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                  {selectedMemberData.medications && selectedMemberData.medications.length > 0 && (
-                    <div className="flex items-center text-base">
-                      <span className="font-semibold text-gray-900 w-32">Medications:</span>
-                      <span className="text-gray-700">{selectedMemberData.medications.join(', ')}</span>
+                  </div>
+                )}
+
+                {/* Location */}
+                {(selectedMemberData.address || selectedMemberData.city || selectedMemberData.state || selectedMemberData.country) && (
+                  <div className="mb-6">
+                    <div className="text-sm font-semibold text-gray-500 mb-2">Location</div>
+                    <div className="space-y-2">
+                      {selectedMemberData.address && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Address:</span>
+                          <span className="text-gray-700">{selectedMemberData.address}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.city && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">City:</span>
+                          <span className="text-gray-700">{selectedMemberData.city}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.state && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">State:</span>
+                          <span className="text-gray-700">{selectedMemberData.state}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.country && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Country:</span>
+                          <span className="text-gray-700">{selectedMemberData.country}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Account */}
+                {(selectedMemberData.userType || selectedMemberData.subscription || selectedMemberData.createdAt || selectedMemberData.updatedAt) && (
+                  <div className="mb-2">
+                    <div className="text-sm font-semibold text-gray-500 mb-2">Account</div>
+                    <div className="space-y-2">
+                      {selectedMemberData.userType && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">User Type:</span>
+                          <span className="text-gray-700">{selectedMemberData.userType}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.subscription && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Subscription:</span>
+                          <span className="text-gray-700">{selectedMemberData.subscription}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.createdAt && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Created At:</span>
+                          <span className="text-gray-700">{new Date(selectedMemberData.createdAt).toLocaleString()}</span>
+                        </div>
+                      )}
+                      {selectedMemberData.updatedAt && (
+                        <div className="flex items-center text-base">
+                          <span className="font-semibold text-gray-900 w-40">Updated At:</span>
+                          <span className="text-gray-700">{new Date(selectedMemberData.updatedAt).toLocaleString()}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400">Select a member to view details</div>

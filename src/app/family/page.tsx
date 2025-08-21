@@ -13,11 +13,24 @@ interface FamilyMember {
   age: string;
   profileImage?: string;
   mobileNumber?: string;
+  altMobileNumber?: string;
   email?: string;
   dateOfBirth?: string;
   bloodGroup?: string;
   allergies?: string[];
   medications?: string[];
+  chronicDiseases?: string[];
+  gender?: string;
+  height?: string | number;
+  weight?: string | number;
+  country?: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  userType?: string;
+  subscription?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 // Helper functions to convert between API and UI models
@@ -86,6 +99,20 @@ const convertApiToUiMember = (apiResponse: ApiMemberEnvelope): FamilyMember => {
     mobileNumber = m.replace(/^\+\d{1,3}/, '');
   }
 
+  // Normalize alternative number
+  let altMobileNumber: string | undefined;
+  const alt = (source as any)?.AlternativeNumber ?? (source as any)?.alternativeNumber;
+  if (Array.isArray(alt) && alt.length > 0) {
+    const first = alt[0];
+    if (typeof first === 'object' && first !== null && 'number' in first) {
+      altMobileNumber = String((first as any).number).replace(/^\+\d{1,3}/, '');
+    } else {
+      altMobileNumber = String(first).replace(/^\+\d{1,3}/, '');
+    }
+  } else if (typeof alt === 'string' && alt.trim()) {
+    altMobileNumber = alt.replace(/^\+\d{1,3}/, '');
+  }
+
   // Normalize email
   const email = (source as any)?.Email || (source as any)?.email;
 
@@ -103,6 +130,20 @@ const convertApiToUiMember = (apiResponse: ApiMemberEnvelope): FamilyMember => {
   // Normalize allergies
   const allergies = (source as any)?.Allergies || (source as any)?.allergies || [];
 
+  // Additional fields
+  const chronicDiseases = (source as any)?.ChronicDiseases || (source as any)?.chronicDiseases || [];
+  const gender = (source as any)?.Gender || (source as any)?.gender;
+  const height = (source as any)?.Height || (source as any)?.height;
+  const weight = (source as any)?.Weight || (source as any)?.weight;
+  const country = (source as any)?.Country || (source as any)?.country;
+  const state = (source as any)?.State || (source as any)?.state;
+  const city = (source as any)?.City || (source as any)?.city;
+  const address = (source as any)?.Address || (source as any)?.address;
+  const userType = (source as any)?.UserType || (source as any)?.userType;
+  const subscription = (source as any)?.subscription || (source as any)?.Subscription;
+  const createdAt = (source as any)?.createdAt;
+  const updatedAt = (source as any)?.updatedAt;
+
   return {
     id: id || 'unknown',
     name,
@@ -110,11 +151,24 @@ const convertApiToUiMember = (apiResponse: ApiMemberEnvelope): FamilyMember => {
     age: typeof ageVal === 'number' ? String(ageVal) : (ageVal || ''),
     profileImage,
     mobileNumber,
+    altMobileNumber,
     email,
     dateOfBirth,
     bloodGroup,
     allergies,
-    medications: []
+    medications: [],
+    chronicDiseases,
+    gender,
+    height,
+    weight,
+    country,
+    state,
+    city,
+    address,
+    userType,
+    subscription,
+    createdAt,
+    updatedAt
   };
 };
 

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Typography, Icon, SearchBar, UniversalHeader } from '../../components/atoms';
-import { folderService, Folder } from '../../services/apiServices';
+import { folderService, familyMemberService, Folder, FamilyMember } from '../../services/apiServices';
 import { TokenManager } from '../../services/auth';
 
 interface RecordFolder {
@@ -25,16 +25,23 @@ const RecordsPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isAddFolderOpen, setIsAddFolderOpen] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [createFor, setCreateFor] = useState<'self' | 'family'>('self');
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  type Perms = { Insert: boolean; View: boolean; Update: boolean; Delete: boolean };
+  type DelegateRow = { id: string; memberId: string; perms: Perms };
+  const [delegateRows, setDelegateRows] = useState<DelegateRow[]>([]);
+  // Edit Folder modal state
+  const [isEditFolderOpen, setIsEditFolderOpen] = useState(false);
+  const [editFolderId, setEditFolderId] = useState<string>('');
+  const [editFolderName, setEditFolderName] = useState<string>('');
+  const [editDelegateRows, setEditDelegateRows] = useState<DelegateRow[]>([]);
+  const [editLoading, setEditLoading] = useState<boolean>(false);
+  // Delete confirm modal
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   // Get user ID from auth context
   const { userId, accessToken, userInfo } = TokenManager.getTokens();
-
-  // Log authentication state
-  console.log('🔐 Records Page - Auth state:', {
-    userId,
-    hasAccessToken: !!accessToken,
-    userInfo: userInfo // userInfo is already parsed in TokenManager.getTokens()
-  });
 
   useEffect(() => {
     const checkDesktop = () => {
@@ -45,6 +52,59 @@ const RecordsPage: React.FC = () => {
     window.addEventListener('resize', checkDesktop);
     return () => window.removeEventListener('resize', checkDesktop);
   }, []);
+
+  // Load family members when opening the Add or Edit Folder modal for family option
+  useEffect(() => {
+    const fetchFamily = async () => {
+      if (!userId || (!isAddFolderOpen && !isEditFolderOpen)) return;
+      try {
+        const list = await familyMemberService.getFamilyMembers(userId);
+        setFamilyMembers(list || []);
+      } catch (e) {
+        setFamilyMembers([]);
+      }
+    };
+    fetchFamily();
+  }, [userId, isAddFolderOpen, isEditFolderOpen]);
+
+  // When switching to family creation, ensure at least one row exists
+  useEffect(() => {
+    if (isAddFolderOpen && createFor === 'family' && delegateRows.length === 0) {
+      setDelegateRows([
+        {
+          id: crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+          memberId: '',
+          perms: { Insert: true, View: true, Update: false, Delete: false },
+        },
+      ]);
+    }
+    if (createFor === 'self') {
+      setDelegateRows([]);
+    }
+  }, [isAddFolderOpen, createFor]);
+
+  const addDelegateRow = () => {
+    setDelegateRows((rows) => [
+      ...rows,
+      {
+        id: crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+        memberId: '',
+        perms: { Insert: true, View: true, Update: false, Delete: false },
+      },
+    ]);
+  };
+
+  const removeDelegateRow = (id: string) => {
+    setDelegateRows((rows) => rows.filter((r) => r.id !== id));
+  };
+
+  const updateRowMember = (id: string, memberId: string) => {
+    setDelegateRows((rows) => rows.map((r) => (r.id === id ? { ...r, memberId } : r)));
+  };
+
+  const toggleRowPerm = (id: string, perm: keyof Perms, value: boolean) => {
+    setDelegateRows((rows) => rows.map((r) => (r.id === id ? { ...r, perms: { ...r.perms, [perm]: value } } : r)));
+  };
 
   // Fetch folders from API
   useEffect(() => {
@@ -58,18 +118,10 @@ const RecordsPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-
-        console.log('🔄 Fetching folders for user:', userId);
         const apiResponse = await folderService.getFoldersByUserId(userId);
-
-        console.log('📦 Records Page - Raw API response:', apiResponse);
-        console.log('📊 Records Page - API response type:', typeof apiResponse);
-        console.log('📊 Records Page - Is API response array?', Array.isArray(apiResponse));
-        console.log('📊 Records Page - API response length:', apiResponse?.length);
 
         // Transform API response to match RecordFolder interface
         const transformedFolders: RecordFolder[] = apiResponse.map((folder: Folder, index: number) => {
-          console.log(`🔄 Transforming folder ${index + 1}:`, folder);
 
           // Extract access information from the actual structure (string or object)
           const accessUsers = folder.folderAccess?.map(access =>
@@ -94,7 +146,7 @@ const RecordsPage: React.FC = () => {
 
           const transformed = {
             id: folder._id,
-            name: folder.folderName,
+            name: folder.folderName || 'Untitled Folder',
             usersWithAccess: accessUsers.length,
             sharedWith: accessUsers,
             sharedWithNames: accessUsers, // For now, using IDs as names
@@ -102,15 +154,10 @@ const RecordsPage: React.FC = () => {
             fileCount: fileCount
           };
 
-          console.log(`✅ Transformed folder ${index + 1}:`, transformed);
           return transformed;
         });
-
-        console.log('✅ All folders transformed:', transformedFolders);
-        console.log('📊 Total transformed folders:', transformedFolders.length);
         setFolders(transformedFolders);
       } catch (err) {
-        console.error('❌ Error fetching folders:', err);
         setError('Failed to load folders. Please try again.');
       } finally {
         setLoading(false);
@@ -126,15 +173,10 @@ const RecordsPage: React.FC = () => {
   };
 
   const filteredFolders = folders.filter(folder =>
-    folder.name.toLowerCase().includes(searchText.toLowerCase())
+    (folder.name || '').toLowerCase().includes((searchText || '').toLowerCase())
   );
 
-  // Log filtered folders for debugging
-  console.log('🔍 Records Page - Current folders state:', folders);
-  console.log('🔍 Records Page - Search text:', searchText);
-  console.log('🔍 Records Page - Filtered folders:', filteredFolders);
-  console.log('🔍 Records Page - Loading state:', loading);
-  console.log('🔍 Records Page - Error state:', error);
+  
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -151,13 +193,40 @@ const RecordsPage: React.FC = () => {
       setError('User not authenticated');
       return;
     }
-    
+    // Build delegates if creating for family
+    let delegates: Array<{ userId: string; access: string[] }> = [];
+    if (createFor === 'family') {
+      if (delegateRows.length === 0) {
+        setError('Please add at least one family member');
+        return;
+      }
+      // Validate rows: unique members, at least one perm each
+      const used = new Set<string>();
+      for (const row of delegateRows) {
+        const memberId = row.memberId?.trim();
+        const selectedPerms = Object.entries(row.perms)
+          .filter(([_, v]) => v)
+          .map(([k]) => k);
+        if (!memberId) {
+          setError('Please select a family member for each row');
+          return;
+        }
+        if (used.has(memberId)) {
+          setError('Duplicate family member selected. Each member should appear only once.');
+          return;
+        }
+        if (selectedPerms.length === 0) {
+          setError('Each selected member must have at least one permission');
+          return;
+        }
+        used.add(memberId);
+        delegates.push({ userId: memberId, access: selectedPerms });
+      }
+    }
+
     try {
-      // Call your folder creation API here
-      const newFolder = await folderService.createFolder(
-        userId, // First argument: userId
-        newFolderName  // Second argument: folderName
-      );
+      // Call folder creation API with optional delegates
+      const newFolder = await folderService.createFolder(userId, newFolderName, delegates);
       
       if (!newFolder) {
         throw new Error('Failed to create folder');
@@ -179,10 +248,129 @@ const RecordsPage: React.FC = () => {
       
       // Reset and close the popup
       setNewFolderName('');
+      setCreateFor('self');
+      setDelegateRows([]);
       setIsAddFolderOpen(false);
     } catch (err) {
-      console.error('Error creating folder:', err);
       setError('Failed to create folder. Please try again.');
+    }
+  };
+
+  // Open Edit Folder modal and load current access
+  const openEditFolder = async (folderId: string, currentName: string) => {
+    if (!userId) {
+      setError('User not authenticated');
+      return;
+    }
+    setEditFolderId(folderId);
+    setEditFolderName(currentName);
+    setEditDelegateRows([]);
+    setIsEditFolderOpen(true);
+    try {
+      setEditLoading(true);
+      const folder = await folderService.getFolderById(userId, folderId);
+      const rows: DelegateRow[] = (folder?.folderAccess || []).map((acc: any) => {
+        const id = crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2);
+        const permsArr: string[] = Array.isArray(acc?.AccessFolderID) ? acc.AccessFolderID : [];
+        const perms: Perms = {
+          Insert: permsArr.includes('Insert'),
+          View: permsArr.includes('View'),
+          Update: permsArr.includes('Update'),
+          Delete: permsArr.includes('Delete'),
+        };
+        const memberId = typeof acc?.DelegateFolderAuthID === 'string' ? acc.DelegateFolderAuthID : '';
+        return { id, memberId, perms };
+      });
+      // Ensure at least one row exists
+      setEditDelegateRows(rows.length > 0 ? rows : [{
+        id: crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+        memberId: '',
+        perms: { Insert: true, View: true, Update: false, Delete: false },
+      }]);
+    } catch (e) {
+      setError('Failed to load folder details for editing.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  const closeEditFolder = () => {
+    setIsEditFolderOpen(false);
+    setEditFolderId('');
+    setEditFolderName('');
+    setEditDelegateRows([]);
+  };
+
+  // Edit rows helpers
+  const addEditDelegateRow = () => {
+    setEditDelegateRows((rows) => ([
+      ...rows,
+      {
+        id: crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
+        memberId: '',
+        perms: { Insert: true, View: true, Update: false, Delete: false },
+      },
+    ]));
+  };
+  const removeEditDelegateRow = (id: string) => {
+    setEditDelegateRows((rows) => rows.filter((r) => r.id !== id));
+  };
+  const updateEditRowMember = (id: string, memberId: string) => {
+    setEditDelegateRows((rows) => rows.map((r) => (r.id === id ? { ...r, memberId } : r)));
+  };
+  const toggleEditRowPerm = (id: string, perm: keyof Perms, value: boolean) => {
+    setEditDelegateRows((rows) => rows.map((r) => (r.id === id ? { ...r, perms: { ...r.perms, [perm]: value } } : r)));
+  };
+
+  // Save edits: rename and grant access for listed members
+  const handleSaveEditFolder = async () => {
+    if (!userId || !editFolderId) return;
+    try {
+      setEditLoading(true);
+      // Update name if changed
+      const current = folders.find((f) => f.id === editFolderId);
+      if (current && editFolderName.trim() && editFolderName.trim() !== current.name) {
+        const updated = await folderService.updateFolder(userId, editFolderId, editFolderName.trim());
+        if (updated) {
+          setFolders((prev) => prev.map((f) => (f.id === editFolderId ? { ...f, name: editFolderName.trim() } : f)));
+        }
+      }
+      // Grant/Update access for each row
+      for (const row of editDelegateRows) {
+        const memberId = row.memberId?.trim();
+        if (!memberId) continue;
+        const selectedPerms = Object.entries(row.perms)
+          .filter(([_, v]) => v)
+          .map(([k]) => k);
+        if (selectedPerms.length === 0) continue;
+        await folderService.grantFolderAccess(userId, editFolderId, memberId, selectedPerms);
+      }
+      closeEditFolder();
+    } catch (e) {
+      setError('Failed to save folder changes.');
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // Delete a folder via custom confirm modal
+  const openDeleteConfirm = (folderId: string, name: string) => {
+    setDeleteTarget({ id: folderId, name });
+    setIsDeleteConfirmOpen(true);
+  };
+  const closeDeleteConfirm = () => {
+    setIsDeleteConfirmOpen(false);
+    setDeleteTarget(null);
+  };
+  const handleConfirmDelete = async () => {
+    if (!userId || !deleteTarget) return;
+    try {
+      const ok = await folderService.deleteFolder(userId, deleteTarget.id);
+      if (!ok) throw new Error('Delete failed');
+      setFolders((prev) => prev.filter((f) => f.id !== deleteTarget.id));
+      closeDeleteConfirm();
+    } catch (e) {
+      setError('Failed to delete folder. Please try again.');
     }
   };
 
@@ -392,7 +580,7 @@ const RecordsPage: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Handle edit action
+                          openEditFolder(folder.id, folder.name);
                         }}
                         className="p-2 text-[#0E3293] hover:bg-white rounded-xl transition-colors"
                       >
@@ -401,7 +589,7 @@ const RecordsPage: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Handle delete action
+                          openDeleteConfirm(folder.id, folder.name);
                         }}
                         className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-colors"
                       >
@@ -485,6 +673,8 @@ const RecordsPage: React.FC = () => {
                   onClick={() => {
                     setIsAddFolderOpen(false);
                     setNewFolderName('');
+                    setCreateFor('self');
+                    setDelegateRows([]);
                   }}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -505,12 +695,89 @@ const RecordsPage: React.FC = () => {
                   autoFocus
                 />
               </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Create For</label>
+                <div className="flex space-x-3">
+                  <button
+                    onClick={() => setCreateFor('self')}
+                    className={`px-4 py-2 rounded-xl border ${createFor === 'self' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700'}`}
+                  >
+                    Myself
+                  </button>
+                  <button
+                    onClick={() => setCreateFor('family')}
+                    className={`px-4 py-2 rounded-xl border ${createFor === 'family' ? 'bg-blue-50 border-blue-500 text-blue-700' : 'bg-white border-gray-300 text-gray-700'}`}
+                  >
+                    Family Member
+                  </button>
+                </div>
+              </div>
+
+              {createFor === 'family' && (
+                <>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700">Share with family members</label>
+                    <button
+                      type="button"
+                      onClick={addDelegateRow}
+                      className="text-sm px-3 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-400 hover:bg-blue-100"
+                    >
+                      + Add Member
+                    </button>
+                  </div>
+                  <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                    {delegateRows.map((row) => (
+                      <div key={row.id} className="border rounded-xl p-3">
+                        <div className="flex items-center gap-3 mb-3">
+                          <select
+                            value={row.memberId}
+                            onChange={(e) => updateRowMember(row.id, e.target.value)}
+                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
+                          >
+                            <option value="">-- Select Member --</option>
+                            {familyMembers.map((m) => {
+                              const id = (m._id || m.id) as string;
+                              const name = m.FullName || id;
+                              return (
+                                <option key={id} value={id}>{name}</option>
+                              );
+                            })}
+                          </select>
+                          <button
+                            type="button"
+                            onClick={() => removeDelegateRow(row.id)}
+                            className="px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg"
+                            title="Remove"
+                          >
+                            <Icon name="trash" size="small" color="#ef4444" />
+                          </button>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          {(['Insert', 'View', 'Update', 'Delete'] as const).map((perm) => (
+                            <label key={perm} className="flex items-center space-x-2 p-2 border rounded-xl">
+                              <input
+                                type="checkbox"
+                                checked={row.perms[perm]}
+                                onChange={(e) => toggleRowPerm(row.id, perm, e.target.checked)}
+                              />
+                              <span className="text-sm text-gray-700">{perm}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
               
               <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => {
                     setIsAddFolderOpen(false);
                     setNewFolderName('');
+                    setCreateFor('self');
+                    setDelegateRows([]);
                   }}
                   className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
                 >
@@ -523,6 +790,105 @@ const RecordsPage: React.FC = () => {
                 >
                   Create Folder
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Folder Modal */}
+        {isEditFolderOpen && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-fadeInUp">
+              <div className="flex justify-between items-center mb-4">
+                <Typography variant="h6" className="font-bold text-gray-800">
+                  Edit Folder
+                </Typography>
+                <button onClick={closeEditFolder} className="text-gray-500 hover:text-gray-700">
+                  <Icon name="close" size="small" />
+                </button>
+              </div>
+
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">Folder Name</label>
+                <input
+                  type="text"
+                  value={editFolderName}
+                  onChange={(e) => setEditFolderName(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+              </div>
+
+              <div className="mb-2 flex items-center justify-between">
+                <label className="block text-sm font-medium text-gray-700">Member Access</label>
+                <button type="button" onClick={addEditDelegateRow} className="text-sm px-3 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-400 hover:bg-blue-100">
+                  + Add Member
+                </button>
+              </div>
+              <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
+                {editDelegateRows.map((row) => (
+                  <div key={row.id} className="border rounded-xl p-3">
+                    <div className="flex items-center gap-3 mb-3">
+                      <select
+                        value={row.memberId}
+                        onChange={(e) => updateEditRowMember(row.id, e.target.value)}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
+                      >
+                        <option value="">-- Select Member --</option>
+                        {familyMembers.map((m) => {
+                          const id = (m._id || m.id) as string;
+                          const name = m.FullName || id;
+                          return (
+                            <option key={id} value={id}>{name}</option>
+                          );
+                        })}
+                      </select>
+                      <button type="button" onClick={() => removeEditDelegateRow(row.id)} className="px-2 py-2 text-red-600 hover:bg-red-50 rounded-lg" title="Remove">
+                        <Icon name="trash" size="small" color="#ef4444" />
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {(['Insert', 'View', 'Update', 'Delete'] as const).map((perm) => (
+                        <label key={perm} className="flex items-center space-x-2 p-2 border rounded-xl">
+                          <input
+                            type="checkbox"
+                            checked={row.perms[perm]}
+                            onChange={(e) => toggleEditRowPerm(row.id, perm, e.target.checked)}
+                          />
+                          <span className="text-sm text-gray-700">{perm}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end space-x-3 mt-6">
+                <button onClick={closeEditFolder} className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button onClick={handleSaveEditFolder} disabled={editLoading} className="px-5 py-2.5 text-white bg-[#0E3293] hover:bg-[#0A2470] rounded-xl disabled:opacity-50">
+                  {editLoading ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">Note: Removing access may require backend revoke support. Currently, access is granted/updated for listed members.</p>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {isDeleteConfirmOpen && deleteTarget && (
+          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm animate-fadeInUp">
+              <div className="flex justify-between items-center mb-3">
+                <Typography variant="h6" className="font-bold text-gray-800">Delete Folder</Typography>
+                <button onClick={closeDeleteConfirm} className="text-gray-500 hover:text-gray-700">
+                  <Icon name="close" size="small" />
+                </button>
+              </div>
+              <Typography variant="body1" className="text-gray-700 mb-4">
+                Are you sure you want to delete "{deleteTarget.name}"? This action cannot be undone.
+              </Typography>
+              <div className="flex justify-end space-x-3">
+                <button onClick={closeDeleteConfirm} className="px-5 py-2.5 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl">Cancel</button>
+                <button onClick={handleConfirmDelete} className="px-5 py-2.5 text-white bg-red-600 hover:bg-red-700 rounded-xl">Delete</button>
               </div>
             </div>
           </div>
