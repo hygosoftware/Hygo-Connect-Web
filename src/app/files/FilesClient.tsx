@@ -1,9 +1,11 @@
-import dynamic from 'next/dynamic';
-import { Suspense } from 'react';
+// This is the client-only logic split out from the original FilesContent component
+'use client';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
+import FileScreen from '../../components/organisms/FileScreen';
+import FileScreenDesktop from '../../components/organisms/FileScreenDesktop';
 
-// Dynamically import the client component
-const FilesClient = dynamic(() => import('./FilesClient'), { ssr: false });
-
+const FilesClient: React.FC = () => {
   const [isDesktop, setIsDesktop] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const searchParams = useSearchParams();
@@ -59,12 +61,4 @@ const FilesClient = dynamic(() => import('./FilesClient'), { ssr: false });
   return <FileComponent />;
 };
 
-// SSR-enabled page component
-export default async function FilesPage() {
-  // You can fetch server-side data here if needed in the future
-  return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Loading Files...</div>}>
-      <FilesClient />
-    </Suspense>
-  );
-}
+export default FilesClient;
