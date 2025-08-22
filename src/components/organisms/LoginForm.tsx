@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Typography } from '../atoms';
 import { EmailInput, OfflineBanner, ToastNotification } from '../molecules';
 import { AuthService } from '../../services/auth';
+import logo from '../../assets/logo.png';
 
 interface LoginFormProps {
   onSubmit?: (email: string) => void;
@@ -116,7 +117,21 @@ const LoginForm: React.FC<LoginFormProps> = ({
       <div className="flex flex-col justify-center min-h-screen px-6 py-12 mobile-container">
         <div className="w-full animate-fade-in-up">
           {/* Header Section */}
-          <div className="ml-2 mb-8">
+          <div className="ml-2 mb-8 flex flex-col items-start">
+  {/* Hygo Logo */}
+<div className="flex justify-center w-full">
+  <img src={typeof logo === 'string' ? logo : logo.src} alt="Hygo Logo" className="w-50 h-auto" />
+</div>
+  
+  <div className="flex justify-center w-full">
+  <Typography 
+    variant="subtitle1" 
+    color="secondary" 
+    className="mb-16"
+  >
+    Welcome aboard!
+  </Typography>
+</div>
             <Typography 
               variant="h2" 
               color="primary" 
@@ -124,13 +139,8 @@ const LoginForm: React.FC<LoginFormProps> = ({
             >
               Wellness Simplified
             </Typography>
-            <Typography 
-              variant="subtitle1" 
-              color="secondary" 
-              className="ml-1 mb-4"
-            >
-              Welcome aboard!
-            </Typography>
+            
+            
             <Typography 
               variant="body1" 
               color="text-secondary" 
