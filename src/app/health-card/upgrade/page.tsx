@@ -4,7 +4,8 @@ import React, { useState, useEffect, useCallback, Suspense } from 'react';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Icon, Button, Typography, UniversalHeader } from '../../../components/atoms';
-import { subscriptionservices, paymentService } from '../../../services/apiServices';
+import { subscriptionservices } from '../../../services/apiServices';
+import { purchaseSubscription } from '../../../services/subscriptionservice';
 import { TokenManager } from '../../../services/auth';
 import type { IconName } from '../../../components/atoms/Icon';
 
@@ -141,87 +142,33 @@ const HealthCardUpgradeContent: React.FC = () => {
   };
 
   const handleRazorpayPayment = async () => {
-    if (!selectedPlan || !userProfile) return;
+    if (!selectedPlan || !userProfile || !paymentMethod) return;
 
     setLoading(true);
     try {
-      // Step 1: Create payment order on backend
-      console.log('🚀 Creating payment order for subscription:', selectedPlan._id);
-      const paymentOrder = await paymentService.createSubscriptionPayment(
-        selectedPlan._id,
-        selectedPlan.price,
-        paymentMethod as 'card' | 'upi' | 'wallet'
-      );
+      // Use subscription service unified flow
+      const result = await purchaseSubscription({
+        subscriptionId: selectedPlan._id,
+        userId: userProfile.id,
+        method: (paymentMethod === 'upi' ? 'upi' : 'card'),
+        prefill: { name: userProfile.name, email: userProfile.email || '' }
+      });
 
-      console.log('✅ Payment order created:', paymentOrder);
-
-      // Step 2: Load Razorpay SDK
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        throw new Error('Razorpay SDK failed to load. Please check your internet connection.');
-      }
-
-      // Step 3: Configure Razorpay options
-      const options: RazorpayOptions = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_fK9weYxngo5yMq',
-        name: 'Hygo Health',
-        description: `Subscription: ${selectedPlan.subscriptionName}`,
-        order_id: paymentOrder.orderId, // Use order ID from backend
-        handler: (response: RazorpayResponse) => {
-          console.log('💳 Razorpay payment successful:', response);
-          handlePaymentSuccess(response);
-        },
-        prefill: {
-          name: userProfile.name,
-          email: userProfile.email || '',
-        },
-        theme: {
-          color: '#0E3293',
-        }
-      };
-
-      // Step 4: Open Razorpay checkout
-      const razorpay = new window.Razorpay(options);
-      razorpay.open();
-      
+      console.log('✅ Subscription purchase flow completed:', result);
+      setStep('confirmation');
     } catch (error: unknown) {
-      console.error('❌ Error initiating payment:', error);
+      console.error('❌ Error initiating subscription purchase:', error);
       const message =
         typeof error === 'object' && error && 'message' in error && typeof (error as { message: unknown }).message === 'string'
           ? (error as { message: string }).message
           : 'Failed to initiate payment. Please try again.';
       alert(message);
-      setLoading(false);
-    }
-  };
-
-  const handlePaymentSuccess = async (response: RazorpayResponse) => {
-    try {
-      // Step 1: Confirm payment with backend
-      console.log('🔐 Confirming payment with backend:', response);
-      
-      const confirmationResult = await paymentService.confirmPayment({
-        razorpayOrderId: response.razorpay_order_id,
-        razorpayPaymentId: response.razorpay_payment_id,
-        razorpaySignature: response.razorpay_signature
-      });
-
-      console.log('✅ Payment confirmed successfully:', confirmationResult);
-      
-      // Step 2: Show success and navigate to confirmation
-      setStep('confirmation');
-      
-    } catch (error: unknown) {
-      console.error('❌ Payment verification failed:', error);
-      const message =
-        typeof error === 'object' && error && 'message' in error && typeof (error as { message: unknown }).message === 'string'
-          ? (error as { message: string }).message
-          : 'Payment verification failed. Please contact support.';
-      alert(message);
     } finally {
       setLoading(false);
     }
   };
+
+  // Payment success handling is done inside purchaseSubscription()
 
   const handleConfirmUpgrade = async () => {
     if (!selectedPlan || !paymentMethod) return;
@@ -229,7 +176,7 @@ const HealthCardUpgradeContent: React.FC = () => {
     setLoading(true);
     try {
       if (paymentMethod === 'card' || paymentMethod === 'upi') {
-        // Use Razorpay for card and UPI payments
+        // Use subscription services API for Razorpay flow
         await handleRazorpayPayment();
       } else {
         // Handle other payment methods (wallet, etc.)

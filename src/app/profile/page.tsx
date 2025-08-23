@@ -102,6 +102,7 @@ const TABS = [
 const ProfileScreen: React.FC = () => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData>(defaultProfileData);
+  const [newProfilePhotoFile, setNewProfilePhotoFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -129,10 +130,11 @@ const ProfileScreen: React.FC = () => {
       setError('Image is too large. Please select an image under 5 MB.');
       return;
     }
+    setNewProfilePhotoFile(file);
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result as string;
-      setProfileData(prev => ({ ...prev, profilePhoto: base64 }));
+      setProfileData(prev => ({ ...prev, profilePhoto: base64 })); // still show preview
       if (!isEditing) setIsEditing(true);
     };
     reader.readAsDataURL(file);
@@ -220,26 +222,59 @@ const ProfileScreen: React.FC = () => {
         };
 
         // Build payload to match UpdateProfileRequest
-        const dataToSend: UpdateProfileRequest = {
-          FullName: profileData.FullName || undefined,
-          Email: profileData.Email || undefined,
-          MobileNumber: toPhoneArray(profileData.MobileNumber),
-          AlternativeNumber: toPhoneArray(profileData.AlternativeNumber),
-          Gender: profileData.Gender || undefined,
-          Age: profileData.Age?.trim() || undefined,
-          DateOfBirth: profileData.DateOfBirth ? toDDMMYYYY(profileData.DateOfBirth) : undefined,
-          Country: profileData.Country || undefined,
-          State: profileData.State || undefined,
-          City: profileData.City || undefined,
-          Height: profileData.Height?.trim() || undefined,
-          Weight: profileData.Weight?.trim() || undefined,
-          BloodGroup: profileData.BloodGroup || undefined,
-          ChronicDiseases: profileData.ChronicDiseases?.length ? profileData.ChronicDiseases : undefined,
-          Allergies: profileData.Allergies?.length ? profileData.Allergies : undefined,
-          profilePhoto: profileData.profilePhoto ?? undefined,
-        };
+        let dataToSend: UpdateProfileRequest | FormData;
+        if (newProfilePhotoFile) {
+          // Use FormData for file upload
+          const form = new FormData();
+          form.append('FullName', profileData.FullName || '');
+          form.append('Email', profileData.Email || '');
+          if (profileData.MobileNumber) form.append('MobileNumber', JSON.stringify(toPhoneArray(profileData.MobileNumber)));
+          if (profileData.AlternativeNumber) form.append('AlternativeNumber', JSON.stringify(toPhoneArray(profileData.AlternativeNumber)));
+          form.append('Gender', profileData.Gender || '');
+          form.append('Age', profileData.Age?.trim() || '');
+          form.append('DateOfBirth', profileData.DateOfBirth ? toDDMMYYYY(profileData.DateOfBirth) : '');
+          form.append('Country', profileData.Country || '');
+          form.append('State', profileData.State || '');
+          form.append('City', profileData.City || '');
+          form.append('Height', profileData.Height?.trim() || '');
+          form.append('Weight', profileData.Weight?.trim() || '');
+          form.append('BloodGroup', profileData.BloodGroup || '');
+          if (profileData.ChronicDiseases?.length) form.append('ChronicDiseases', JSON.stringify(profileData.ChronicDiseases));
+          if (profileData.Allergies?.length) form.append('Allergies', JSON.stringify(profileData.Allergies));
+          form.append('profilePhoto', newProfilePhotoFile);
+          dataToSend = form;
+        } else {
+          dataToSend = {
+            FullName: profileData.FullName || undefined,
+            Email: profileData.Email || undefined,
+            MobileNumber: toPhoneArray(profileData.MobileNumber),
+            AlternativeNumber: toPhoneArray(profileData.AlternativeNumber),
+            Gender: profileData.Gender || undefined,
+            Age: profileData.Age?.trim() || undefined,
+            DateOfBirth: profileData.DateOfBirth ? toDDMMYYYY(profileData.DateOfBirth) : undefined,
+            Country: profileData.Country || undefined,
+            State: profileData.State || undefined,
+            City: profileData.City || undefined,
+            Height: profileData.Height?.trim() || undefined,
+            Weight: profileData.Weight?.trim() || undefined,
+            BloodGroup: profileData.BloodGroup || undefined,
+            ChronicDiseases: profileData.ChronicDiseases?.length ? profileData.ChronicDiseases : undefined,
+            Allergies: profileData.Allergies?.length ? profileData.Allergies : undefined,
+            profilePhoto: profileData.profilePhoto ?? undefined,
+          };
+        }
 
+        // Log the payload before sending
+        if (dataToSend instanceof FormData) {
+          // Log all FormData entries
+          for (let pair of dataToSend.entries()) {
+            console.log('[Profile Update Payload]', pair[0], pair[1]);
+          }
+        } else {
+          console.log('[Profile Update Payload]', dataToSend);
+        }
         await profileService.updateProfile(user._id, dataToSend);
+        setNewProfilePhotoFile(null);
         setSuccess('Profile updated successfully!');
         setIsEditing(false);
       }

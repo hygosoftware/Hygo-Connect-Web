@@ -5,10 +5,15 @@ import { Typography, Icon, Calendar, TimeSlotSkeleton } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { TimeSlot } from '../../contexts/BookingContext';
 import { DoctorAvailability, DoctorAvailabilitySlot } from '../../types/Doctor';
+import { appointmentService } from '../../services/apiServices';
+import { TokenManager } from '../../services/auth';
+import { useToast } from '../../contexts/ToastContext';
 
 const DateTimeSelection: React.FC = () => {
   const { state, selectDate, selectSlot, setStep } = useBooking();
+  const { showToast } = useToast();
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
+  const [availableDateKeys, setAvailableDateKeys] = useState<Set<string>>(new Set());
   const [selectedDate, setSelectedDate] = useState<Date | null>(state.selectedDate);
 
   // Sync local selectedDate with context selectedDate
@@ -20,6 +25,7 @@ const DateTimeSelection: React.FC = () => {
   }, [state.selectedDate]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [rawApiSlots, setRawApiSlots] = useState<{ id: string; from: string; to: string }[]>([]);
 
   // Log initial state on component mount
   useEffect(() => {
@@ -39,7 +45,7 @@ const DateTimeSelection: React.FC = () => {
     'Saturday': 6
   };
 
-  // Helper: Get next N dates for a given weekday
+  // Helper: Get next N dates for a given weekday (legacy fallback)
   const getNextDatesForWeekday = useCallback((weekday: string, count = 4): Date[] => {
     const results: Date[] = [];
     const today = new Date();
@@ -61,144 +67,197 @@ const DateTimeSelection: React.FC = () => {
   // Internal helper type to avoid 'any' for clinic identifiers from various sources
   type ClinicIdentifier = { _id?: string; clinicId?: string; id?: string; name?: string; clinicName?: string };
 
-  // Function to get slots for a specific date
-  const getSlotsForDate = useCallback((date: Date | null, overrideClinic?: ClinicIdentifier): TimeSlot[] => {
-    if (!date) {
-      return [];
-    }
-    if (!state.selectedDoctor) return [];
+  // Function to fetch slots for a specific date from API
+  const fetchSlotsForDate = useCallback(async (date: Date | null, overrideClinic?: ClinicIdentifier): Promise<TimeSlot[]> => {
+    if (!date || !state.selectedDoctor) return [];
 
-    // Use the override clinic if provided, otherwise use the selected clinic from state
+    // Resolve clinic ID
     const clinicToUse: ClinicIdentifier | undefined = overrideClinic || state.selectedClinic || undefined;
-    let normalizedClinicId: string | undefined = undefined;
-    if (clinicToUse) {
-      if (clinicToUse._id) {
-        normalizedClinicId = String(clinicToUse._id);
-      } else if (clinicToUse.clinicId) {
-        normalizedClinicId = String(clinicToUse.clinicId);
-      }
+    // Try multiple strategies to resolve clinic id robustly
+    let clinicId = String(
+      clinicToUse?._id || clinicToUse?.clinicId || state.selectedClinic?._id || ''
+    );
+    if (!clinicId) {
+      // Try match by clinicName within doctor's clinics
+      const targetName = (clinicToUse?.clinicName || state.selectedClinic?.clinicName || '').toString().trim().toLowerCase();
+      const matched = Array.isArray((state.selectedDoctor as any).clinic)
+        ? (state.selectedDoctor as any).clinic.find((c: any) => (c?.clinicName || '').toString().trim().toLowerCase() === targetName)
+        : null;
+      clinicId = matched?._id || (state.selectedDoctor as any).clinic?.[0]?._id || '';
     }
+    const doctorId = String(state.selectedDoctor._id);
 
-    // Get the day of the week for the selected date
-    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const yyyy = date.getFullYear();
+    const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+    const dd = date.getDate().toString().padStart(2, '0');
+    const dateStr = `${yyyy}-${mm}-${dd}`;
 
-    // Access the availability array from the doctor object
-    const availability: DoctorAvailability[] = state.selectedDoctor.availability || [];
+    console.log('[API] Fetching slots for', { doctorId, clinicId, dateStr });
+    try {
+      const slots = await appointmentService.getAvailableSlotsForDate(doctorId, clinicId, dateStr);
+      console.log('[API] Raw slots response:', slots);
 
-    // Debug logs
-    console.log('Normalized Clinic ID:', normalizedClinicId);
-    console.log('Day name:', dayName);
-    console.log('Doctor availability:', availability.map((a) => ({ clinic: a.clinic, day: a.day })));
+      // Normalize to UI TimeSlot[] and keep raw mapping for conflict checks
+      const normalized = (slots || []).map((s: any, idx: number) => {
+        const from: string = s.from || s.start || s.startTime || '';
+        const to: string = s.to || s.end || s.endTime || '';
+        const id = `${from}-${to}-${idx}`;
+        return { id, from, to };
+      });
+      setRawApiSlots(normalized);
+      console.log('[UI] Normalized rawApiSlots:', normalized);
 
-    // --- Robust clinic and day matching ---
-    // Normalize all possible clinic IDs for comparison
-    const normalize = (v: unknown) => (v !== undefined && v !== null) ? String(v).trim().toLowerCase() : '';
-    const selectedClinicIds = [
-      normalize(clinicToUse?._id),
-      normalize(clinicToUse?.clinicId),
-      normalize(clinicToUse?.id),
-      normalize(clinicToUse?.name),
-      normalize(clinicToUse?.clinicName)
-    ].filter(Boolean) as string[];
-    const dayNameNorm = dayName.trim().toLowerCase();
-
-    // Filter availabilities for the selected clinic (by any ID or name)
-    const clinicAvailabilities = availability.filter((a: DoctorAvailability) => {
-      const availClinicNorms = [
-        normalize(a.clinic),
-      ];
-      // If any selectedClinicIds matches any availClinicNorms
-      const clinicMatch = selectedClinicIds.some(selId => (availClinicNorms as string[]).includes(selId));
-      if (!clinicMatch) {
-        console.log('[SLOTS] Clinic mismatch:', {availClinicNorms, selectedClinicIds});
-      }
-      return clinicMatch;
-    });
-
-    // Now filter for the correct day (case-insensitive)
-    const dayAvailabilities = clinicAvailabilities
-      .filter((a: DoctorAvailability) => a.day && a.day.trim().toLowerCase() === dayNameNorm);
-
-    // Debug logs
-    console.log('[SLOTS] Filtered availabilities for clinic:', clinicAvailabilities);
-    console.log('[SLOTS] Day availabilities:', dayAvailabilities);
-
-    // If no availability found for this day, return empty array
-    if (dayAvailabilities.length === 0) {
-      console.log('[SLOTS] No availability found for day:', dayName);
+      const uiSlots: TimeSlot[] = normalized.map((s) => ({
+        id: s.id,
+        time: s.from, // display start time primarily; can be enhanced to show range
+        available: true,
+        bookedCount: 0,
+        maxBookings: 1,
+      }));
+      console.log('[UI] Derived uiSlots:', uiSlots);
+      return uiSlots;
+    } catch (e: any) {
+      console.error('[API] Failed to fetch slots:', e);
+      const msg = e?.response?.data?.message || 'Doctor not available on this day at this clinic';
+      showToast({ type: 'warning', title: msg });
       return [];
     }
-
-    // Get the first matching day availability (there should typically be only one)
-    const dayAvailability = dayAvailabilities[0];
-
-    if (!dayAvailability || !dayAvailability.slots) {
-      console.log('[SLOTS] No slots found in day availability');
-      return [];
-    }
-
-    // Convert to TimeSlot[] format for UI
-    const formattedSlots = dayAvailability.slots.map((slot: DoctorAvailabilitySlot, idx: number) => {
-      // Ensure we have all required data
-      if (!slot._id || !slot.startTime || slot.appointmentLimit === undefined || slot.bookedCount === undefined) {
-        console.log('[SLOTS] Missing slot data:', slot);
-      }
-
-      return {
-        id: slot._id || `${dayName}-${idx}`,
-        time: slot.startTime,
-        available: (slot.bookedCount < slot.appointmentLimit),
-        bookedCount: slot.bookedCount || 0,
-        maxBookings: slot.appointmentLimit || 5 // Default to 5 if not specified
-      };
-    });
-
-    console.log('[SLOTS] Formatted slots:', formattedSlots);
-    return formattedSlots;
   }, [state.selectedDoctor, state.selectedClinic]);
 
-  // Build available dates based on doctor availability for selected clinic
+  // Build available dates using API for current and next month
   useEffect(() => {
-    if (!state.selectedDoctor) {
-      setAvailableDates([]);
-      return;
-    }
+    const fetchMonthly = async () => {
+      if (!state.selectedDoctor) { setAvailableDates([]); return; }
+      const doctorId = String(state.selectedDoctor._id);
+      const clinicId = String(state.selectedClinic?._id || state.selectedDoctor.clinic?.[0]?._id || '');
+      if (!clinicId) { setAvailableDates([]); return; }
 
-    const availability: DoctorAvailability[] = state.selectedDoctor.availability || [];
-    if (!availability.length) {
-      setAvailableDates([]);
-      return;
-    }
+      const today = new Date();
+      const month1 = today.getMonth() + 1; // 1-based
+      const year1 = today.getFullYear();
+      const next = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+      const month2 = next.getMonth() + 1;
+      const year2 = next.getFullYear();
 
-    const selectedClinicId = state.selectedClinic?._id;
-    const filtered = selectedClinicId
-      ? availability.filter((a) => a.clinic === selectedClinicId)
-      : availability;
+      try {
+        const [d1, d2] = await Promise.all([
+          appointmentService.getMonthlySlots(doctorId, clinicId, month1, year1),
+          appointmentService.getMonthlySlots(doctorId, clinicId, month2, year2),
+        ]);
+        console.log('[API] Monthly slots raw:', { month1, year1, d1, month2, year2, d2 });
+        const all = [...(d1 || []), ...(d2 || [])];
+        // Support two formats:
+        // 1) string[] of 'YYYY-MM-DD'
+        // 2) { date: 'YYYY-MM-DD', day: string, slots: Array<{startTime,endTime,isAvailable,...}> }
+        const dateStrings: string[] = all
+          .filter(Boolean)
+          .map((entry: any) => {
+            if (typeof entry === 'string') return entry;
+            if (entry && typeof entry === 'object') {
+              const hasAvailableSlots = Array.isArray(entry.slots)
+                ? entry.slots.some((s: any) => s?.isAvailable !== false)
+                : true; // if slots missing, assume available
+              return hasAvailableSlots ? entry.date : null;
+            }
+            return null;
+          })
+          .filter((s): s is string => !!s);
 
-    const dates: Date[] = [];
-    filtered.forEach((a) => {
-      if (!a.day) return;
-      dates.push(...getNextDatesForWeekday(a.day, 4));
-    });
+        const asDates = dateStrings
+          .map((ds) => {
+            const [y, m, d] = String(ds).split('-').map((n) => parseInt(n, 10));
+            if (!y || !m || !d) return null;
+            return new Date(y, m - 1, d);
+          })
+          .filter((x): x is Date => !!x);
 
-    const unique = Array.from(new Set(dates.map((d) => d.toDateString()))).map((ds) => new Date(ds));
-    unique.sort((a, b) => a.getTime() - b.getTime());
-    setAvailableDates(unique);
-  }, [state.selectedDoctor, state.selectedClinic, getNextDatesForWeekday]);
+        // Deduplicate by date string
+        const keySet = new Set(asDates.map((d) => d.toDateString()));
+        const unique = Array.from(keySet).map((ds) => new Date(ds));
+        unique.sort((a, b) => a.getTime() - b.getTime());
+        setAvailableDates(unique);
+        setAvailableDateKeys(keySet);
+        console.log('[UI] Monthly dateStrings:', dateStrings);
+        console.log('[UI] Available dates:', unique);
+        console.log('[UI] Available date keys:', Array.from(keySet));
+      } catch (e) {
+        console.error('Failed to fetch monthly slots:', e);
+        setAvailableDates([]);
+        setAvailableDateKeys(new Set());
+      }
+    };
+    void fetchMonthly();
+  }, [state.selectedDoctor, state.selectedClinic]);
 
   // Date selection handler
   const handleDateSelect = useCallback((date: Date) => {
     setSelectedDate(date);
     selectDate(date);
-    const slots = getSlotsForDate(date);
-    setTimeSlots(slots);
-  }, [getSlotsForDate, selectDate]);
+    const key = date.toDateString();
+    console.log('[UI] Date selected:', { date, key });
+    if (!availableDateKeys.has(key)) {
+      setTimeSlots([]);
+      showToast({ type: 'warning', title: 'Doctor not available on this date at this clinic' });
+      return;
+    }
+    setLoadingSlots(true);
+    void (async () => {
+      const slots = await fetchSlotsForDate(date);
+      console.log('[UI] Slots after fetch for selected date:', slots);
+      setTimeSlots(slots);
+      setLoadingSlots(false);
+    })();
+  }, [availableDateKeys, fetchSlotsForDate, selectDate, showToast]);
 
   // Slot selection handler
-  const handleSlotSelect = useCallback((slot: TimeSlot) => {
-    selectSlot(slot);
-    setStep('details');
-  }, [selectSlot, setStep]);
+  const handleSlotSelect = useCallback(async (slot: TimeSlot) => {
+    try {
+      if (!state.selectedDoctor || !state.selectedClinic || !state.selectedDate) {
+        selectSlot(slot);
+        setStep('details');
+        return;
+      }
+
+      const userId = TokenManager.getTokens().userId as string | null;
+      if (!userId) {
+        showToast({ type: 'error', title: 'Please login to continue' });
+        return;
+      }
+
+      // Find raw slot by id to extract from/to
+      const raw = rawApiSlots.find((s) => s.id === slot.id);
+      const from = raw?.from || slot.time;
+      const to = raw?.to || slot.time; // fallback
+      console.log('[UI] Slot selected:', { slot, raw, from, to });
+      console.log('[CTX] Doctor/Clinic/Date:', { doctor: state.selectedDoctor?._id, clinic: state.selectedClinic?._id, date: state.selectedDate });
+      const doctorId = String(state.selectedDoctor._id);
+      const clinicId = String(state.selectedClinic._id);
+      const d = state.selectedDate;
+      const yyyy = d.getFullYear();
+      const mm = (d.getMonth() + 1).toString().padStart(2, '0');
+      const dd = d.getDate().toString().padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      console.log('[API] Conflict check params:', { userId, doctorId, clinicId, dateStr, timeSlot: { from, to } });
+      const hasConflict = await appointmentService.checkUserBookingForSlot(
+        userId,
+        doctorId,
+        clinicId,
+        dateStr,
+        { from, to }
+      );
+      console.log('[API] Conflict check result:', hasConflict);
+      if (hasConflict) {
+        showToast({ type: 'warning', title: 'You already have a booking at this time' });
+        return;
+      }
+
+      selectSlot(slot);
+      setStep('details');
+    } catch (e) {
+      console.error('Slot selection error:', e);
+      showToast({ type: 'error', title: 'Unable to validate slot. Please try again.' });
+    }
+  }, [rawApiSlots, selectSlot, setStep, state.selectedClinic, state.selectedDate, state.selectedDoctor, showToast]);
 
   // Render grid of slots
   const renderSlotGrid = useCallback(() => {

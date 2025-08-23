@@ -240,7 +240,7 @@ const BookingProgressStepper: React.FC = () => {
           </Typography>
           <div className="space-y-1">
             <Typography variant="caption" className="text-gray-600 block">
-              Dr. {state.selectedDoctor.fullName}
+              {state.selectedDoctor.fullName}
             </Typography>
             <Typography variant="caption" className="text-gray-600 block">
               {state.selectedClinic.clinicName}

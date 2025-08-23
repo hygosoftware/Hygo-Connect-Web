@@ -24,13 +24,22 @@ export interface AuthResponse {
 }
 
 // --- API Client ---
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL;
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+const RESOLVED_BASE_URL = API_BASE_URL?.trim();
+
+if (typeof window !== 'undefined') {
+  if (!RESOLVED_BASE_URL) {
+    console.error('[AuthService] NEXT_PUBLIC_API_BASE_URL is not set. Requests will fail.');
+  } else {
+    console.log('[AuthService] Using API base URL:', RESOLVED_BASE_URL);
+  }
+}
 
 const apiClient = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: RESOLVED_BASE_URL,
   withCredentials: true,
-  timeout: 30000,
+  // Temporarily increase timeout to rule out slow network/API cold starts
+  timeout: 60000,
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',

@@ -1,4 +1,11 @@
 /** @type {import('next').NextConfig} */
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  disable: process.env.NODE_ENV === 'development'
+});
+
 const nextConfig = {
   allowedDevOrigins: [
     'http://192.168.29.127:3000', // must match the browser address exactly
@@ -43,6 +50,12 @@ const nextConfig = {
         port: '',
         pathname: '/api/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'unsplash.com',
+        port: '',
+        pathname: '/**',
+      },
     ],
   },
   eslint: {
@@ -50,4 +63,4 @@ const nextConfig = {
   },
 }
 
-export default nextConfig
+module.exports = withPWA(nextConfig);

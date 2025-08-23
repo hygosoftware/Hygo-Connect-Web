@@ -1,8 +1,14 @@
 import { loadRazorpayScript } from '../services/razorpay';
+import { getRazorpayConfig } from '../lib/razorpay';
 import { TokenManager } from './auth';
 import axios from 'axios';
+import type { IRazorpay } from '../types/razorpay';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL as string;
-const RAZORPAY_KEY = process.env.NEXT_PUBLIC_RAZORPAY_KEY as string;
+// Prefer using sanitized key from getRazorpayConfig to avoid accidental concatenation
+const RAZORPAY_KEY = ((): string => {
+  const key = getRazorpayConfig().key as string;
+  return key;
+})();
 
 const apiClient = axios.create({
     baseURL: API_BASE_URL,
@@ -116,69 +122,123 @@ export const purchaseSubscription = async ({
   method?: 'upi' | 'card';
   prefill?: { email?: string; contact?: string; name?: string };
 }) => {
-  if (!['card', 'upi'].includes(method)) method = 'upi';
+  console.log('Starting subscription purchase process...', { subscriptionId, userId, method });
+  
+  if (!['card', 'upi'].includes(method)) {
+    console.warn(`Invalid payment method '${method}', defaulting to 'upi'`);
+    method = 'upi';
+  }
 
-  // Load Razorpay script
-  const isRazorpayLoaded = await loadRazorpayScript();
-  if (!isRazorpayLoaded) throw new Error("Razorpay SDK failed to load.");
+  try {
+    // Load Razorpay script
+    console.log('Loading Razorpay script...');
+    const isRazorpayLoaded = await loadRazorpayScript();
+    if (!isRazorpayLoaded) {
+      const errorMsg = 'Razorpay SDK failed to load. Please check your internet connection and try again.';
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    console.log('Razorpay script loaded successfully');
 
-  // 1) Create order
-  const orderRes = await apiClient.post(
-    `${API_BASE_URL}/UserSubscription/create-order/${userId}`,
-    { subscriptionId, method },
-  );
+    // 1) Create order
+    console.log('Creating order...', { subscriptionId, method });
+    const orderRes = await apiClient.post(
+      `UserSubscription/create-order/${userId}`,
+      { subscriptionId, method },
+    );
 
-  const {
-    order,
-    paymentId,
-    paymentStatus,
-    subscriptionId: subId,
-    subscriptionCardId,
-    cardStatus,
-  } = orderRes.data;
+    console.log('Order created successfully:', orderRes.data);
+
+    if (!orderRes.data?.order?.id) {
+      const errorMsg = 'Invalid order response from server';
+      console.error(errorMsg, orderRes.data);
+      throw new Error(errorMsg);
+    }
+
+    const {
+      order,
+      paymentId,
+      paymentStatus,
+      subscriptionId: subId,
+      subscriptionCardId,
+      cardStatus,
+    } = orderRes.data;
 
   // 2) Open Razorpay Checkout
-  const options = {
-    key: RAZORPAY_KEY,
-    amount: order.amount,
-    currency: order.currency,
-    order_id: order.id,
-    name: 'HYGO Connect',
-    description: 'Subscription Purchase',
-    prefill: {
-      email: prefill.email || '',
-      contact: prefill.contact || '',
-      name: prefill.name || '',
-    },
-    theme: { color: '#3399cc' },
-  };
-
-  const paymentObject = new (window as any).Razorpay(options);
-
   return new Promise((resolve, reject) => {
-    paymentObject.on('payment.failed', (err: any) => reject(err));
-    paymentObject.open();
-
-    paymentObject.on('payment.success', async (paymentResult: any) => {
-      // 3) Verify payment
-      const verifyRes = await apiClient.post(        `${API_BASE_URL}/UserSubscription/verify-payment/${userId}`,
-        {
-          razorpay_payment_id: paymentResult.razorpay_payment_id,
-          razorpay_order_id: paymentResult.razorpay_order_id,
-          razorpay_signature: paymentResult.razorpay_signature,
-          paymentId,
-        }
-      );
-
-      resolve({
-        creation: {
-          paymentStatus,
-          subscriptionId: subId,
-          subscriptionCardId,
-          cardStatus,
+    try {
+      console.log('Preparing Razorpay checkout...');
+      
+      const options = {
+        key: RAZORPAY_KEY,
+        amount: order.amount,
+        currency: order.currency || 'INR',
+        order_id: order.id,
+        name: 'Hygo Healthcare',
+        description: 'Subscription Purchase',
+        prefill: {
+          name: prefill.name || '',
+          email: prefill.email || '',
+          contact: prefill.contact || ''
         },
-        verification: verifyRes.data,
-      });
-    });
+        theme: {
+          color: '#0e3293'
+        },
+        handler: async function (response: any) {
+          console.log('Payment successful:', response);
+          try {
+            // Verify payment with backend
+            const verifyRes = await apiClient.post(`UserSubscription/verify-payment/${userId}`, {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              paymentId,
+              subscriptionId: subId
+            });
+            
+            console.log('Payment verification successful:', verifyRes.data);
+            resolve({
+              success: true,
+              data: verifyRes.data,
+              paymentId: response.razorpay_payment_id
+            });
+          } catch (error) {
+            console.error('Payment verification failed:', error);
+            reject(new Error('Payment verification failed'));
+          }
+        },
+        modal: {
+          ondismiss: function() {
+            console.log('Payment modal dismissed by user');
+            reject(new Error('Payment cancelled by user'));
+          }
+        }
+      };
+
+      console.log('Opening Razorpay checkout...');
+      const rzp: IRazorpay = new window.Razorpay(options);
+      
+      // Handle payment failure using the modal's ondismiss as a fallback
+      // since the 'on' method might not be available in all versions
+      if (typeof rzp.on === 'function') {
+        rzp.on('payment.failed', function(response: any) {
+          console.error('Payment failed:', response.error);
+          reject(new Error(response.error?.description || 'Payment failed'));
+        });
+      } else {
+        console.warn('Razorpay on() method not available. Using modal dismiss handler only.');
+      }
+      
+      // Open the Razorpay checkout
+      rzp.open();
+      
+    } catch (error) {
+      console.error('Error in payment process:', error);
+      reject(new Error('Failed to process payment. Please try again.'));
+    }
   });
+  } catch (error) {
+    console.error('Error in purchaseSubscription:', error);
+    throw error;
+  }
 };

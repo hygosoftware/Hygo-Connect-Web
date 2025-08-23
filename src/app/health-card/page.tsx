@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon, Button, Typography, UniversalHeader } from '../../components/atoms';
-import { subscriptionservices } from '../../services/apiServices';
+import { subscriptionservices, userSubscriptionService } from '../../services/apiServices';
 import { TokenManager } from '../../services/auth';
 
 interface SubscriptionPlan {
@@ -39,9 +39,11 @@ interface UserProfile {
 const HealthCardPage: React.FC = () => {
   const router = useRouter();
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
+  const [activePlan, setActivePlan] = useState<SubscriptionPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSubscriptions, setShowSubscriptions] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [cardNumber, setCardNumber] = useState<string | null>(null);
 
   const [usedServices, setUsedServices] = useState<UsedService[]>([]);
 
@@ -79,14 +81,87 @@ const HealthCardPage: React.FC = () => {
       const respUnknown = response as unknown;
       const data = (respUnknown as { data?: unknown }).data;
       if (Array.isArray(data)) {
-        setSubscriptionPlans(data as SubscriptionPlan[]);
+        const plans = data as SubscriptionPlan[];
+        setSubscriptionPlans(plans);
+        await selectActivePlan(plans);
       } else if (Array.isArray(respUnknown)) {
-        setSubscriptionPlans(respUnknown as SubscriptionPlan[]);
+        const plans = respUnknown as SubscriptionPlan[];
+        setSubscriptionPlans(plans);
+        await selectActivePlan(plans);
       }
     } catch (error) {
       console.error('Error fetching subscription plans:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const selectActivePlan = async (plans: SubscriptionPlan[]) => {
+    try {
+      const tokens = TokenManager.getTokens();
+      const userId = tokens.userId;
+      if (!userId) {
+        // Fallback to first plan for anonymous sessions
+        if (plans.length > 0) setActivePlan(plans[0]);
+        return;
+      }
+      const active = await userSubscriptionService.getActiveSubscription(userId);
+      // Try to find planId in common shapes
+      let planId: string | undefined;
+      if (Array.isArray(active)) {
+        // Prefer status === 'active', otherwise pick the most recent by subscriptionStartDate, else first
+        const pick =
+          active.find((it) => it && typeof it === 'object' && (it as any).status === 'active') ||
+          active
+            .slice()
+            .sort((a, b) => {
+              const aDate = (a && typeof a === 'object' && (a as any).subscriptionStartDate) ? Date.parse((a as any).subscriptionStartDate) : 0;
+              const bDate = (b && typeof b === 'object' && (b as any).subscriptionStartDate) ? Date.parse((b as any).subscriptionStartDate) : 0;
+              return bDate - aDate;
+            })[0] ||
+          active[0];
+
+        if (pick && typeof pick === 'object') {
+          const obj = pick as Record<string, unknown>;
+          const subField = obj.subscription as unknown;
+          if (typeof (obj as any).subscriptionNumber === 'string') {
+            setCardNumber((obj as any).subscriptionNumber as string);
+          }
+          if (typeof obj.subscriptionId === 'string') {
+            planId = obj.subscriptionId;
+          } else if (subField && typeof subField === 'object' && '_id' in subField && typeof (subField as any)._id === 'string') {
+            planId = (subField as any)._id;
+          } else if (typeof subField === 'string') {
+            planId = subField;
+          }
+        }
+      } else if (active && typeof active === 'object') {
+        const obj = active as Record<string, unknown>;
+        const planField = obj.plan as unknown;
+        if (typeof (obj as any).subscriptionNumber === 'string') {
+          setCardNumber((obj as any).subscriptionNumber as string);
+        }
+        if (typeof obj.planId === 'string') {
+          planId = obj.planId;
+        } else if (typeof obj.subscriptionId === 'string') {
+          planId = obj.subscriptionId;
+        } else if (planField && typeof planField === 'object' && '_id' in planField && typeof (planField as any)._id === 'string') {
+          planId = (planField as any)._id;
+        } else if (typeof planField === 'string') {
+          planId = planField;
+        }
+      }
+      const plan = plans.find(p => p._id === planId) || plans[0] || null;
+      setActivePlan(plan);
+      if (plan) {
+        setUserProfile(prev => prev ? { ...prev, plan: plan.subscriptionName || prev.plan } : prev);
+      }
+    } catch (e) {
+      console.warn('Could not resolve active subscription plan, falling back to first plan');
+      if (plans.length > 0) {
+        setActivePlan(plans[0]);
+        setUserProfile(prev => prev ? { ...prev, plan: plans[0].subscriptionName || prev.plan } : prev);
+      }
     }
   };
 
@@ -224,10 +299,10 @@ const HealthCardPage: React.FC = () => {
             <div className="flex justify-between mb-4">
               <div>
                 <Typography variant="body2" className="opacity-80 mb-1 text-white">
-                  Member ID
+                  Card Number
                 </Typography>
                 <Typography variant="body1" className="font-mono text-white">
-                  {userProfile?.id || 'HYGO001'}
+                  {cardNumber || userProfile?.id || 'HYGO001'}
                 </Typography>
               </div>
               <div className="text-right">
@@ -252,6 +327,58 @@ const HealthCardPage: React.FC = () => {
                 Active
               </span>
             </div>
+          </div>
+        </div>
+
+        {/* Card Details (from active subscription) */}
+        <div className="max-w-3xl mx-auto">
+          <Typography variant="h5" className="text-gray-900 font-bold mb-6 text-center">
+            Card Details
+          </Typography>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+            {loading ? (
+              <Typography variant="body2" className="text-gray-600 text-center">
+                Loading card details...
+              </Typography>
+            ) : !activePlan ? (
+              <Typography variant="body2" className="text-gray-600 text-center">
+                No active plan found.
+              </Typography>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Typography variant="h6" className="text-gray-900 font-bold">
+                    {activePlan.subscriptionName}
+                  </Typography>
+                  <Typography variant="h6" className="text-[#0E3293] font-bold">
+                    ₹{activePlan.price}
+                  </Typography>
+                </div>
+                <div className="flex items-center justify-between">
+                  <Typography variant="body1" className="text-gray-900 font-semibold">
+                    Duration
+                  </Typography>
+                  <Typography variant="body2" className="text-gray-600">
+                    {activePlan.duration?.value} {activePlan.duration?.unit}{activePlan.duration?.value && activePlan.duration.value > 1 ? 's' : ''}
+                  </Typography>
+                </div>
+                <div className="pt-3 border-t border-gray-200">
+                  <Typography variant="body1" className="text-gray-900 font-semibold mb-3">
+                    Available Services
+                  </Typography>
+                  <div className="space-y-2">
+                    {activePlan.availableServices?.map((service) => (
+                      <div key={service._id} className="flex items-center space-x-3">
+                        <Icon name="check" className="text-green-500 w-4 h-4" />
+                        <Typography variant="body2" className="text-gray-700">
+                          {service.serviceName}
+                        </Typography>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

@@ -48,7 +48,12 @@ export const verifyPaymentSignature = async (paymentData: RazorpayPaymentData) =
 
 // Razorpay configuration
 export const getRazorpayConfig = () => ({
-  key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_9mOyRUi9azswI',
+  key: (() => {
+    // Prefer KEY_ID, then KEY; sanitize to the first valid-looking key
+    const raw = (process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY || '').trim();
+    const match = raw.match(/rzp_(test|live)_[A-Za-z0-9]+/);
+    return match?.[0] || 'rzp_test_9mOyRUi9azswI';
+  })(),
   currency: 'INR',
   name: 'Hygo Healthcare',
   description: 'Medical Appointment Booking',

@@ -186,7 +186,7 @@ export interface CreateFamilyMemberRequest {
   City?: string;
 }
 
-// Create axios instance
+// Create axios instance with default config
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
   timeout: 60000, // Increased to 60 seconds for pill reminder operations
@@ -199,20 +199,21 @@ const apiClient = axios.create({
 // Add request interceptor to include auth token if available
 apiClient.interceptors.request.use(
   (config) => {
-    // Get token from TokenManager
-    const { accessToken } = TokenManager.getTokens();
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
+    // Skip token for auth endpoints
+    const isAuthEndpoint = ['/auth/login', '/auth/verify-otp'].some(path => 
+      config.url?.includes(path)
+    );
+    
+    if (!isAuthEndpoint) {
+      // Get token from TokenManager
+      const { accessToken } = TokenManager.getTokens();
+      
+      if (!accessToken) {
+        console.warn('⚠️ No access token found. API request may fail.');
+      } else {
+        config.headers.Authorization = `Bearer ${accessToken}`;
+      }
     }
-
-    // Log the request for debugging
-    console.log('🔐 API Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      hasAuth: !!accessToken,
-      headers: config.headers
-    });
-
     return config;
   },
   (error) => {
@@ -391,7 +392,7 @@ export const profileService = {
   },
 
   // Update user profile
-  updateProfile: async (userId: string, profileData: UpdateProfileRequest): Promise<ProfileData | null> => {
+  updateProfile: async (userId: string, profileData: UpdateProfileRequest | FormData): Promise<ProfileData | null> => {
     console.log('🌐 API Call: Updating profile for user ID:', userId);
     console.log('🔗 API URL:', `${API_BASE_URL}/${userId}`);
     console.log('📊 Update data:', profileData);
@@ -472,32 +473,58 @@ export const profileService = {
 export const doctorService = {
   // Fetch all doctors
   getAllDoctors: async (): Promise<Doctor[]> => {
-    console.log('🌐 API Call: Fetching all doctors');
-    console.log('🔗 API URL:', `${API_BASE_URL}/Staff/d`);
+    console.log('🌐 [DoctorService] Fetching all doctors...');
+    console.log('🔗 [DoctorService] API Base URL:', API_BASE_URL);
+    console.log('🔗 [DoctorService] Endpoint: /Staff/d');
+    console.log('🔗 [DoctorService] Full URL:', `${API_BASE_URL}/Staff/d`);
 
     try {
+      console.log('🔄 [DoctorService] Sending GET request...');
       const response = await apiClient.get<Doctor[]>('/Staff/d');
-      console.log('✅ API Response received for all doctors:', response.status);
-      console.log('📦 Number of doctors received:', response.data?.length || 0);
-      console.log('📋 First doctor sample:', response.data?.[0]);
+      
+      console.log('✅ [DoctorService] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        dataLength: response.data?.length || 0,
+        firstItem: response.data?.[0] || null
+      });
+
+      if (!response.data) {
+        console.warn('⚠️ [DoctorService] No data in response');
+        return [];
+      }
+
+      console.log(`📦 [DoctorService] Successfully fetched ${response.data.length} doctors`);
+      if (response.data.length > 0) {
+        console.log('📋 [DoctorService] First doctor sample:', JSON.stringify(response.data[0], null, 2));
+      }
+      
       return response.data;
+      
     } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error('❌ API Error fetching all doctors:', error.message);
-        console.log('🔍 Error details:', {
+      console.error('❌ [DoctorService] Error fetching doctors:', {
+        timestamp: new Date().toISOString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        isAxiosError: axios.isAxiosError(error),
+        response: axios.isAxiosError(error) ? {
           status: error.response?.status,
           statusText: error.response?.statusText,
-          data: error.response?.data,
-          message: error.message
-        });
-      } else if (error instanceof Error) {
-        console.error('❌ API Error fetching all doctors:', error.message);
-      } else {
-        console.error('❌ API Error fetching all doctors:', error);
+          headers: error.response?.headers,
+          data: error.response?.data
+        } : undefined
+      });
+
+      // Log additional details for CORS issues
+      if (axios.isAxiosError(error) && error.message?.includes('Network Error')) {
+        console.error('🚨 [DoctorService] Network Error - Possible CORS issue or server not reachable');
+        console.error('🚨 [DoctorService] Please check if the backend server is running and CORS is properly configured');
       }
 
       // Return empty array on error
-      console.log('🔄 Returning empty array due to API error');
+      console.log('🔄 [DoctorService] Returning empty array due to error');
+      return [];
       return [];
     }
   },
@@ -1970,6 +1997,13 @@ export interface Appointment {
   updatedAt: string;
 }
 
+// Helper function to convert time (HH:MM) to minutes for overlap checks
+const convertTimeToMinutes = (time: string) => {
+  if (!time) return 0;
+  const [hours, minutes] = time.split(':').map(Number);
+  return (hours || 0) * 60 + (minutes || 0);
+};
+
 // Appointment API Services
 export const appointmentService = {
   // Book an appointment
@@ -2029,9 +2063,145 @@ export const appointmentService = {
       console.error('Error fetching appointments:', error);
       throw error;
     }
+  },
+
+  // Get available slots for a specific doctor, clinic and date
+  getAvailableSlotsForDate: async (doctorId: string, clinicId: string, date: string): Promise<any[]> => {
+    try {
+      console.log('=== FETCHING AVAILABLE SLOTS ===');
+      console.log('Request params:', { doctorId, clinicId, date });
+
+      // Format as YYYY-MM-DD using local date components (avoid timezone drift)
+      const dateObj = new Date(date);
+      const year = dateObj.getFullYear();
+      const month = dateObj.getMonth();
+      const day = dateObj.getDate();
+      const formattedDate = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+
+      console.log('Formatted date for API:', formattedDate);
+
+      // Using lowercase 'staff' to match other endpoints like `/staff/c/:clinicId`
+      const response = await apiClient.get(`/staff/${doctorId}/${clinicId}/available-slots/${formattedDate}`);
+
+      console.log('Backend response:', response.data);
+
+      if ((response.data as any)?.success && (response.data as any)?.data?.slots) {
+        return (response.data as any).data.slots as any[];
+      }
+      // some deployments may return slots array directly
+      if (Array.isArray(response.data)) return response.data as any[];
+      return [];
+    } catch (error: any) {
+      console.error('Error fetching available slots:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      console.error('Status code:', error.response?.status);
+      try {
+        const dateObj = new Date(date);
+        console.error('Date sent to backend:', date);
+        console.error('Expected day of week:', dateObj.toLocaleDateString('en-US', { weekday: 'long' }));
+      } catch {}
+      return [];
+    }
+  },
+
+  // Check if a user already has a booking conflicting with the provided slot
+  checkUserBookingForSlot: async (
+    userId: string,
+    doctorId: string,
+    clinicId: string,
+    date: string,
+    timeSlot: { from: string; to: string }
+  ): Promise<boolean> => {
+    try {
+      console.log('Checking if user already has booking for slot:', { userId, doctorId, clinicId, date, timeSlot });
+
+      const response = await apiClient.get(`/Appointment/user/${userId}`);
+
+      const appointments = (response.data as any)?.appointments || (response.data as any)?.data || response.data || [];
+      if (!Array.isArray(appointments)) return false;
+
+      const hasConflict = appointments.some((appointment: any) => {
+        // Skip cancelled and no-show appointments (case-insensitive)
+        if (appointment.status?.toLowerCase() === 'cancelled' || appointment.status?.toLowerCase() === 'no-show') {
+          return false;
+        }
+
+        // Check if it's the same date (normalize to YYYY-MM-DD in local time)
+        const appointmentDate = new Date(appointment.appointmentDate).toISOString().split('T')[0];
+        const requestedDate = new Date(date).toISOString().split('T')[0];
+        if (appointmentDate !== requestedDate) return false;
+
+        // Check doctor and clinic match (id or nested object)
+        const sameDoctor = String(appointment.doctor) === String(doctorId) || String(appointment.doctor?._id) === String(doctorId);
+        const sameClinic = String(appointment.clinic) === String(clinicId) || String(appointment.clinic?._id) === String(clinicId);
+        if (!sameDoctor || !sameClinic) return false;
+
+        // Compare time slots for overlap
+        const existingFrom = appointment.timeSlot?.from || appointment.appointmentTime?.from;
+        const existingTo = appointment.timeSlot?.to || appointment.appointmentTime?.to;
+        if (!existingFrom || !existingTo) return false;
+
+        const requestedFromMinutes = convertTimeToMinutes(timeSlot.from);
+        const requestedToMinutes = convertTimeToMinutes(timeSlot.to);
+        const existingFromMinutes = convertTimeToMinutes(existingFrom);
+        const existingToMinutes = convertTimeToMinutes(existingTo);
+        return requestedFromMinutes < existingToMinutes && requestedToMinutes > existingFromMinutes;
+      });
+
+      console.log('User has existing booking for this slot:', hasConflict);
+      return hasConflict;
+    } catch (error: any) {
+      console.error('Error checking user booking for slot:', error);
+      return false;
+    }
+  },
+
+  // Get monthly available dates for a doctor and clinic
+  getMonthlySlots: async (doctorId: string, clinicId: string, month: number, year: number): Promise<string[]> => {
+    try {
+      console.log('Fetching monthly slots:', { doctorId, clinicId, month, year });
+
+      const response = await apiClient.get(`/staff/generate-monthly-slots/${doctorId}/${clinicId}`, {
+        params: { month, year }
+      });
+
+      console.log('Monthly slots response:', response.data);
+
+      if ((response.data as any)?.success && (response.data as any)?.data?.availableDates) {
+        return (response.data as any).data.availableDates as string[];
+      }
+      // some deployments may return the array directly
+      if (Array.isArray((response.data as any)?.availableDates)) return (response.data as any).availableDates as string[];
+      if (Array.isArray(response.data)) return response.data as string[];
+      return [];
+    } catch (error: any) {
+      console.error('Error fetching monthly slots:', error);
+      return [];
+    }
   }
 
 }
+
+export const userSubscriptionService = {
+  getActiveSubscription: async (userId: string): Promise<unknown | null> => {
+    try {
+      const response = await apiClient.get(`/UserSubscription/${userId}`);
+      console.log("response.data", response.data)
+      const raw = response.data as unknown;
+      if (raw && typeof raw === 'object' && (raw as any).data !== undefined) {
+        return (raw as any).data as unknown;
+      }
+      if (raw && typeof raw === 'object' && (raw as any).subscription !== undefined) {
+        return (raw as any).subscription as unknown;
+      }
+      return raw ?? null;
+    } catch (error: unknown) {
+      console.error('Error fetching active subscription:', error);
+      return null;
+    }
+  },
+}
+
 export const subscriptionservices = {
 
   getallsubscription: async (): Promise<any> => {
