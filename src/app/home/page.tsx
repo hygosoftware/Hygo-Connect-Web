@@ -16,7 +16,10 @@ const HomePage: React.FC = () => {
   const [loadingAppointments, setLoadingAppointments] = useState(true);
 
   const handleFeaturePress = (feature: string) => {
-    console.log(`Feature pressed: ${feature}`);
+    // Keep non-booking feature logs only
+    if (feature !== 'Book Appointment' && feature !== 'Appointment') {
+      console.log(`Feature pressed: ${feature}`);
+    }
     if (feature === 'PillPal') {
       router.push('/pillpal');
     } else if (feature === 'Book Appointment' || feature === 'Appointment') {
@@ -270,7 +273,7 @@ const HomePage: React.FC = () => {
             </Typography>
             <button
               className="text-blue-800 hover:text-blue-900 transition-colors duration-200"
-              onClick={() => console.log('See all appointments')}
+              onClick={() => { /* Intentionally no log for appointment action */ }}
             >
               <Typography variant="body1" className="text-blue-800">
                 See All
@@ -320,7 +323,7 @@ const HomePage: React.FC = () => {
                   clinicCity={appointment.clinic.clinicAddress || 'N/A'}
                   qrCode={`appointment-${appointment._id}`}
                   appointmentId={appointment._id}
-                  onPress={() => console.log(`Appointment ${appointment._id} clicked`)}
+                  onPress={() => { /* Intentionally no log for appointment click */ }}
                 />
               ))
             ) : (

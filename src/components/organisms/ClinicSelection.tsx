@@ -24,9 +24,13 @@ const mapDoctorClinicToClinic = (c: DoctorClinic): Clinic => {
     ? c.clinicAddress!.location!.coordinates
     : [0, 0];
 
+  // Robust id/name extraction to handle variations like _id/clinicId/id and clinicName/name
+  const id = (c as any)?._id || (c as any)?.clinicId || (c as any)?.id || '';
+  const clinicName = (c as any)?.clinicName || (c as any)?.name || '';
+
   return {
-    _id: c._id,
-    clinicName: c.clinicName,
+    _id: id,
+    clinicName,
     clinicAddress: {
       addressLine,
       city,

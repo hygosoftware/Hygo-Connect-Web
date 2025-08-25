@@ -38,7 +38,6 @@ const Header: React.FC<HeaderProps> = ({
   }, []);
 
   const handleBookAppointment = () => {
-    console.log('Book appointment clicked');
     // Navigate to book appointment page
     router.push('/booking');
   };

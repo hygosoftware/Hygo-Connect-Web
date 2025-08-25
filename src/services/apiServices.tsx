@@ -715,7 +715,8 @@ export const pillReminderService = {
 
   createPillReminder: async (
     userIdOrPillReminder: string | Omit<PillReminder, '_id' | 'createdAt' | 'updatedAt'>,
-    notificationData?: CreatePillReminderPayload
+    notificationData?: CreatePillReminderPayload,
+    prescriptionFile?: File | null
   ): Promise<PillReminder | null> => {
     try {
       // Handle both old and new calling patterns
@@ -766,6 +767,14 @@ export const pillReminderService = {
       // Append optional fields only if present
       if (typeof data.dosage === 'string') formData.append("dosage", data.dosage);
       if (typeof data.intake === 'string') formData.append("intake", data.intake);
+      // Append optional prescription file
+      try {
+        if (prescriptionFile instanceof File) {
+          formData.append('file', prescriptionFile, prescriptionFile.name || 'prescription');
+        }
+      } catch (e) {
+        console.warn('Could not append prescription file:', e);
+      }
 
       const response = await apiClient.post<PillReminder>(`${API_BASE_URL}/Pillreminder/${userId}`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
@@ -851,7 +860,8 @@ export const pillReminderService = {
   // Add multiple medicines for a user by creating individual pill reminders
   addMedicines: async (
     medicines: Medicine[],
-    userId: string
+    userId: string,
+    prescriptionFile?: File | null
   ): Promise<{ success: boolean; created: PillReminder[]; errors: string[] }> => {
     const created: PillReminder[] = [];
     const errors: string[] = [];
@@ -874,7 +884,7 @@ export const pillReminderService = {
         }
 
         const payload = pillReminderHelpers.convertMedicineToApiFormat(med, userId);
-        const createdReminder = await pillReminderService.createPillReminder(userId, payload);
+        const createdReminder = await pillReminderService.createPillReminder(userId, payload, prescriptionFile);
         if (createdReminder) {
           created.push(createdReminder);
         } else {
@@ -2000,41 +2010,50 @@ export interface Appointment {
 // Helper function to convert time (HH:MM) to minutes for overlap checks
 const convertTimeToMinutes = (time: string) => {
   if (!time) return 0;
-  const [hours, minutes] = time.split(':').map(Number);
-  return (hours || 0) * 60 + (minutes || 0);
+  const parts = String(time).split(':');
+  const hours = parseInt(parts[0] || '0', 10);
+  const minutes = parseInt(parts[1] || '0', 10);
+  const h = isNaN(hours) ? 0 : hours;
+  const m = isNaN(minutes) ? 0 : minutes;
+  return h * 60 + m;
 };
 
 // Appointment API Services
 export const appointmentService = {
   // Book an appointment
   bookAppointment: async (payload: BookAppointmentPayload): Promise<any> => {
-    console.log('📅 Booking appointment with payload:', payload);
-    console.log('🔗 API URL:', `/Appointment/${payload.user}`);
-
     try {
-      const requestBody = {
+      // Build request body to match backend schema used in Postman, allowing extra fields via safe casts
+      const p: any = payload as any;
+      const requestBody: any = {
         user: payload.user,
         doctor: payload.doctor,
         clinic: payload.clinic,
         appointmentDate: payload.appointmentDate,
         timeSlot: payload.timeSlot,
-        mode: payload.mode || 'InPerson',
-        status: 'Scheduled',
-        consultationFee: payload.consultationFee || 0,
+        mode: p.mode || 'InPerson',
+        status: p.status || 'Scheduled',
+        consultationFee: payload.consultationFee ?? 0,
         purpose: payload.purpose,
-        symptoms: payload.symptoms || [],
+        symptoms: payload.symptoms ?? [],
         notes: payload.notes,
+        paymentMethod: p.paymentMethod,
         payment: {
-          amount: payload.consultationFee || 0,
-          isPaid: false,
-          status: 'pending'
-        }
+          amount: p.payment?.amount ?? payload.consultationFee ?? 0,
+          isPaid: p.payment?.isPaid ?? false,
+          method: p.payment?.method ?? p.paymentMethod ?? 'Cash',
+          status: p.payment?.status ?? 'pending',
+        },
+        isFollowUp: p.isFollowUp ?? false,
+        createdBy: p.createdBy ?? payload.user,
+        userName: p.userName,
+        doctorName: p.doctorName,
+        isRescheduled: p.isRescheduled ?? false,
+        isDeleted: p.isDeleted ?? false,
       };
-
-      console.log('📤 Request body:', requestBody);
-
+      // Debug: log the exact appointment payload being sent
+      console.log('Appointment booking payload:', requestBody);
       const response = await apiClient.post(`/Appointment/${payload.user}`, requestBody);
-      console.log('✅ Appointment booking successful:', response.data);
       return response.data;
     } catch (error: unknown) {
       console.error('❌ Appointment booking failed:', error);
@@ -2056,8 +2075,7 @@ export const appointmentService = {
   // Get appointments by user ID
   getAppointmentsByUserId: async (userId: string): Promise<Appointment[]> => {
     try {
-      const response = await apiClient.get(`/Appointment/user/${userId}`);
-      console.log("response.data", response.data)
+      const response = await apiClient.get(`/Appointment/${userId}`);
       return response.data?.data || response.data || [];
     } catch (error: unknown) {
       console.error('Error fetching appointments:', error);
@@ -2068,27 +2086,18 @@ export const appointmentService = {
   // Get available slots for a specific doctor, clinic and date
   getAvailableSlotsForDate: async (doctorId: string, clinicId: string, date: string): Promise<any[]> => {
     try {
-      console.log('=== FETCHING AVAILABLE SLOTS ===');
-      console.log('Request params:', { doctorId, clinicId, date });
-
       // Format as YYYY-MM-DD using local date components (avoid timezone drift)
       const dateObj = new Date(date);
       const year = dateObj.getFullYear();
       const month = dateObj.getMonth();
       const day = dateObj.getDate();
       const formattedDate = `${year}-${(month + 1).toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-
-      console.log('Formatted date for API:', formattedDate);
-
       // Using lowercase 'staff' to match other endpoints like `/staff/c/:clinicId`
       const response = await apiClient.get(`/staff/${doctorId}/${clinicId}/available-slots/${formattedDate}`);
-
-      console.log('Backend response:', response.data);
-
+      console.log("response.data", response.data)
       if ((response.data as any)?.success && (response.data as any)?.data?.slots) {
         return (response.data as any).data.slots as any[];
-      }
-      // some deployments may return slots array directly
+      }      // some deployments may return slots array directly
       if (Array.isArray(response.data)) return response.data as any[];
       return [];
     } catch (error: any) {
@@ -2113,9 +2122,8 @@ export const appointmentService = {
     timeSlot: { from: string; to: string }
   ): Promise<boolean> => {
     try {
-      console.log('Checking if user already has booking for slot:', { userId, doctorId, clinicId, date, timeSlot });
-
-      const response = await apiClient.get(`/Appointment/user/${userId}`);
+      const response = await apiClient.get(`/Appointment/${userId}`);
+      console.log("response.data", response.data)
 
       const appointments = (response.data as any)?.appointments || (response.data as any)?.data || response.data || [];
       if (!Array.isArray(appointments)) return false;
@@ -2147,8 +2155,6 @@ export const appointmentService = {
         const existingToMinutes = convertTimeToMinutes(existingTo);
         return requestedFromMinutes < existingToMinutes && requestedToMinutes > existingFromMinutes;
       });
-
-      console.log('User has existing booking for this slot:', hasConflict);
       return hasConflict;
     } catch (error: any) {
       console.error('Error checking user booking for slot:', error);
@@ -2159,14 +2165,10 @@ export const appointmentService = {
   // Get monthly available dates for a doctor and clinic
   getMonthlySlots: async (doctorId: string, clinicId: string, month: number, year: number): Promise<string[]> => {
     try {
-      console.log('Fetching monthly slots:', { doctorId, clinicId, month, year });
-
       const response = await apiClient.get(`/staff/generate-monthly-slots/${doctorId}/${clinicId}`, {
         params: { month, year }
       });
-
-      console.log('Monthly slots response:', response.data);
-
+      console.log("response.data", response.data)
       if ((response.data as any)?.success && (response.data as any)?.data?.availableDates) {
         return (response.data as any).data.availableDates as string[];
       }

@@ -36,15 +36,7 @@ const BookingReview: React.FC = () => {
       });
       return;
     }
-    
-    console.log('BookingReview - Proceeding to payment with complete data:', {
-      doctor: state.selectedDoctor.fullName,
-      clinic: state.selectedClinic.clinicName,
-      date: state.selectedDate.toDateString(),
-      slot: state.selectedSlot.time,
-      patient: state.bookingDetails.patientName
-    });
-    
+
     setStep('payment');
   };
 

@@ -48,10 +48,97 @@
   }
   .add-medicine-modal-mobile .modal-content {
     padding: 1rem !important;
+    height: 100svh; /* safer small-viewport height on mobile */
   }
   .add-medicine-modal-mobile .modal-footer {
     flex-direction: column;
     gap: 1rem;
     padding: 1rem !important;
   }
+
+  /* Creative, mobile-first AddMedicineModal polish */
+  .add-medicine-modal-mobile .modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.18);
+  }
+
+  .add-medicine-modal-mobile .modal-scroll {
+    -webkit-overflow-scrolling: touch;
+    background: linear-gradient(180deg, rgba(14,50,147,0.03), transparent 60%);
+  }
+
+  /* Cards spacing */
+  .add-medicine-modal-mobile .modal-content .p-5 {
+    padding: 1rem !important;
+  }
+  .add-medicine-modal-mobile .modal-content .rounded-xl {
+    border-radius: 1rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+  }
+
+  /* Inputs and selects: larger tap targets */
+  .add-medicine-modal-mobile input,
+  .add-medicine-modal-mobile select,
+  .add-medicine-modal-mobile button {
+    font-size: 16px; /* avoid iOS zoom */
+  }
+  .add-medicine-modal-mobile input,
+  .add-medicine-modal-mobile select {
+    min-height: 44px;
+  }
+
+  /* Time slot buttons: make tappable */
+  .add-medicine-modal-mobile .modal-scroll .grid button {
+    min-height: 64px;
+    border-radius: 1rem;
+  }
+
+  /* Icon-only buttons (e.g., remove medicine) */
+  .add-medicine-modal-mobile .modal-content button.p-2 {
+    padding: 0.625rem; /* 10px */
+  }
+
+  /* Sticky footer actions with frosted background */
+  .add-medicine-modal-mobile .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: rgba(255,255,255,0.9);
+    backdrop-filter: saturate(150%) blur(6px);
+    -webkit-backdrop-filter: saturate(150%) blur(6px);
+    border-top: 1px solid #e5e7eb;
+  }
+}
+
+/* ==============================
+   AddMedicineModal color overrides
+   ============================== */
+.add-medicine-modal input,
+.add-medicine-modal textarea,
+.add-medicine-modal select {
+  color: #000 !important;
+}
+
+/* Placeholders */
+.add-medicine-modal input::placeholder,
+.add-medicine-modal textarea::placeholder {
+  color: #000 !important;
+  opacity: 1;
+}
+/* Legacy placeholder selectors for broader support */
+.add-medicine-modal input:-ms-input-placeholder,
+.add-medicine-modal textarea:-ms-input-placeholder {
+  color: #000 !important;
+}
+.add-medicine-modal input::-ms-input-placeholder,
+.add-medicine-modal textarea::-ms-input-placeholder {
+  color: #000 !important;
+}
+
+/* Native select dropdown options */
+.add-medicine-modal select option {
+  color: #000 !important;
 }

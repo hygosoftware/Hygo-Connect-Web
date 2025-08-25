@@ -44,6 +44,7 @@ const HealthCardPage: React.FC = () => {
   const [showSubscriptions, setShowSubscriptions] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [cardNumber, setCardNumber] = useState<string | null>(null);
+  const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean>(false);
 
   const [usedServices, setUsedServices] = useState<UsedService[]>([]);
 
@@ -101,8 +102,9 @@ const HealthCardPage: React.FC = () => {
       const tokens = TokenManager.getTokens();
       const userId = tokens.userId;
       if (!userId) {
-        // Fallback to first plan for anonymous sessions
-        if (plans.length > 0) setActivePlan(plans[0]);
+        // Anonymous: no active subscription context
+        setActivePlan(null);
+        setHasActiveSubscription(false);
         return;
       }
       const active = await userSubscriptionService.getActiveSubscription(userId);
@@ -151,17 +153,19 @@ const HealthCardPage: React.FC = () => {
           planId = planField;
         }
       }
-      const plan = plans.find(p => p._id === planId) || plans[0] || null;
+      const plan = plans.find(p => p._id === planId) || null;
       setActivePlan(plan);
+      setHasActiveSubscription(!!plan);
       if (plan) {
         setUserProfile(prev => prev ? { ...prev, plan: plan.subscriptionName || prev.plan } : prev);
+      } else {
+        setUserProfile(prev => prev ? { ...prev, plan: 'None' } : prev);
       }
     } catch (e) {
-      console.warn('Could not resolve active subscription plan, falling back to first plan');
-      if (plans.length > 0) {
-        setActivePlan(plans[0]);
-        setUserProfile(prev => prev ? { ...prev, plan: plans[0].subscriptionName || prev.plan } : prev);
-      }
+      console.warn('Could not resolve active subscription plan');
+      setActivePlan(null);
+      setHasActiveSubscription(false);
+      setUserProfile(prev => prev ? { ...prev, plan: 'None' } : prev);
     }
   };
 
@@ -175,7 +179,7 @@ const HealthCardPage: React.FC = () => {
         name: userInfo.FullName || userInfo.fullName || 'User',
         id: userId,
         memberSince: new Date(userInfo.createdAt || Date.now()).getFullYear().toString(),
-        plan: 'Basic' // This should come from subscription API or user data
+        plan: 'None' // This will be updated if an active subscription exists
       });
     } else {
       // If no user data available, set empty profile
@@ -320,11 +324,13 @@ const HealthCardPage: React.FC = () => {
                   Current Plan
                 </Typography>
                 <Typography variant="body1" className="font-semibold text-white">
-                  {userProfile?.plan || 'Basic'}
+                  {userProfile?.plan || 'None'}
                 </Typography>
               </div>
-              <span className="ml-2 px-3 py-1 bg-white/20 rounded-full text-xs font-semibold uppercase tracking-wide">
-                Active
+              <span className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
+                hasActiveSubscription ? 'bg-white/20' : 'bg-red-500/80'
+              }`}>
+                {hasActiveSubscription ? 'Active' : 'Inactive'}
               </span>
             </div>
           </div>
@@ -341,9 +347,17 @@ const HealthCardPage: React.FC = () => {
                 Loading card details...
               </Typography>
             ) : !activePlan ? (
-              <Typography variant="body2" className="text-gray-600 text-center">
-                No active plan found.
-              </Typography>
+              <div className="text-center space-y-4">
+                <Typography variant="body2" className="text-gray-600">
+                  No subscription found.
+                </Typography>
+                <Button
+                  onClick={handleSubscribe}
+                  className="px-6 py-3 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  Purchase Now
+                </Button>
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">

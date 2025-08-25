@@ -32,40 +32,11 @@ const BookingPayment: React.FC = () => {
 
   // Debug logging to identify missing fields
   useEffect(() => {
-    console.log('BookingPayment - Validation Check:', {
-      selectedDoctor: !!state.selectedDoctor,
-      selectedClinic: !!state.selectedClinic,
-      selectedDate: !!state.selectedDate,
-      selectedSlot: !!state.selectedSlot,
-      bookingDetails: !!state.bookingDetails,
-      isComplete: isBookingComplete
-    });
-
-    // More detailed logging
-    console.log('BookingPayment - Detailed State:', {
-      doctorName: state.selectedDoctor?.fullName,
-      clinicName: state.selectedClinic?.clinicName,
-      date: state.selectedDate?.toDateString(),
-      slotTime: state.selectedSlot?.time,
-      patientName: state.bookingDetails?.patientName,
-      currentStep: state.currentStep
-    });
   }, [state, isBookingComplete]);
-  const [selectedMethod, setSelectedMethod] = useState<'card' | 'upi' | 'wallet' | 'cash' | null>(null); // 'cash' now included in type
+  const [selectedMethod, setSelectedMethod] = useState<'card' | 'cash' | null>(null);
 const [showCashConfirm, setShowCashConfirm] = useState(false);
 
-  const [isDesktop, setIsDesktop] = useState(false);
-  const [showQR, setShowQR] = useState(false);
-
-  useEffect(() => {
-    const checkScreenSize = () => {
-      setIsDesktop(window.innerWidth >= 768);
-    };
-
-    checkScreenSize();
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  // Removed desktop-specific checks as only Razorpay and Cash are supported
 
   // Load Razorpay script
   useEffect(() => {
@@ -84,7 +55,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
 
   const totalAmount = state.selectedDoctor ? state.selectedDoctor.consultationFee + 50 : 0;
 
-  const handlePaymentMethodSelect = (method: 'card' | 'upi' | 'wallet' | 'cash') => {
+  const handlePaymentMethodSelect = (method: 'card' | 'cash') => {
     setSelectedMethod(method);
     setPaymentMethod(method);
   };
@@ -129,8 +100,6 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
             const verification = await verifyPaymentSignature(response);
 
             if (verification.verified) {
-              console.log('Payment successful:', response);
-              console.log('Appointment confirmed with payment:', appointmentData);
 
               setPaymentStatus('success');
               showToast({
@@ -173,7 +142,6 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
             // 1. Set a timer to cancel the appointment if payment isn't completed
             // 2. Send the appointment ID to a cleanup service
             // 3. Show a countdown timer to the user
-            console.log('Payment cancelled for appointment:', appointmentData);
           }
         }
       };
@@ -205,7 +173,6 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
       setPaymentStatus('processing');
 
       // Step 1: Book the appointment first
-      console.log('Step 1: Booking appointment...');
 
       // Get current user ID from auth
       const { userId } = TokenManager.getTokens();
@@ -214,73 +181,116 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
         throw new Error('User not authenticated. Please log in to book an appointment.');
       }
 
-      // Calculate end time (assuming 30-minute appointments)
-      const calculateEndTime = (startTime: string): string => {
-        if (!startTime) return '';
+      // Require explicitly selected clinic id
+      const resolvedClinicId = String(state.selectedClinic?._id || '');
+      if (!resolvedClinicId) {
+        setLoading(false);
+        showToast({
+          type: 'error',
+          title: 'Clinic required',
+          message: 'Please select a clinic before booking an appointment.'
+        });
+        setStep('clinic');
+        return;
+      }
 
-        // Parse time like "10:00 AM" or "02:30 PM"
-        const timeMatch = startTime.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-        if (!timeMatch) return startTime; // Return original if can't parse
-
-        let hours = parseInt(timeMatch[1]);
-        const minutes = parseInt(timeMatch[2]);
-        const ampm = timeMatch[3].toUpperCase();
-
-        // Convert to 24-hour format
-        if (ampm === 'PM' && hours !== 12) hours += 12;
-        if (ampm === 'AM' && hours === 12) hours = 0;
-
-        // Add 30 minutes
-        let endMinutes = minutes + 30;
-        let endHours = hours;
-        if (endMinutes >= 60) {
-          endMinutes -= 60;
-          endHours += 1;
+      // Helpers to format time and combine to UTC ISO
+      const to24Hour = (time12h: string): { hhmm: string; hours: number; minutes: number } => {
+        // accepts formats like "10:00 AM" or "02:30 pm"
+        const m = time12h.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+        if (!m) {
+          // fallback: try HH:mm
+          const m24 = time12h.match(/^(\d{1,2}):(\d{2})$/);
+          if (m24) {
+            const h = Math.min(23, Math.max(0, parseInt(m24[1], 10)));
+            const min = Math.min(59, Math.max(0, parseInt(m24[2], 10)));
+            return { hhmm: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`, hours: h, minutes: min };
+          }
+          return { hhmm: '', hours: 0, minutes: 0 };
         }
-
-        // Convert back to 12-hour format
-        const endAmPm = endHours >= 12 ? 'PM' : 'AM';
-        const displayHours = endHours > 12 ? endHours - 12 : (endHours === 0 ? 12 : endHours);
-
-        return `${displayHours}:${endMinutes.toString().padStart(2, '0')} ${endAmPm}`;
+        let h = parseInt(m[1], 10);
+        const min = parseInt(m[2], 10);
+        const ampm = m[3].toUpperCase();
+        if (ampm === 'PM' && h !== 12) h += 12;
+        if (ampm === 'AM' && h === 12) h = 0;
+        return { hhmm: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`, hours: h, minutes: min };
       };
 
-      // Prepare booking data for API (matching MongoDB schema)
+      const combineDateAndTimeToUTC = (dateOnly: Date | null, timeText: string): string => {
+        if (!dateOnly || !timeText) return '';
+        const { hours, minutes } = to24Hour(timeText);
+        if (isNaN(hours) || isNaN(minutes)) return '';
+        const d = new Date(dateOnly);
+        // set local time, then output UTC ISO
+        d.setHours(hours, minutes, 0, 0);
+        return d.toISOString();
+      };
+
+      // Prepare booking data matching required schema
+      // Extract from/to from slot id pattern: `${from}-${to}-${idx}` created in DateTimeSelection
+      const idParts = (state.selectedSlot?.id || '').split('-');
+      const rawFromFromId = idParts.length >= 2 ? idParts[0] : '';
+      const rawToFromId = idParts.length >= 2 ? idParts[1] : '';
+      const from24 = to24Hour(rawFromFromId || (state.selectedSlot?.time || ''));
+      const to24Parsed = to24Hour(rawToFromId || (state.selectedSlot?.time || ''));
+      // Appointment date should be date-only (midnight UTC) to match backend expectation
+      const toMidnightUTC = (dateOnly: Date | null): string => {
+        if (!dateOnly) return '';
+        const d = new Date(dateOnly);
+        d.setHours(0, 0, 0, 0);
+        return d.toISOString();
+      };
+      const appointmentDateISO = toMidnightUTC(state.selectedDate || null);
+
+      // Validate computed time and date
+      if (!from24.hhmm || !to24Parsed.hhmm || !appointmentDateISO) {
+        setLoading(false);
+        showToast({
+          type: 'error',
+          title: 'Invalid time selection',
+          message: 'Please select a valid date and time slot.'
+        });
+        setStep('date');
+        return;
+      }
+
+      const paymentMethodText = selectedMethod === 'cash' ? 'Cash' : 'Online';
+
       const bookingPayload = {
         user: userId,
         doctor: state.selectedDoctor?._id || '',
-        clinic: state.selectedClinic?._id || '',
-        appointmentDate: state.selectedDate?.toISOString() || '', // Full ISO date for MongoDB
+        clinic: resolvedClinicId,
+        appointmentDate: appointmentDateISO,
         timeSlot: {
-          from: state.selectedSlot?.time || '',
-          to: calculateEndTime(state.selectedSlot?.time || '')
+          from: from24.hhmm,
+          to: to24Parsed.hhmm
         },
         mode: 'InPerson',
         consultationFee: state.selectedDoctor?.consultationFee || 0,
         purpose: 'General Consultation',
-        symptoms: state.bookingDetails?.symptoms ? [state.bookingDetails.symptoms] : [],
-        notes: state.bookingDetails?.notes || '',
-        // Legacy fields for backward compatibility
-        date: state.selectedDate?.toISOString().split('T')[0] || '',
-        slot: {
-          from: state.selectedSlot?.time || '',
-          to: calculateEndTime(state.selectedSlot?.time || '')
-        }
+        status: 'Scheduled',
+        symptoms: [] as string[],
+        notes: '',
+        paymentMethod: paymentMethodText,
+        payment: {
+          amount: state.selectedDoctor?.consultationFee || 0,
+          isPaid: false,
+          method: paymentMethodText,
+          status: 'pending'
+        },
+        isFollowUp: false,
+        createdBy: userId,
+        userName: state.bookingDetails?.patientName || 'Myself',
+        doctorName: state.selectedDoctor?.fullName || '',
+        isRescheduled: false,
+        isDeleted: false
       };
 
-      console.log('Booking payload:', bookingPayload);
-      console.log('Detailed payload structure:', {
-        doctor: bookingPayload.doctor,
-        clinic: bookingPayload.clinic,
-        date: bookingPayload.date,
-        slot: bookingPayload.slot,
-        user: bookingPayload.user,
-        hasAllFields: !!(bookingPayload.doctor && bookingPayload.clinic && bookingPayload.date && bookingPayload.slot.from && bookingPayload.user)
-      });
+      // Debug: verify outgoing booking payload shape
+      console.log('Booking payload (client):', bookingPayload);
 
       // Book the appointment
       const appointmentResult = await appointmentService.bookAppointment(bookingPayload);
-      console.log('Appointment booked successfully:', appointmentResult);
 
       showToast({
         type: 'success',
@@ -289,7 +299,6 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
       });
 
       // Step 2: Process payment after successful booking
-      console.log('Step 2: Processing payment...');
       setLoading(false); // Reset loading before opening Razorpay
       handleRazorpayPayment(appointmentResult);
 
@@ -312,8 +321,8 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
   };
 
   const PaymentMethodCard: React.FC<{
-    method: 'card' | 'upi' | 'wallet' | 'cash';
-    icon: 'credit-card' | 'smartphone' | 'wallet' | 'hospital'; // Use 'hospital' icon for cash
+    method: 'card' | 'cash';
+    icon: 'credit-card' | 'hospital'; // Use 'hospital' icon for cash
     title: string;
     description: string;
   }> = ({ method, icon, title, description }) => (
@@ -348,44 +357,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
     </button>
   );
 
-  const QRCodeDisplay: React.FC = () => (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
-      <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
-        Scan QR Code to Pay
-      </Typography>
-
-      {/* Mock QR Code */}
-      <div className="w-48 h-48 bg-gray-100 rounded-lg mx-auto mb-4 flex items-center justify-center">
-        <div className="w-40 h-40 bg-black rounded-lg flex items-center justify-center">
-          <Typography variant="body2" className="text-white text-center">
-            QR CODE<br />₹{totalAmount}
-          </Typography>
-        </div>
-      </div>
-
-      <Typography variant="body2" className="text-gray-600 mb-4">
-        Use any UPI app to scan and pay
-      </Typography>
-
-      <div className="flex justify-center space-x-4 mb-6">
-        <div className="flex items-center">
-          <Icon name="check-circle" size="small" color="#10b981" className="mr-2" />
-          <Typography variant="caption" className="text-gray-600">Secure</Typography>
-        </div>
-        <div className="flex items-center">
-          <Icon name="check-circle" size="small" color="#10b981" className="mr-2" />
-          <Typography variant="caption" className="text-gray-600">Instant</Typography>
-        </div>
-      </div>
-
-      <Button
-        onClick={() => { void handlePayment(); }}
-        className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 text-white py-3 px-6 rounded-xl font-medium transition-colors"
-      >
-        I have paid ₹{totalAmount}
-      </Button>
-    </div>
-  );
+  // Removed UPI QR flow
 
   // Show validation error if booking information is incomplete
   if (!isBookingComplete) {
@@ -496,10 +468,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
           </div>
         </div>
 
-        {isDesktop && selectedMethod === 'upi' && showQR ? (
-          <QRCodeDisplay />
-        ) : (
-          <>
+        <>
             {/* Payment Methods */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
               <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
@@ -511,23 +480,8 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
                   method="card"
                   icon="credit-card"
                   title="Razorpay - All Payment Methods"
-                  description="Cards, UPI, Wallets, Net Banking & more"
+                  description="Pay via Razorpay (Cards, UPI, Net Banking, Wallets)"
                 />
-
-                <PaymentMethodCard
-                  method="upi"
-                  icon="smartphone"
-                  title="UPI Payment"
-                  description="Pay using UPI apps like GPay, PhonePe"
-                />
-
-                <PaymentMethodCard
-                  method="wallet"
-                  icon="wallet"
-                  title="Digital Wallet"
-                  description="Pay using digital wallets"
-                />
-
                 <PaymentMethodCard
                   method="cash"
                   icon="hospital"
@@ -579,67 +533,11 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
                     </div>
                   </div>
                 )}
-
-                {selectedMethod === 'upi' && (
-                  <div className="space-y-4">
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-center mb-2">
-                        <Icon name="smartphone" size="small" color="#10b981" className="mr-2" />
-                        <Typography variant="body2" className="text-green-800 font-medium">
-                          UPI Payment via Razorpay
-                        </Typography>
-                      </div>
-                      <Typography variant="caption" className="text-green-700">
-                        Pay instantly using any UPI app. Supports GPay, PhonePe, Paytm, BHIM and more.
-                      </Typography>
-                    </div>
-
-                    {isDesktop ? (
-                      <div className="text-center">
-                        <Button
-                          onClick={() => setShowQR(true)}
-                          className="bg-[#0e3293] hover:bg-[#0e3293]/90 text-white py-3 px-6 rounded-xl font-medium transition-colors"
-                        >
-                          Show QR Code
-                        </Button>
-                        <Typography variant="body2" className="text-gray-600 mt-2">
-                          Or proceed to enter UPI ID
-                        </Typography>
-                      </div>
-                    ) : (
-                      <Typography variant="body2" className="text-gray-600 text-center">
-                        Proceed to payment to enter your UPI ID
-                      </Typography>
-                    )}
-                  </div>
-                )}
-
-                {selectedMethod === 'wallet' && (
-                  <div className="space-y-4">
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-center mb-2">
-                        <Icon name="wallet" size="small" color="#8b5cf6" className="mr-2" />
-                        <Typography variant="body2" className="text-purple-800 font-medium">
-                          Digital Wallet Payment
-                        </Typography>
-                      </div>
-                      <Typography variant="caption" className="text-purple-700">
-                        Pay using Paytm, Amazon Pay, MobiKwik, Freecharge and other digital wallets.
-                      </Typography>
-                    </div>
-
-                    <div className="text-center py-4">
-                      <Typography variant="body1" className="text-gray-600">
-                        You will be redirected to select your preferred wallet
-                      </Typography>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
             {/* Pay Button */}
-            {selectedMethod === 'cash' && !showQR && (
+            {selectedMethod === 'cash' && (
               <Button
                 onClick={() => setShowCashConfirm(true)}
                 disabled={state.loading}
@@ -655,7 +553,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
                 )}
               </Button>
             )}
-            {selectedMethod && selectedMethod !== 'cash' && !showQR && (
+            {selectedMethod === 'card' && (
               <Button
                 onClick={() => { void handlePayment(); }}
                 disabled={state.loading}
@@ -710,7 +608,6 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
               </div>
             )}
           </>
-        )}
 
         {/* Security Note */}
         <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">

@@ -69,12 +69,7 @@ const LoginForm: React.FC<LoginFormProps> = ({
       showToast('No internet connection. Please check your network.', 'error');
       return;
     }
-
-    if (!email.trim()) {
-      showToast('Please enter your email address', 'error');
-      return;
-    }
-
+    
     if (!isValidEmail(email)) {
       showToast('Please enter a valid email address', 'error');
       return;

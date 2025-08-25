@@ -154,7 +154,7 @@ const DoctorDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 doctor-details-mobile">
       <UniversalHeader
-        title={`Dr. ${doctor.fullName.replace(/^Dr\.\s*/i, '')}`}
+        title={` ${doctor.fullName.replace(/^Dr\.\s*/i, '')}`}
         subtitle={doctor.specializations?.join(', ') || 'Medical Professional'}
         variant="gradient"
         icon="user"

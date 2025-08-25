@@ -206,7 +206,7 @@ const PillPalPage: React.FC = () => {
 
 
 
-  const handleAddMedicines = async (medicines: Medicine[]) => {
+  const handleAddMedicines = async (medicines: Medicine[], prescriptionFile?: File | null) => {
     setAddingMedicines(true);
 
     try {
@@ -222,7 +222,7 @@ const PillPalPage: React.FC = () => {
       // Show initial loading message
       showToast('Adding medicines... This may take a moment', 'info');
 
-      const result = await pillReminderService.addMedicines(medicines, userId);
+      const result = await pillReminderService.addMedicines(medicines, userId, prescriptionFile);
 
       if (result.success) {
         showToast(`Successfully added ${result.created.length} medicine${result.created.length > 1 ? 's' : ''}`, 'success');
@@ -335,7 +335,7 @@ const PillPalPage: React.FC = () => {
       <AddMedicineModal
         isOpen={showAddMedicineModal}
         onClose={() => setShowAddMedicineModal(false)}
-        onAddMedicines={(medicines) => { void handleAddMedicines(medicines); }}
+        onAddMedicines={(medicines, file) => { void handleAddMedicines(medicines, file); }}
         loading={addingMedicines}
       />
 
