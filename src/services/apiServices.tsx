@@ -1393,7 +1393,7 @@ export const paymentService = {
   async createPayment(paymentData: CreatePaymentRequest): Promise<CreatePaymentResponse> {
     try {
       console.log('🚀 Creating payment order:', paymentData);
-      const response = await apiClient.post('/payment', paymentData);
+      const response = await apiClient.post('/Payment', paymentData);
       console.log('✅ Payment order created:', response.data);
       return response.data;
     } catch (error: unknown) {
@@ -1424,6 +1424,54 @@ export const paymentService = {
         throw new Error(error.message);
       }
       throw new Error('Failed to confirm payment');
+    }
+  },
+
+  // Create a Razorpay order on backend
+  async createOrder(payload: {
+    amount: number; // in paise
+    currency: string; // e.g., 'INR'
+    receipt?: string;
+    notes?: Record<string, unknown>;
+    relatedType?: string; // e.g., 'appointment'
+    relatedId?: string; // e.g., appointment id
+    user?: string; // legacy user field
+    userId?: string; // backend expects userId
+  }): Promise<{ id: string; amount: number; currency: string; status?: string } & Record<string, unknown>> {
+    try {
+      const response = await apiClient.post('/Payment', payload);
+      return ((response.data as any)?.data ?? response.data) as any;
+    } catch (error: unknown) {
+      console.error('Error creating payment order:', error);
+      if (axios.isAxiosError(error)) {
+        const msg = (error.response?.data as any)?.error || error.message;
+        throw new Error(msg);
+      } else if (error instanceof Error) {
+        throw new Error(error.message);
+      }
+      throw new Error('Failed to create payment order');
+    }
+  },
+
+  // Verify Razorpay payment on backend
+  async verifyPayment(payload: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    appointmentId?: string;
+  }): Promise<{ verified?: boolean; success?: boolean } & Record<string, unknown>> {
+    try {
+      const response = await apiClient.post('/payment/verify', payload);
+      return ((response.data as any)?.data ?? response.data) as any;
+    } catch (error: unknown) {
+      console.error('Error verifying payment:', error);
+      if (axios.isAxiosError(error)) {
+        const msg = (error.response?.data as any)?.error || error.message;
+        throw new Error(msg);
+      } else if (error instanceof Error) {
+        throw new Error(error.message);
+      }
+      throw new Error('Failed to verify payment');
     }
   },
 

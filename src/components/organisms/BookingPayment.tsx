@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Typography, Icon, Button } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
-import { createRazorpayOrder, verifyPaymentSignature, getRazorpayConfig, RazorpayOrderData } from '../../lib/razorpay';
-import { appointmentService } from '../../services/apiServices';
+import { getRazorpayConfig, RazorpayOrderData } from '../../lib/razorpay';
+import { appointmentService, paymentService, userSubscriptionService } from '../../services/apiServices';
 import { TokenManager } from '../../services/auth';
 
 // Razorpay types
@@ -34,7 +34,10 @@ const BookingPayment: React.FC = () => {
   useEffect(() => {
   }, [state, isBookingComplete]);
   const [selectedMethod, setSelectedMethod] = useState<'card' | 'cash' | null>(null);
-const [showCashConfirm, setShowCashConfirm] = useState(false);
+  const [showCashConfirm, setShowCashConfirm] = useState(false);
+  const [subscriptionChecked, setSubscriptionChecked] = useState(false);
+  const baseTotalAmount = state.selectedDoctor ? state.selectedDoctor.consultationFee + 50 : 0;
+  const [effectiveTotal, setEffectiveTotal] = useState<number>(baseTotalAmount);
 
   // Removed desktop-specific checks as only Razorpay and Cash are supported
 
@@ -53,7 +56,58 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
     void loadRazorpayScript();
   }, []);
 
-  const totalAmount = state.selectedDoctor ? state.selectedDoctor.consultationFee + 50 : 0;
+  // Extract a useful error message from various error shapes (Axios, Error, string)
+  const extractErrorMessage = (err: unknown): string => {
+    const fallback = 'An unexpected error occurred. Please try again.';
+    try {
+      if (typeof err === 'string') return err || fallback;
+      if (err && typeof err === 'object') {
+        const anyErr = err as any;
+        const msg = anyErr?.response?.data?.message
+          ?? anyErr?.response?.data?.error
+          ?? anyErr?.response?.data?.errors?.[0]?.message
+          ?? anyErr?.message;
+        if (typeof msg === 'string' && msg.trim()) return msg;
+        // Attempt to stringify known shapes
+        const data = anyErr?.response?.data;
+        if (data && typeof data === 'object') {
+          const s = JSON.stringify(data);
+          if (s && s !== '{}' && s !== 'null') return s;
+        }
+      }
+      return fallback;
+    } catch {
+      return fallback;
+    }
+  };
+
+  // Preload subscription coverage and compute effective total
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const { userId } = TokenManager.getTokens();
+        if (!userId) {
+          setEffectiveTotal(baseTotalAmount);
+          setSubscriptionChecked(true);
+          return;
+        }
+        const sub = await userSubscriptionService.getActiveSubscription(userId);
+        const active = !!sub && (
+          (sub as any).status?.toString().toLowerCase() === 'active' ||
+          (sub as any).isActive === true ||
+          (sub as any).remainingBookings > 0 ||
+          (sub as any).remainingFreeAppointments > 0
+        );
+        setEffectiveTotal(active ? 0 : baseTotalAmount);
+      } catch {
+        setEffectiveTotal(baseTotalAmount);
+      } finally {
+        setSubscriptionChecked(true);
+      }
+    };
+    void init();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseTotalAmount]);
 
   const handlePaymentMethodSelect = (method: 'card' | 'cash') => {
     setSelectedMethod(method);
@@ -71,35 +125,45 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
     }
 
     try {
-      // Create order (in production, this should be done on your backend)
-      const orderData: RazorpayOrderData = {
-        amount: totalAmount * 100, // Amount in paise
+      // Create order on backend
+      const appointmentId = String((appointmentData as any)?._id ?? (appointmentData as any)?.id ?? '');
+      const { userId } = TokenManager.getTokens();
+      if (!userId) throw new Error('Missing userId for payment order creation');
+      const order = await paymentService.createOrder({
+        amount: effectiveTotal * 100,
         currency: 'INR',
         receipt: `receipt_${Date.now()}`,
+        relatedType: 'appointment',
+        relatedId: appointmentId,
+        userId,
+        user: userId, // legacy
         notes: {
-          appointment_id: String((appointmentData as Record<string, unknown> | undefined)?.['_id'] ?? (appointmentData as Record<string, unknown> | undefined)?.['id'] ?? ''),
+          appointment_id: appointmentId,
           doctor_id: String(state.selectedDoctor?._id ?? ''),
           clinic_id: String(state.selectedClinic?._id ?? ''),
-          appointment_date: String(state.selectedDate?.toISOString() ?? ''),
+          appointment_date: state.selectedDate ? `${state.selectedDate.getFullYear()}-${String(state.selectedDate.getMonth()+1).padStart(2,'0')}-${String(state.selectedDate.getDate()).padStart(2,'0')}` : '',
           slot_id: String(state.selectedSlot?.id ?? ''),
           patient_name: String(state.bookingDetails?.patientName ?? '')
         }
-      };
-
-      const order = await createRazorpayOrder(orderData);
+      });
       const config = getRazorpayConfig();
 
       const options = {
         ...config,
-        amount: totalAmount * 100, // Amount in paise
+        amount: effectiveTotal * 100, // Amount in paise
         order_id: order.id,
         description: `Appointment with ${(state.selectedDoctor?.fullName || '').replace(/^Dr\.\s*/i, '')}`,
         handler: async function (response: import('../../lib/razorpay').RazorpayPaymentData) {
           try {
-            // Verify payment (in production, this should be done on your backend)
-            const verification = await verifyPaymentSignature(response);
+            // Verify payment on backend
+            const verification = await paymentService.verifyPayment({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              appointmentId
+            });
 
-            if (verification.verified) {
+            if ((verification as any)?.verified || (verification as any)?.success) {
 
               setPaymentStatus('success');
               showToast({
@@ -153,7 +217,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
       showToast({
         type: 'error',
         title: 'Payment initialization failed',
-        message: 'Please try again or contact support.'
+        message: extractErrorMessage(error)
       });
     }
   };
@@ -233,22 +297,45 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
       const rawToFromId = idParts.length >= 2 ? idParts[1] : '';
       const from24 = to24Hour(rawFromFromId || (state.selectedSlot?.time || ''));
       const to24Parsed = to24Hour(rawToFromId || (state.selectedSlot?.time || ''));
-      // Appointment date should be date-only (midnight UTC) to match backend expectation
-      const toMidnightUTC = (dateOnly: Date | null): string => {
+      // Appointment date as YYYY-MM-DD (local) to avoid UTC day drift on backend
+      const toYyyyMmDd = (dateOnly: Date | null): string => {
         if (!dateOnly) return '';
-        const d = new Date(dateOnly);
-        d.setHours(0, 0, 0, 0);
-        return d.toISOString();
+        const y = dateOnly.getFullYear();
+        const m = String(dateOnly.getMonth() + 1).padStart(2, '0');
+        const d = String(dateOnly.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
       };
-      const appointmentDateISO = toMidnightUTC(state.selectedDate || null);
+      const appointmentDateStr = toYyyyMmDd(state.selectedDate || null);
 
       // Validate computed time and date
-      if (!from24.hhmm || !to24Parsed.hhmm || !appointmentDateISO) {
+      if (!from24.hhmm || !to24Parsed.hhmm || !appointmentDateStr) {
         setLoading(false);
         showToast({
           type: 'error',
           title: 'Invalid time selection',
           message: 'Please select a valid date and time slot.'
+        });
+        setStep('date');
+        return;
+      }
+
+      // Client-side availability pre-check to avoid avoidable 400s
+      const targetClinicId = String(state.selectedClinic?._id || '');
+      const targetDay = state.selectedDate
+        ? state.selectedDate.toLocaleDateString('en-US', { weekday: 'long' })
+        : '';
+      const availList = Array.isArray((state.selectedDoctor as any)?.availability)
+        ? (state.selectedDoctor as any).availability
+        : [];
+      const availableForDayClinic = availList.some((a: any) =>
+        String(a?.clinic) === targetClinicId && String(a?.day) === targetDay
+      );
+      if (!availableForDayClinic) {
+        setLoading(false);
+        showToast({
+          type: 'warning',
+          title: 'Doctor unavailable',
+          message: 'Doctor not available on this day at this clinic'
         });
         setStep('date');
         return;
@@ -260,7 +347,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
         user: userId,
         doctor: state.selectedDoctor?._id || '',
         clinic: resolvedClinicId,
-        appointmentDate: appointmentDateISO,
+        appointmentDate: appointmentDateStr,
         timeSlot: {
           from: from24.hhmm,
           to: to24Parsed.hhmm
@@ -273,10 +360,10 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
         notes: '',
         paymentMethod: paymentMethodText,
         payment: {
-          amount: state.selectedDoctor?.consultationFee || 0,
-          isPaid: false,
-          method: paymentMethodText,
-          status: 'pending'
+          amount: effectiveTotal || state.selectedDoctor?.consultationFee || 0,
+          isPaid: effectiveTotal === 0 ? true : false,
+          method: effectiveTotal === 0 ? 'Online' : paymentMethodText,
+          status: effectiveTotal === 0 ? 'succeeded' : 'pending'
         },
         isFollowUp: false,
         createdBy: userId,
@@ -285,37 +372,64 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
         isRescheduled: false,
         isDeleted: false
       };
-
-      // Debug: verify outgoing booking payload shape
-      console.log('Booking payload (client):', bookingPayload);
-
-      // Book the appointment
+      // Book the appointment via backend
       const appointmentResult = await appointmentService.bookAppointment(bookingPayload);
 
-      showToast({
-        type: 'success',
-        title: 'Appointment booked!',
-        message: 'Your appointment has been reserved. Proceeding to payment...'
-      });
+      // If amount is zero (subscription covered), skip Razorpay entirely
+      if (effectiveTotal === 0) {
+        setLoading(false);
+        setPaymentStatus('success');
+        showToast({
+          type: 'success',
+          title: 'Appointment booked!',
+          message: 'Covered by your subscription. No payment required.'
+        });
+        setStep('confirmation');
+        return;
+      }
 
-      // Step 2: Process payment after successful booking
-      setLoading(false); // Reset loading before opening Razorpay
-      handleRazorpayPayment(appointmentResult);
+      // If user selected cash, skip Razorpay
+      if (selectedMethod === 'cash') {
+        setLoading(false);
+        setPaymentStatus('success');
+        showToast({
+          type: 'success',
+          title: 'Appointment booked!',
+          message: 'Please pay in cash at the clinic.'
+        });
+        setStep('confirmation');
+        return;
+      }
 
+      // Proceed to Razorpay for card/online payments
+      setLoading(false);
+      await handleRazorpayPayment(appointmentResult as any);
     } catch (error) {
       console.error('Booking or payment error:', error);
       setPaymentStatus('failed');
-
-      // Check if it's a booking error or payment error
-      const errorMessage = error && typeof error === 'object' && 'message' in error
-        ? (error as { message: string }).message
-        : 'An unexpected error occurred. Please try again.';
-
-      showToast({
-        type: 'error',
-        title: 'Booking failed',
-        message: errorMessage
-      });
+      // Detect slot availability error shape and surface suggestions
+      const anyErr = error as any;
+      const available = anyErr?.availableSlots || anyErr?.response?.data?.availableSlots;
+      if (Array.isArray(available) && available.length) {
+        const suggestions = available
+          .slice(0, 3)
+          .map((s: any) => `${s.startTime}-${s.endTime}`)
+          .join(', ');
+        showToast({
+          type: 'warning',
+          title: 'Slot unavailable',
+          message: `${extractErrorMessage(error)}${suggestions ? `\nTry: ${suggestions}` : ''}`
+        });
+        setStep('slot');
+      } else {
+        showToast({
+          type: 'error',
+          title: 'Booking failed',
+          message: extractErrorMessage(error)
+        });
+      }
+    } finally {
+      // Safety: ensure loading is cleared even if a branch above missed it
       setLoading(false);
     }
   };
@@ -461,7 +575,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
                   Total Amount
                 </Typography>
                 <Typography variant="h6" className="text-[#0e3293] font-bold">
-                  ₹{totalAmount}
+                  ₹{effectiveTotal}
                 </Typography>
               </div>
             </div>
@@ -565,7 +679,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
                     Processing...
                   </div>
                 ) : (
-                  `Pay ₹${totalAmount}`
+                  `Pay ₹${effectiveTotal}`
                 )}
               </Button>
             )}
@@ -590,14 +704,8 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
                     <Button
                       onClick={async () => {
                         setShowCashConfirm(false);
-                        setPaymentMethod('cash' as any); // TypeScript: cast as any since context may expect only old types
-                        setPaymentStatus('success');
-                        showToast({
-                          type: 'success',
-                          title: 'Appointment Booked!',
-                          message: 'Please pay in cash at the clinic.'
-                        });
-                        setStep('confirmation');
+                        setSelectedMethod('cash');
+                        await handlePayment();
                       }}
                       className="bg-[#0e3293] text-white hover:bg-[#0e3293]/90 px-4 py-2 rounded-lg"
                     >
@@ -620,7 +728,7 @@ const [showCashConfirm, setShowCashConfirm] = useState(false);
               <Typography variant="caption" className="text-green-700">
                 Your payment is processed by Razorpay, India&apos;s most trusted payment gateway.
                 All transactions are encrypted with 256-bit SSL and PCI DSS compliant.
-              </Typography>
+             mm        </Typography>
             </div>
           </div>
         </div>
