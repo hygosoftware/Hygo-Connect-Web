@@ -242,7 +242,8 @@ const BookingConfirmation: React.FC = () => {
           
           <Button
             onClick={handleGoHome}
-            className="w-full bg-white hover:bg-gray-50 text-[#0e3293] border-2 border-[#0e3293] py-4 px-6 rounded-xl font-medium text-lg transition-colors"
+            variant="secondary"
+            className="w-full bg-white hover:bg-gray-50 text-[#0e3293] border-2 border-[#0e3293] py-4 px-6 rounded-xl text-lg transition-colors"
           >
             Back to Home
           </Button>

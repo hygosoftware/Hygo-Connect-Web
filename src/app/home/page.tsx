@@ -14,6 +14,7 @@ const HomePage: React.FC = () => {
   const [loadingDoctors, setLoadingDoctors] = useState(true);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
+  const [locationText, setLocationText] = useState<string>('Rajkot');
 
   const handleFeaturePress = (feature: string) => {
     // Keep non-booking feature logs only
@@ -73,6 +74,50 @@ const HomePage: React.FC = () => {
     loadDoctors();
     loadAppointments();
   }, [loadDoctors, loadAppointments]);
+
+  // Detect location and reverse-geocode to City, State
+  useEffect(() => {
+    if (typeof window === 'undefined') return; // Safety for SSR
+    if (!('geolocation' in navigator)) {
+      setLocationText('Rajkot');
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      // In case geolocation takes too long, keep UI responsive with fallback
+      setLocationText((prev) => prev || 'Rajkot');
+    }, 10000);
+
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const url = `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`;
+          const res = await fetch(url, {
+            headers: {
+              'Accept-Language': 'en',
+              'User-Agent': 'HygoConnectWeb/1.0 (+https://example.com)'
+            },
+          });
+          const data = await res.json();
+          const addr = data?.address || {};
+          const city = addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.suburb || addr.state_district;
+          const state = addr.state || addr.region;
+          const text = city && state ? `${city}, ${state}` : (city || state || 'Rajkot');
+          setLocationText(text);
+        } catch (e) {
+          setLocationText('Rajkot');
+        } finally {
+          window.clearTimeout(timeoutId);
+        }
+      },
+      () => {
+        window.clearTimeout(timeoutId);
+        setLocationText('Rajkot');
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
+    );
+  }, []);
 
   // Feature items with icon names..
   const featureItems: { iconName: IconName; title: string; onPress: () => void; hasNotification?: boolean }[] = [
@@ -183,7 +228,7 @@ const HomePage: React.FC = () => {
               <button className="hidden sm:flex items-center bg-white/15 px-3 py-1.5 rounded-lg hover:bg-white/25 transition-colors duration-200">
                 <Icon name="location" size="small" color="white" className="mr-1" />
                 <Typography variant="caption" className="text-white text-xs">
-                  New York, NY
+                  {locationText}
                 </Typography>
               </button>
 

@@ -1431,6 +1431,7 @@ export const paymentService = {
   async createOrder(payload: {
     amount: number; // in paise
     currency: string; // e.g., 'INR'
+    method?: string; // e.g., 'razorpay'
     receipt?: string;
     notes?: Record<string, unknown>;
     relatedType?: string; // e.g., 'appointment'
@@ -1461,7 +1462,15 @@ export const paymentService = {
     appointmentId?: string;
   }): Promise<{ verified?: boolean; success?: boolean } & Record<string, unknown>> {
     try {
-      const response = await apiClient.post('/payment/verify', payload);
+      const { appointmentId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = payload;
+      if (!appointmentId) {
+        throw new Error('Missing appointmentId for payment verification');
+      }
+      const response = await apiClient.put(`/Appointment/verify-payment/${appointmentId}` as const, {
+        razorpay_order_id,
+        razorpay_payment_id,
+        razorpay_signature
+      });
       return ((response.data as any)?.data ?? response.data) as any;
     } catch (error: unknown) {
       console.error('Error verifying payment:', error);
@@ -2123,8 +2132,49 @@ export const appointmentService = {
   // Get appointments by user ID
   getAppointmentsByUserId: async (userId: string): Promise<Appointment[]> => {
     try {
-      const response = await apiClient.get(`/Appointment/${userId}`);
-      return response.data?.data || response.data || [];
+      const response = await apiClient.get(`/Appointment/user/${userId}`);
+      const raw = response.data as any;
+      // Local normalizer to guarantee shape expected by Home page
+      const normalizeAppointment = (a: any): Appointment => {
+        const id = String(a?._id || a?.id || a?.appointmentId || '');
+        const appointmentDate: string = String(a?.appointmentDate || a?.date || a?.scheduledAt || '');
+        const from: string = String(
+          a?.appointmentTime?.from || a?.timeSlot?.from || a?.time?.from || a?.slot?.from || ''
+        );
+        const to: string = String(
+          a?.appointmentTime?.to || a?.timeSlot?.to || a?.time?.to || a?.slot?.to || ''
+        );
+        const docRaw = (typeof a?.doctor === 'object' && a?.doctor) ? a?.doctor : {};
+        const doctor = {
+          fullName: String(docRaw?.fullName || a?.doctorName || 'Doctor'),
+          specializations: docRaw?.specializations || [],
+          profileImage: String(docRaw?.profileImage || '')
+        } as any;
+        const clinicRaw = (typeof a?.clinic === 'object' && a?.clinic) ? a?.clinic : {};
+        const clinic = {
+          _id: String(clinicRaw?._id || a?.clinic || ''),
+          clinicName: String(clinicRaw?.clinicName || clinicRaw?.name || a?.clinicName || 'Clinic'),
+          clinicAddress: String(clinicRaw?.clinicAddress || clinicRaw?.addressLine || '')
+        } as any;
+        const status = String(a?.status || 'Scheduled');
+        return {
+          _id: id,
+          appointmentDate,
+          appointmentTime: { from, to } as any,
+          doctor,
+          clinic,
+          status
+        } as unknown as Appointment;
+      };
+      // Normalize various possible response shapes to an array
+      if (Array.isArray(raw)) return (raw as any[]).map(normalizeAppointment) as Appointment[];
+      if (raw?.data) {
+        if (Array.isArray(raw.data)) return (raw.data as any[]).map(normalizeAppointment) as Appointment[];
+        if (Array.isArray(raw.data.appointments)) return (raw.data.appointments as any[]).map(normalizeAppointment) as Appointment[];
+      }
+      if (Array.isArray(raw?.appointments)) return (raw.appointments as any[]).map(normalizeAppointment) as Appointment[];
+      if (raw && typeof raw === 'object') return [normalizeAppointment(raw) as Appointment];
+      return [] as Appointment[];
     } catch (error: unknown) {
       console.error('Error fetching appointments:', error);
       throw error;

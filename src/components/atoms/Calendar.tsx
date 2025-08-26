@@ -81,7 +81,25 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   const handleDateClick = (date: Date) => {
+    // Prevent selecting past dates
+    if (isPastDate(date)) return;
     onDateSelect(date);
+  };
+
+  // New: compute if a date is in the past (date-only, ignore time)
+  const isPastDate = (date: Date) => {
+    const t = new Date();
+    t.setHours(0, 0, 0, 0);
+    const d = new Date(date);
+    d.setHours(0, 0, 0, 0);
+    return d < t;
+  };
+
+  // New: whether we can navigate to previous month (block months before current month)
+  const canGoPrevMonth = () => {
+    const t = new Date();
+    const firstOfThisMonth = new Date(t.getFullYear(), t.getMonth(), 1);
+    return currentMonth > firstOfThisMonth;
   };
 
   return (
@@ -89,8 +107,9 @@ const Calendar: React.FC<CalendarProps> = ({
       {/* Calendar Header */}
       <div className="flex items-center justify-between mb-4">
         <button
-          onClick={() => navigateMonth('prev')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          onClick={() => canGoPrevMonth() && navigateMonth('prev')}
+          disabled={!canGoPrevMonth()}
+          className={`p-2 rounded-lg transition-colors ${canGoPrevMonth() ? 'hover:bg-gray-100' : 'opacity-50 cursor-not-allowed'}`}
         >
           <Icon name="chevron-left" size="small" color="#6b7280" />
         </button>
@@ -125,6 +144,9 @@ const Calendar: React.FC<CalendarProps> = ({
           const isTodayDate = isToday(date);
           const isSelectedDate = isSelected(date);
           const isHighlightedDate = isHighlighted(date);
+          const isPast = isPastDate(date);
+          const isAvailableDate = isCurrentMonthDate && !isPast && isHighlightedDate;
+          const isUnavailableDate = isCurrentMonthDate && !isPast && !isHighlightedDate;
 
           return (
             <button
@@ -133,42 +155,36 @@ const Calendar: React.FC<CalendarProps> = ({
               className={`
                 p-2 h-10 w-10 rounded-lg text-sm font-medium transition-all duration-200 relative
                 ${isCurrentMonthDate ? 'text-gray-900' : 'text-gray-300'}
-                ${isSelectedDate 
-                  ? 'bg-blue-800 text-white shadow-md' 
-                  : isTodayDate 
-                    ? 'bg-blue-100 text-blue-800 border border-blue-300' 
-                    : 'hover:bg-gray-100'
+                ${isSelectedDate
+                  ? 'bg-blue-600 text-white border-2 border-blue-600 shadow-sm'
+                  : `${isPast ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`
                 }
-                ${!isCurrentMonthDate && 'cursor-default'}
+                ${!isSelectedDate && isAvailableDate ? 'border-2 border-green-600' : ''}
+                ${!isSelectedDate && isUnavailableDate ? 'border-2 border-red-500' : ''}
+                ${!isSelectedDate && isAvailableDate ? 'bg-green-50' : ''}
+                ${!isSelectedDate && isUnavailableDate ? 'bg-red-50' : ''}
+                ${(!isCurrentMonthDate || isPast) && 'cursor-not-allowed'}
               `}
-              disabled={!isCurrentMonthDate}
+              disabled={!isCurrentMonthDate || isPast}
             >
               {date.getDate()}
-              
-              {/* Medication indicator dot */}
-              {isHighlightedDate && isCurrentMonthDate && (
-                <div className={`
-                  absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full
-                  ${isSelectedDate ? 'bg-white' : 'bg-blue-600'}
-                `} />
-              )}
             </button>
           );
         })}
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center mt-4 space-x-4">
-        <div className="flex items-center space-x-1">
-          <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+      <div className="flex items-center justify-center mt-4 space-x-6">
+        <div className="flex items-center space-x-2">
+          <div className="w-5 h-5 rounded-lg border-2 border-green-600"></div>
           <Typography variant="body2" className="text-gray-600 text-xs">
-            Has medications
+            Available
           </Typography>
         </div>
-        <div className="flex items-center space-x-1">
-          <div className="w-2 h-2 bg-blue-100 border border-blue-300 rounded-full"></div>
+        <div className="flex items-center space-x-2">
+          <div className="w-5 h-5 rounded-lg border-2 border-red-500"></div>
           <Typography variant="body2" className="text-gray-600 text-xs">
-            Today
+            Unavailable
           </Typography>
         </div>
       </div>

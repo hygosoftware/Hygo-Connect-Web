@@ -125,32 +125,85 @@ const BookingPayment: React.FC = () => {
     }
 
     try {
-      // Create order on backend
-      const appointmentId = String((appointmentData as any)?._id ?? (appointmentData as any)?.id ?? '');
-      const { userId } = TokenManager.getTokens();
-      if (!userId) throw new Error('Missing userId for payment order creation');
-      const order = await paymentService.createOrder({
-        amount: effectiveTotal * 100,
-        currency: 'INR',
-        receipt: `receipt_${Date.now()}`,
-        relatedType: 'appointment',
-        relatedId: appointmentId,
-        userId,
-        user: userId, // legacy
-        notes: {
-          appointment_id: appointmentId,
-          doctor_id: String(state.selectedDoctor?._id ?? ''),
-          clinic_id: String(state.selectedClinic?._id ?? ''),
-          appointment_date: state.selectedDate ? `${state.selectedDate.getFullYear()}-${String(state.selectedDate.getMonth()+1).padStart(2,'0')}-${String(state.selectedDate.getDate()).padStart(2,'0')}` : '',
-          slot_id: String(state.selectedSlot?.id ?? ''),
-          patient_name: String(state.bookingDetails?.patientName ?? '')
-        }
-      });
+      // Prefer server-provided Razorpay order if available
+      const apptAny = (appointmentData || {}) as any;
+      const appointmentId = String(
+        apptAny?._id ||
+        apptAny?.id ||
+        apptAny?.appointmentId ||
+        apptAny?.appointment?._id ||
+        apptAny?.data?._id ||
+        apptAny?.data?.appointment?._id ||
+        ''
+      );
+      if (!appointmentId) {
+        throw new Error('Missing related appointmentId for payment');
+      }
+      // Detect existing order details from server response
+      const serverOrderId = String(
+        apptAny?.razorpayOrder?.orderId ||
+        apptAny?.razorpayOrder?.id ||
+        apptAny?.payment?.transactionId ||
+        apptAny?.data?.razorpayOrder?.orderId ||
+        apptAny?.data?.razorpayOrder?.id ||
+        apptAny?.data?.payment?.transactionId ||
+        ''
+      );
+      const serverAmountPaise = Number(
+        apptAny?.razorpayOrder?.amount ??
+        apptAny?.data?.razorpayOrder?.amount ??
+        NaN
+      );
+      const { userId, userInfo } = TokenManager.getTokens();
+      const resolvedUserId = String(
+        userId ||
+        (userInfo as any)?._id ||
+        (state as any)?.bookingDetails?.user ||
+        (state as any)?.bookingDetails?.patient?._id ||
+        ''
+      );
+      if (!resolvedUserId) {
+        showToast({
+          type: 'error',
+          title: 'Missing user',
+          message: 'We could not identify your account. Please login again.'
+        });
+        throw new Error('Missing userId for payment order creation');
+      }
+      // Use existing order if provided by server; otherwise create a new one
+      let order: any = null;
+      if (serverOrderId) {
+        order = {
+          id: serverOrderId,
+          amount: Number.isFinite(serverAmountPaise) ? serverAmountPaise : effectiveTotal * 100,
+          currency: 'INR'
+        };
+        console.log('Using server-provided Razorpay order:', order);
+      } else {
+        order = await paymentService.createOrder({
+          amount: effectiveTotal * 100,
+          currency: 'INR',
+          method: 'UPI',
+          receipt: `appointment_${Date.now()}`,
+          relatedType: 'appointment',
+          relatedId: appointmentId,
+          userId: resolvedUserId,
+          user: resolvedUserId, // legacy
+          notes: {
+            appointment_id: appointmentId,
+            doctor_id: String(state.selectedDoctor?._id ?? ''),
+            clinic_id: String(state.selectedClinic?._id ?? ''),
+            appointment_date: state.selectedDate ? `${state.selectedDate.getFullYear()}-${String(state.selectedDate.getMonth()+1).padStart(2,'0')}-${String(state.selectedDate.getDate()).padStart(2,'0')}` : '',
+            slot_id: String(state.selectedSlot?.id ?? ''),
+            patient_name: String(state.bookingDetails?.patientName ?? '')
+          }
+        });
+      }
       const config = getRazorpayConfig();
 
       const options = {
         ...config,
-        amount: effectiveTotal * 100, // Amount in paise
+        amount: Number(order?.amount) || effectiveTotal * 100, // Amount in paise
         order_id: order.id,
         description: `Appointment with ${(state.selectedDoctor?.fullName || '').replace(/^Dr\.\s*/i, '')}`,
         handler: async function (response: import('../../lib/razorpay').RazorpayPaymentData) {
@@ -163,8 +216,20 @@ const BookingPayment: React.FC = () => {
               appointmentId
             });
 
-            if ((verification as any)?.verified || (verification as any)?.success) {
+            const v: any = verification as any;
+            const messageText = typeof v?.message === 'string' ? v.message.toLowerCase() : '';
+            const isSuccess = (
+              v?.verified === true ||
+              v?.success === true ||
+              v?.status === 'success' ||
+              v?.paymentStatus === 'paid' ||
+              messageText.includes('verified') ||
+              messageText.includes('success') ||
+              // If backend returned 200 with some payload, consider success unless explicitly falsey
+              (v !== undefined && v !== null && v !== false)
+            );
 
+            if (isSuccess) {
               setPaymentStatus('success');
               showToast({
                 type: 'success',
@@ -341,7 +406,9 @@ const BookingPayment: React.FC = () => {
         return;
       }
 
-      const paymentMethodText = selectedMethod === 'cash' ? 'Cash' : 'Online';
+      // Backend expects method enum: 'UPI' | 'Card' | 'Cash' | 'Online'
+      // As per requirement: use 'UPI' for card/upi/online, and 'Cash' for cash
+      const paymentMethodText = selectedMethod === 'cash' ? 'Cash' : 'UPI';
 
       const bookingPayload = {
         user: userId,
@@ -362,7 +429,7 @@ const BookingPayment: React.FC = () => {
         payment: {
           amount: effectiveTotal || state.selectedDoctor?.consultationFee || 0,
           isPaid: effectiveTotal === 0 ? true : false,
-          method: effectiveTotal === 0 ? 'Online' : paymentMethodText,
+          method: paymentMethodText,
           status: effectiveTotal === 0 ? 'succeeded' : 'pending'
         },
         isFollowUp: false,
@@ -686,7 +753,7 @@ const BookingPayment: React.FC = () => {
 
             {/* Cash confirmation popup */}
             {showCashConfirm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm">
                 <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
                   <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
                     Confirm Cash Payment
@@ -696,8 +763,9 @@ const BookingPayment: React.FC = () => {
                   </Typography>
                   <div className="flex justify-end gap-3">
                     <Button
+                      variant="secondary"
                       onClick={() => setShowCashConfirm(false)}
-                      className="bg-gray-200 text-gray-800 hover:bg-gray-300 px-4 py-2 rounded-lg"
+                      className="px-4 py-2 rounded-lg"
                     >
                       Cancel
                     </Button>

@@ -251,6 +251,10 @@ const RecordsPage: React.FC = () => {
       setCreateFor('self');
       setDelegateRows([]);
       setIsAddFolderOpen(false);
+      // Hard reload to guarantee data refetch
+      if (typeof window !== 'undefined') {
+        window.location.reload();
+      }
     } catch (err) {
       setError('Failed to create folder. Please try again.');
     }
@@ -346,6 +350,8 @@ const RecordsPage: React.FC = () => {
         await folderService.grantFolderAccess(userId, editFolderId, memberId, selectedPerms);
       }
       closeEditFolder();
+      // Refresh page to reflect latest data
+      router.refresh();
     } catch (e) {
       setError('Failed to save folder changes.');
     } finally {
@@ -369,6 +375,8 @@ const RecordsPage: React.FC = () => {
       if (!ok) throw new Error('Delete failed');
       setFolders((prev) => prev.filter((f) => f.id !== deleteTarget.id));
       closeDeleteConfirm();
+      // Refresh page to reflect latest data
+      router.refresh();
     } catch (e) {
       setError('Failed to delete folder. Please try again.');
     }
@@ -562,7 +570,7 @@ const RecordsPage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredFolders.map((folder, index) => (
                 <div
-                  key={folder.id}
+                  key={`${folder.id}-${index}`}
                   onClick={() => handleFolderClick(folder)}
                   className="group bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 backdrop-blur-sm rounded-3xl p-6 shadow-lg border border-white/20 hover:shadow-2xl hover:bg-white/90 transition-all duration-300 cursor-pointer transform hover:scale-105 animate-fadeInUp"
                   style={{
@@ -663,8 +671,17 @@ const RecordsPage: React.FC = () => {
 
         {/* Add Folder Modal */}
         {isAddFolderOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-fadeInUp">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={() => {
+                setIsAddFolderOpen(false);
+                setNewFolderName('');
+                setCreateFor('self');
+                setDelegateRows([]);
+              }}
+            />
+            <div className="relative z-10 bg-white rounded-2xl p-6 w-full max-w-md animate-fadeInUp">
               <div className="flex justify-between items-center mb-4">
                 <Typography variant="h6" className="font-bold text-gray-800">
                   Create New Folder
@@ -736,11 +753,11 @@ const RecordsPage: React.FC = () => {
                             className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
                           >
                             <option value="">-- Select Member --</option>
-                            {familyMembers.map((m) => {
+                            {familyMembers.map((m, index) => {
                               const id = (m._id || m.id) as string;
                               const name = m.FullName || id;
                               return (
-                                <option key={id} value={id}>{name}</option>
+                                <option key={id || index} value={id}>{name}</option>
                               );
                             })}
                           </select>
@@ -797,8 +814,12 @@ const RecordsPage: React.FC = () => {
 
         {/* Edit Folder Modal */}
         {isEditFolderOpen && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md animate-fadeInUp">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={closeEditFolder}
+            />
+            <div className="relative z-10 bg-white rounded-2xl p-6 w-full max-w-md animate-fadeInUp">
               <div className="flex justify-between items-center mb-4">
                 <Typography variant="h6" className="font-bold text-gray-800">
                   Edit Folder
@@ -834,11 +855,11 @@ const RecordsPage: React.FC = () => {
                         className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-black"
                       >
                         <option value="">-- Select Member --</option>
-                        {familyMembers.map((m) => {
+                        {familyMembers.map((m, index) => {
                           const id = (m._id || m.id) as string;
                           const name = m.FullName || id;
                           return (
-                            <option key={id} value={id}>{name}</option>
+                            <option key={id || index} value={id}>{name}</option>
                           );
                         })}
                       </select>
@@ -875,8 +896,12 @@ const RecordsPage: React.FC = () => {
 
         {/* Delete Confirmation Modal */}
         {isDeleteConfirmOpen && deleteTarget && (
-          <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm animate-fadeInUp">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div
+              className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+              onClick={closeDeleteConfirm}
+            />
+            <div className="relative z-10 bg-white rounded-2xl p-6 w-full max-w-sm animate-fadeInUp">
               <div className="flex justify-between items-center mb-3">
                 <Typography variant="h6" className="font-bold text-gray-800">Delete Folder</Typography>
                 <button onClick={closeDeleteConfirm} className="text-gray-500 hover:text-gray-700">

@@ -24,9 +24,53 @@ const DateTimeSelection: React.FC = () => {
   }, [state.selectedDate]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
-  const [rawApiSlots, setRawApiSlots] = useState<{ id: string; from: string; to: string }[]>([]);
+  const [rawApiSlots, setRawApiSlots] = useState<{ id: string; from: string; to: string; appointmentLimit?: number; availableSlots?: number; isAvailable?: boolean }[]>([]);
 
   // (Removed debug logs previously printing initial doctor and clinic data)
+
+  // Helpers to block past selections
+  const isPastDate = (d: Date) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const cmp = new Date(d);
+    cmp.setHours(0, 0, 0, 0);
+    return cmp < today;
+  };
+
+  const parseTimeToDate = (baseDate: Date, timeStr: string): Date | null => {
+    if (!timeStr) return null;
+    const d = new Date(baseDate);
+    // Expect formats like "HH:MM AM/PM" or "HH:MM"
+    const ampmMatch = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*([AaPp][Mm])$/);
+    const hhmmMatch = timeStr.trim().match(/^(\d{1,2}):(\d{2})$/);
+    let hours: number | null = null;
+    let minutes: number | null = null;
+    if (ampmMatch) {
+      hours = parseInt(ampmMatch[1], 10);
+      minutes = parseInt(ampmMatch[2], 10);
+      const ampm = ampmMatch[3].toLowerCase();
+      if (ampm === 'pm' && hours < 12) hours += 12;
+      if (ampm === 'am' && hours === 12) hours = 0;
+    } else if (hhmmMatch) {
+      hours = parseInt(hhmmMatch[1], 10);
+      minutes = parseInt(hhmmMatch[2], 10);
+    } else {
+      // Fallback: try Date parsing
+      const isoTry = new Date(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${timeStr}`);
+      if (!isNaN(isoTry.getTime())) return isoTry;
+      return null;
+    }
+    if (hours == null || minutes == null) return null;
+    d.setHours(hours, minutes, 0, 0);
+    return d;
+  };
+
+  const isPastTimeOnDate = (date: Date, timeStr: string) => {
+    const now = new Date();
+    const dt = parseTimeToDate(date, timeStr);
+    if (!dt) return false; // If unknown format, do not block
+    return dt.getTime() < now.getTime();
+  };
 
   // Helper: Map weekday string to JS day index
   const weekdayToIndex: Record<string, number> = {
@@ -87,17 +131,27 @@ const DateTimeSelection: React.FC = () => {
         const from: string = s.from || s.start || s.startTime || '';
         const to: string = s.to || s.end || s.endTime || '';
         const id = `${from}-${to}-${idx}`;
-        return { id, from, to };
+        const appointmentLimit: number | undefined = typeof s.appointmentLimit === 'number' ? s.appointmentLimit : undefined;
+        const availableSlots: number | undefined = typeof s.availableSlots === 'number' ? s.availableSlots : undefined;
+        const isAvailable: boolean | undefined = typeof s.isAvailable === 'boolean' ? s.isAvailable : undefined;
+        return { id, from, to, appointmentLimit, availableSlots, isAvailable };
       });
       setRawApiSlots(normalized);
 
-      const uiSlots: TimeSlot[] = normalized.map((s) => ({
-        id: s.id,
-        time: s.from, // display start time primarily; can be enhanced to show range
-        available: true,
-        bookedCount: 0,
-        maxBookings: 1,
-      }));
+      const uiSlots: TimeSlot[] = normalized.map((s) => {
+        const maxBookings = (s.appointmentLimit && s.appointmentLimit > 0) ? s.appointmentLimit : 1;
+        const bookedCount = (typeof s.availableSlots === 'number' && typeof s.appointmentLimit === 'number')
+          ? Math.max(0, s.appointmentLimit - s.availableSlots)
+          : 0;
+        const available = (s.isAvailable !== false) && (typeof s.availableSlots === 'number' ? s.availableSlots > 0 : true);
+        return {
+          id: s.id,
+          time: s.from,
+          available,
+          bookedCount,
+          maxBookings,
+        };
+      });
       return uiSlots;
     } catch (e: any) {
       console.error('[API] Failed to fetch slots:', e);
@@ -177,6 +231,11 @@ const DateTimeSelection: React.FC = () => {
 
   // Date selection handler
   const handleDateSelect = useCallback((date: Date) => {
+    // Block selecting past dates regardless of availability
+    if (isPastDate(date)) {
+      showToast({ type: 'warning', title: 'You cannot select a past date' });
+      return;
+    }
     setSelectedDate(date);
     selectDate(date);
     const key = date.toDateString();
@@ -188,7 +247,18 @@ const DateTimeSelection: React.FC = () => {
     setLoadingSlots(true);
     void (async () => {
       const slots = await fetchSlotsForDate(date);
-      setTimeSlots(slots);
+      // If selected date is today, mark past times as unavailable
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const sel = new Date(date);
+      sel.setHours(0, 0, 0, 0);
+      const adjusted = sel.getTime() === today.getTime()
+        ? slots.map(s => ({
+            ...s,
+            available: s.available && !isPastTimeOnDate(date, s.time)
+          }))
+        : slots;
+      setTimeSlots(adjusted);
       setLoadingSlots(false);
     })();
   }, [availableDateKeys, fetchSlotsForDate, selectDate, showToast]);
@@ -208,6 +278,12 @@ const DateTimeSelection: React.FC = () => {
       }
       if (!state.selectedDate) {
         showToast({ type: 'error', title: 'Please select a date first' });
+        return;
+      }
+
+      // Guard: prevent selecting past time slot
+      if (isPastDate(state.selectedDate) || isPastTimeOnDate(state.selectedDate, slot.time)) {
+        showToast({ type: 'warning', title: 'Please select a future time slot' });
         return;
       }
 
@@ -261,16 +337,26 @@ const DateTimeSelection: React.FC = () => {
       );
     }
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {timeSlots.map((slot) => (
           <button
             key={slot.id}
             disabled={!slot.available}
             onClick={() => handleSlotSelect(slot)}
-            className={`px-3 py-2 rounded-lg border text-sm ${slot.available ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`}
+            className={`w-full px-4 py-3 rounded-xl border transition-colors text-center ${slot.available ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`}
             aria-disabled={!slot.available}
           >
-            {slot.time}
+            <div className={`text-sm font-medium ${slot.available ? 'text-green-700' : 'text-gray-400'}`}>
+              {(() => {
+                const raw = rawApiSlots.find((s) => s.id === slot.id);
+                const from = raw?.from || slot.time;
+                const to = raw?.to;
+                return to ? `${from} - ${to}` : from;
+              })()}
+            </div>
+            <div className="text-[11px] mt-1 text-gray-600">
+              Booked: {slot.bookedCount} • Available: {Math.max(0, (slot.maxBookings || 0) - (slot.bookedCount || 0))}
+            </div>
           </button>
         ))}
       </div>
