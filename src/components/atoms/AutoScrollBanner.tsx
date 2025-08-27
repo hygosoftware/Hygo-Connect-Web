@@ -90,7 +90,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
             className="object-cover"
             onError={() => setImageError(true)}
           />
-          <div className="absolute inset-0 bg-black bg-opacity-30 rounded-xl p-4 flex flex-col justify-between">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-xl p-4 flex flex-col justify-between">
             <div>
               <Typography variant="h5" className="text-white font-bold mb-1">
                 {item.title}

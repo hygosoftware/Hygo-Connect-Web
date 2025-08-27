@@ -370,7 +370,7 @@ const HomePage: React.FC = () => {
                   clinicCity={appointment.clinic.clinicAddress || 'N/A'}
                   qrCode={`appointment-${appointment._id}`}
                   appointmentId={appointment._id}
-                  onPress={() => { /* Intentionally no log for appointment click */ }}
+                  onPress={() => router.push(`/appointments/${appointment._id}`)}
                 />
               ))
             ) : (

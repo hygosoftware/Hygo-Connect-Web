@@ -3,6 +3,7 @@ export { default as Button } from './Button';
 export { default as Input } from './Input';
 export { default as Typography } from './Typography';
 export { default as Icon } from './Icon';
+export type { IconName } from './Icon';
 export { default as OTPInput } from './OTPInput';
 export { default as BackButton } from './BackButton';
 export { default as Header } from './Header';
