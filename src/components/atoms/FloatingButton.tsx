@@ -32,8 +32,8 @@ const FloatingButton: React.FC<FloatingButtonProps> = ({
   };
 
   const positionClasses = {
-    'bottom-right': 'fixed bottom-6 right-6 md:bottom-8 md:right-8',
-    'bottom-left': 'fixed bottom-6 left-6 md:bottom-8 md:left-8',
+    'bottom-right': 'fixed bottom-20 right-6 md:bottom-8 md:right-8',
+    'bottom-left': 'fixed bottom-20 left-6 md:bottom-8 md:left-8',
     'top-right': 'fixed top-6 right-6 md:top-8 md:right-8',
     'top-left': 'fixed top-6 left-6 md:top-8 md:left-8',
     'custom': '',

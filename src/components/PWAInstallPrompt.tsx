@@ -60,7 +60,7 @@ export default function PWAInstallPrompt() {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 bg-white p-4 rounded-lg shadow-lg border border-gray-200 z-50 max-w-sm">
+    <div className="fixed bottom-20 right-4 md:bottom-4 bg-white p-4 rounded-lg shadow-lg border border-gray-200 z-50 max-w-sm">
       <div className="flex flex-col space-y-3">
         <h3 className="font-semibold text-gray-800">Install Hygo App</h3>
         <p className="text-sm text-gray-600">

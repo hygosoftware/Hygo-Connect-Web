@@ -385,7 +385,7 @@ const PillPal: React.FC<PillPalProps> = ({
       {/* Floating Add Button */}
       <button
         onClick={onAddButtonPress}
-        className="fixed bottom-6 right-6 lg:bottom-8 lg:right-8 w-14 h-14 lg:w-16 lg:h-16 bg-[#0E3293] hover:bg-[#0A2470] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50"
+        className="fixed bottom-20 right-6 lg:bottom-8 lg:right-8 w-14 h-14 lg:w-16 lg:h-16 bg-[#0E3293] hover:bg-[#0A2470] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50"
       >
         <Icon name="plus" size="small" color="white" />
       </button>

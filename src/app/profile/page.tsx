@@ -596,7 +596,7 @@ const ProfileScreen: React.FC = () => {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="fixed bottom-20 md:bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center disabled:opacity-50"
+            className="fixed bottom-24 md:bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center disabled:opacity-50"
             style={{ backgroundColor: '#0e3293' }}
           >
             <Check className="w-6 h-6" />
@@ -605,7 +605,7 @@ const ProfileScreen: React.FC = () => {
           {/* Cancel Button - Bottom Right (offset) */}
           <button
             onClick={() => setIsEditing(false)}
-            className="fixed bottom-20 md:bottom-6 right-24 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center"
+            className="fixed bottom-24 md:bottom-6 right-24 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center"
             style={{ backgroundColor: '#6b7280' }}
           >
             <X className="w-6 h-6" />
@@ -615,7 +615,7 @@ const ProfileScreen: React.FC = () => {
         /* Edit Button */
         <button
           onClick={() => setIsEditing(true)}
-          className="fixed bottom-20 md:bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center"
+          className="fixed bottom-24 md:bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center"
           style={{ backgroundColor: '#0e3293' }}
         >
           <Edit3 className="w-5 h-5" />

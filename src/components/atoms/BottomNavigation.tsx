@@ -76,7 +76,7 @@ const BottomNavigation: React.FC<BottomNavigationProps> = ({ userId, className =
       path: '/profile',
       icon: 'user',
       label: userName && userName.length > 0 ? userName.split(' ')[0] : 'User',
-      onClick: () => console.log('Navigate to Profile'),
+      onClick: () => router.push('/profile'),
       isProfile: true
     }
   ];

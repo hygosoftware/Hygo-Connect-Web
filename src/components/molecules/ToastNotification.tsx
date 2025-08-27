@@ -62,7 +62,7 @@ const ToastNotification: React.FC<ToastNotificationProps> = ({
   return (
     <div 
       className={`
-        fixed bottom-8 left-6 right-6 z-50 
+        fixed bottom-24 left-6 right-6 md:bottom-8 z-50 
         ${typeStyles[type]} 
         py-3 px-4 rounded-lg shadow-lg
         transition-all duration-300 ease-in-out

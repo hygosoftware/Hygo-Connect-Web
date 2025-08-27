@@ -657,7 +657,7 @@ const RecordsPage: React.FC = () => {
         </div>
 
         {/* Enhanced Floating Action Button */}
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className="fixed bottom-20 right-6 md:bottom-6 z-50">
           <button 
             onClick={() => setIsAddFolderOpen(true)}
             className="group bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white p-4 rounded-2xl shadow-2xl hover:shadow-3xl transition-all duration-300 transform hover:scale-110 animate-pulse-gentle"

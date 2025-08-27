@@ -637,7 +637,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
               setEditingMemberId(null);
               onShowAddMember();
             }}
-            className="fixed bottom-32 right-6 bg-[#0e3293] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors z-40"
+            className="fixed bottom-20 right-6 bg-[#0e3293] w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:bg-blue-700 transition-colors z-50"
           >
             <Icon name="plus" size="medium" color="white" />
           </button>
