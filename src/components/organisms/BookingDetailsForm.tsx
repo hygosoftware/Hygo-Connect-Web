@@ -6,12 +6,12 @@ import { useBooking } from '../../contexts/BookingContext';
 import { BookingDetails } from '../../contexts/BookingContext';
 
 // Mock family members data - in real app, this would come from user's profile
-const mockFamilyMembers = [
-  { id: '1', name: 'John Doe (Father)', age: 45, gender: 'male' },
-  { id: '2', name: 'Jane Doe (Mother)', age: 42, gender: 'female' },
-  { id: '3', name: 'Mike Doe (Brother)', age: 20, gender: 'male' },
-  { id: '4', name: 'Sarah Doe (Sister)', age: 18, gender: 'female' },
-];
+// const mockFamilyMembers = [
+//   { id: '1', name: 'John Doe (Father)', age: 45, gender: 'male' },
+//   { id: '2', name: 'Jane Doe (Mother)', age: 42, gender: 'female' },
+//   { id: '3', name: 'Mike Doe (Brother)', age: 20, gender: 'male' },
+//   { id: '4', name: 'Sarah Doe (Sister)', age: 18, gender: 'female' },
+// ];
 
 const BookingDetailsForm: React.FC = () => {
   const { state, setBookingDetails, setStep } = useBooking();

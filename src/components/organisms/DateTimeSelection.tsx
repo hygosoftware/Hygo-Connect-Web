@@ -25,6 +25,7 @@ const DateTimeSelection: React.FC = () => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [rawApiSlots, setRawApiSlots] = useState<{ id: string; from: string; to: string; appointmentLimit?: number; availableSlots?: number; isAvailable?: boolean }[]>([]);
+  const [selectedTimePeriod, setSelectedTimePeriod] = useState<'morning' | 'afternoon' | 'evening'>('morning');
 
   // (Removed debug logs previously printing initial doctor and clinic data)
 
@@ -377,14 +378,11 @@ const DateTimeSelection: React.FC = () => {
           
         </div>
 
-        {/* Selected Doctor and Clinic Info */}
+        {/* Compact Doctor Info Card */}
         {state.selectedDoctor && (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
-            <Typography variant="body2" className="text-gray-600 mb-3">
-              Booking appointment with:
-            </Typography>
-            <div className="flex items-center space-x-4">
-              <div className="w-12 h-12 rounded-full overflow-hidden bg-gray-100">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+            <div className="flex items-start space-x-4">
+              <div className="w-20 h-20 rounded-2xl overflow-hidden bg-gray-100 flex-shrink-0">
                 <img
                   src={state.selectedDoctor.profileImage}
                   alt={state.selectedDoctor.fullName}
@@ -395,146 +393,236 @@ const DateTimeSelection: React.FC = () => {
                   }}
                 />
               </div>
-              <div className="flex-1">
-                <Typography variant="h6" className="text-gray-900 font-semibold">
+              <div className="flex-1 min-w-0">
+                {/* Doctor Name */}
+                <Typography variant="h5" className="text-gray-900 font-bold mb-1 truncate">
                   {state.selectedDoctor.fullName}
                 </Typography>
-                <Typography variant="body2" className="text-gray-600">
+                
+                {/* Specialty */}
+                <Typography variant="body1" className="text-[#0e3293] font-medium mb-2">
                   {state.selectedDoctor.specializations.join(', ')}
                 </Typography>
-                {state.selectedClinic && (
-                  <div className="flex items-center mt-1">
-                    <Icon name="location" size="small" color="#6b7280" className="mr-1" />
-                    <Typography variant="caption" className="text-gray-600">
-                      {state.selectedClinic.clinicName}
-                    </Typography>
-                  </div>
-                )}
-                {!state.selectedClinic && state.selectedDoctor.clinic && state.selectedDoctor.clinic.length > 0 && (
-                  <div className="flex items-center mt-1">
-                    <Icon name="location" size="small" color="#6b7280" className="mr-1" />
-                    <Typography variant="caption" className="text-gray-600">
-                      {state.selectedDoctor.clinic[0].clinicName} (Auto-selected)
-                    </Typography>
-                  </div>
-                )}
-              </div>
-              <div className="text-right">
-                <Typography variant="body1" className="text-[#0e3293] font-bold">
+                
+                {/* Location */}
+                <div className="flex items-center mb-4">
+                  <Icon name="location" size="small" color="#6b7280" className="mr-2" />
+                  <Typography variant="body2" className="text-gray-600">
+                    {state.selectedClinic ? 
+                      state.selectedClinic.clinicName : 
+                      state.selectedDoctor.clinic && state.selectedDoctor.clinic.length > 0 ? 
+                        state.selectedDoctor.clinic[0].clinicName : 
+                        'HYGO'
+                    }
+                  </Typography>
+                </div>
+                
+                {/* Consultation Fee Button */}
+                <button className="bg-[#0e3293] text-white px-4 py-2 rounded-lg font-semibold text-sm w-fit">
                   ₹{state.selectedDoctor.consultationFee}
-                </Typography>
-                <Typography variant="caption" className="text-gray-600">
-                  Consultation Fee
-                </Typography>
+                </button>
               </div>
             </div>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Date Selection */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
+        {/* Date Selection Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+          <div className="flex items-center mb-4">
+            <div className="w-1 h-6 bg-[#0e3293] rounded-full mr-3"></div>
+            <Typography variant="h6" className="text-gray-900 font-semibold">
               Select Date
             </Typography>
-            
-            <Calendar
-              selectedDate={selectedDate || new Date()}
-              onDateSelect={handleDateSelect}
-              highlightedDates={availableDates}
-              className="w-full"
-            />
-            
-            {availableDates.length > 0 ? (
-              <div className="mt-4 p-3 bg-white rounded-lg">
-                <Typography variant="caption" className="text-blue-700 block mb-1">
-                  Note:
-                </Typography>
-                <Typography variant="caption" className="text-blue-600">
-                  Highlighted dates show doctor availability at this clinic. Availability is based on the doctor's schedule.
-                </Typography>
-              </div>
-            ) : (
-              <div className="mt-4 p-3 bg-yellow-50 rounded-lg">
-                <Typography variant="caption" className="text-yellow-700 block mb-1">
-                  No Available Dates:
-                </Typography>
-                <Typography variant="caption" className="text-yellow-600">
-                  {state.selectedClinic ? 
-                    `No availability found for this doctor at ${state.selectedClinic.clinicName}.` : 
-                    "No availability found for this doctor at any clinic."}
-                </Typography>
-              </div>
-            )}
           </div>
+          
+          <Calendar
+            selectedDate={selectedDate || new Date()}
+            onDateSelect={handleDateSelect}
+            highlightedDates={availableDates}
+            className="w-full mb-4"
+          />
+          
+          {/* Legend */}
+          <div className="mb-4">
+            <Typography variant="body2" className="text-gray-700 font-medium mb-2">
+              Legend:
+            </Typography>
+            <div className="flex flex-wrap gap-4 text-sm">
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+                <Typography variant="caption" className="text-gray-600">
+                  Available
+                </Typography>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+                <Typography variant="caption" className="text-gray-600">
+                  No availability
+                </Typography>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-gray-400 rounded-full mr-2"></div>
+                <Typography variant="caption" className="text-gray-600">
+                  Past date
+                </Typography>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-[#0e3293] rounded-full mr-2"></div>
+                <Typography variant="caption" className="text-gray-600">
+                  Selected
+                </Typography>
+              </div>
+            </div>
+          </div>
+          
+          {/* Selected Date Info */}
+          {selectedDate && (
+            <div className="bg-blue-50 rounded-lg p-4">
+              <Typography variant="body2" className="text-[#0e3293] font-medium mb-1">
+                Selected: {selectedDate.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </Typography>
+              <Typography variant="caption" className="text-blue-600">
+                {timeSlots.filter(slot => slot.available).length} time slot(s) available
+              </Typography>
+            </div>
+          )}
+          
+          {availableDates.length === 0 && (
+            <div className="bg-yellow-50 rounded-lg p-4">
+              <Typography variant="caption" className="text-yellow-700 block mb-1">
+                No Available Dates:
+              </Typography>
+              <Typography variant="caption" className="text-yellow-600">
+                {state.selectedClinic ? 
+                  `No availability found for this doctor at ${state.selectedClinic.clinicName}.` : 
+                  "No availability found for this doctor at any clinic."}
+              </Typography>
+            </div>
+          )}
+        </div>
 
-          {/* Time Slot Selection */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        {/* Time Period Tabs */}
+        {selectedDate && timeSlots.length > 0 && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
             <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
               Available Time Slots
             </Typography>
             
-            {selectedDate ? (
-              <>
-                <div className="mb-4">
-                  <Typography variant="body2" className="text-gray-600">
-                    {selectedDate.toLocaleDateString('en-US', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+            {/* Time Period Navigation */}
+            <div className="flex bg-gray-100 rounded-full p-1 mb-6">
+              {[
+                { key: 'morning', label: 'Morning', icon: '☀️', count: timeSlots.filter(s => {
+                  const hour = parseInt(s.time.split(':')[0]);
+                  return hour >= 6 && hour < 12;
+                }).length },
+                { key: 'afternoon', label: 'Afternoon', icon: '☀️', count: timeSlots.filter(s => {
+                  const hour = parseInt(s.time.split(':')[0]);
+                  return hour >= 12 && hour < 18;
+                }).length },
+                { key: 'evening', label: 'Evening', icon: '🌙', count: timeSlots.filter(s => {
+                  const hour = parseInt(s.time.split(':')[0]);
+                  return hour >= 18 || hour < 6;
+                }).length }
+              ].map((period) => (
+                <button
+                  key={period.key}
+                  onClick={() => setSelectedTimePeriod(period.key as 'morning' | 'afternoon' | 'evening')}
+                  className={`flex-1 flex flex-col items-center py-3 px-4 rounded-full transition-all ${
+                    selectedTimePeriod === period.key
+                      ? 'bg-white shadow-sm text-gray-900'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <div className="text-lg mb-1">{period.icon}</div>
+                  <Typography variant="caption" className="font-medium">
+                    {period.label} ({period.count})
                   </Typography>
-                </div>
+                </button>
+              ))}
+            </div>
 
-                {renderSlotGrid()}
-              </>
-            ) : (
+            {/* Time Slots Grid */}
+            <div className="grid grid-cols-2 gap-3">
+              {timeSlots
+                .filter(slot => {
+                  const hour = parseInt(slot.time.split(':')[0]);
+                  if (selectedTimePeriod === 'morning') return hour >= 6 && hour < 12;
+                  if (selectedTimePeriod === 'afternoon') return hour >= 12 && hour < 18;
+                  if (selectedTimePeriod === 'evening') return hour >= 18 || hour < 6;
+                  return true;
+                })
+                .map((slot) => (
+                  <button
+                    key={slot.id}
+                    disabled={!slot.available}
+                    onClick={() => handleSlotSelect(slot)}
+                    className={`w-full px-4 py-3 rounded-xl border transition-colors text-center ${
+                      slot.available 
+                        ? 'border-green-600 text-green-700 hover:bg-green-50' 
+                        : 'border-gray-300 text-gray-400 cursor-not-allowed'
+                    }`}
+                  >
+                    <div className={`text-sm font-medium ${slot.available ? 'text-green-700' : 'text-gray-400'}`}>
+                      {(() => {
+                        const raw = rawApiSlots.find((s) => s.id === slot.id);
+                        const from = raw?.from || slot.time;
+                        const to = raw?.to;
+                        return to ? `${from} - ${to}` : from;
+                      })()}
+                    </div>
+                    <div className="text-[11px] mt-1 text-gray-600">
+                      Available: {Math.max(0, (slot.maxBookings || 0) - (slot.bookedCount || 0))}
+                    </div>
+                  </button>
+                ))}
+            </div>
+
+            {timeSlots.filter(slot => {
+              const hour = parseInt(slot.time.split(':')[0]);
+              if (selectedTimePeriod === 'morning') return hour >= 6 && hour < 12;
+              if (selectedTimePeriod === 'afternoon') return hour >= 12 && hour < 18;
+              if (selectedTimePeriod === 'evening') return hour >= 18 || hour < 6;
+              return true;
+            }).length === 0 && (
               <div className="text-center py-8">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                  <Icon name="calendar" size="medium" color="#9ca3af" />
-                </div>
                 <Typography variant="body2" className="text-gray-600">
-                  Please select a date first
+                  No slots available for {selectedTimePeriod}
                 </Typography>
-                {availableDates.length === 0 && (
-                  <Typography variant="caption" className="text-gray-500 mt-2 block">
-                    {state.selectedClinic ? 
-                      `No available dates found for ${state.selectedDoctor?.fullName} at ${state.selectedClinic.clinicName}.` : 
-                      `No available dates found for ${state.selectedDoctor?.fullName} at any clinic.`}
-                  </Typography>
-                )}
               </div>
             )}
           </div>
-        </div>
+        )}
 
-        {/* Legend */}
-        <div className="mt-6 bg-white rounded-xl shadow-sm border border-gray-200 p-4">
-          <Typography variant="body2" className="text-gray-700 font-medium mb-3">
-            Booking Information:
-          </Typography>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-              <Typography variant="caption" className="text-gray-600">
-                Available slots
-              </Typography>
-            </div>
-            <div className="flex items-center">
-              <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-              <Typography variant="caption" className="text-gray-600">
-                Fully booked
-              </Typography>
-            </div>
-            <div className="flex items-center">
-              <Icon name="info" size="small" color="#6b7280" className="mr-2" />
-              <Typography variant="caption" className="text-gray-600">
-                Each slot has limited appointments
+        {selectedDate && timeSlots.length === 0 && !loadingSlots && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Icon name="calendar" size="medium" color="#9ca3af" />
+              </div>
+              <Typography variant="body2" className="text-gray-600">
+                No slots available for this date
               </Typography>
             </div>
           </div>
-        </div>
+        )}
+
+        {!selectedDate && (
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="text-center py-8">
+              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                <Icon name="calendar" size="medium" color="#9ca3af" />
+              </div>
+              <Typography variant="body2" className="text-gray-600">
+                Please select a date first
+              </Typography>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -23,8 +23,10 @@ const HomePage: React.FC = () => {
     }
     if (feature === 'PillPal') {
       router.push('/pillpal');
-    } else if (feature === 'Book Appointment' || feature === 'Appointment') {
+    } else if (feature === 'Book Appointment') {
       router.push('/booking');
+    } else if (feature === 'Appointment') {
+      router.push('/appointments');
     }
   };
 
@@ -318,7 +320,7 @@ const HomePage: React.FC = () => {
             </Typography>
             <button
               className="text-blue-800 hover:text-blue-900 transition-colors duration-200"
-              onClick={() => { /* Intentionally no log for appointment action */ }}
+              onClick={() => router.push('/appointments')}
             >
               <Typography variant="body1" className="text-blue-800">
                 See All

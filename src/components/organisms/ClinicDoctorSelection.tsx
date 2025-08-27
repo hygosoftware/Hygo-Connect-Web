@@ -95,80 +95,71 @@ const ClinicDoctorSelection: React.FC = () => {
       </div>
 
       <div className="p-6">
-        {/* Header */}
+        {/* Doctor Name - Single line with ellipsis */}
         <div className="mb-3">
-          <Typography variant="h6" className="text-gray-900 font-semibold mb-1 group-hover:text-[#0e3293] transition-colors">
+          <Typography variant="h6" className="text-gray-900 font-semibold mb-2 group-hover:text-[#0e3293] transition-colors truncate">
             {doctor.fullName}
           </Typography>
-          <Typography variant="body2" className="text-gray-600 mb-2">
+          
+          {/* Specialty */}
+          <Typography variant="body2" className="text-gray-600 mb-3">
             {doctor.specializations.join(', ')}
           </Typography>
-        </div>
-
-        {/* Rating and Experience */}
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center">
-            <Icon name="star" size="small" color="#fbbf24" className="mr-1" />
-            <Typography variant="body2" className="text-gray-700 font-medium">
-              {doctor.ratings.average}
-            </Typography>
-            <Typography variant="caption" className="text-gray-500 ml-1">
-              ({doctor.ratings.count})
+          
+          {/* Location - Show selected clinic since this is clinic-specific */}
+          <div className="flex items-center mb-3">
+            <Icon name="location" size="small" color="#6b7280" className="mr-2 flex-shrink-0" />
+            <Typography variant="body2" className="text-gray-600 truncate">
+              {state.selectedClinic?.clinicName}
             </Typography>
           </div>
-          <div className="flex items-center">
-            <Icon name="clock" size="small" color="#6b7280" className="mr-1" />
-            <Typography variant="body2" className="text-gray-600">
-              {doctor.experience} years
-            </Typography>
-          </div>
-        </div>
-
-        {/* Qualifications */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {doctor.qualifications.slice(0, 2).map((qual, index) => (
-            <span
-              key={index}
-              className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-            >
-              {qual.degree}
-            </span>
-          ))}
-        </div>
-
-        {/* Consultation Fee */}
-        <div className="mb-3">
-          <Typography variant="body1" className="text-[#0e3293] font-bold">
-            ₹{doctor.consultationFee}
-          </Typography>
-          <Typography variant="caption" className="text-gray-600">
-            Consultation Fee
-          </Typography>
-        </div>
-
-        {/* Clinic Info */}
-        {doctor.clinic && doctor.clinic.length > 0 && (
-          <div className="pt-3 border-t border-gray-100">
-            <Typography variant="caption" className="text-gray-500 block mb-2">
-              Available at:
-            </Typography>
-            <div className="space-y-1">
-              {doctor.clinic.slice(0, 1).map((clinic, index) => (
-                <div key={index} className="flex items-center text-gray-600">
-                  <Icon name="location" size="small" color="#6b7280" className="mr-1" />
-                  <Typography variant="caption">
-                    {clinic.clinicName}
-                  </Typography>
-                </div>
-              ))}
-              {doctor.clinic.length > 1 && (
-                <Typography variant="caption" className="text-gray-500">
-                  +{doctor.clinic.length - 1} more location{doctor.clinic.length > 2 ? 's' : ''}
-                </Typography>
-              )}
+          
+          {/* Consultation Fee */}
+          <div className="bg-blue-50 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-between">
+              <Typography variant="body2" className="text-gray-700 font-medium">
+                Consultation Fee
+              </Typography>
+              <Typography variant="h6" className="text-[#0e3293] font-bold">
+                ₹{doctor.consultationFee}
+              </Typography>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* Additional Info - Rating, Experience, Qualifications */}
+        <div className="space-y-3">
+          {/* Rating and Experience */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center">
+              <Icon name="star" size="small" color="#fbbf24" className="mr-1" />
+              <Typography variant="caption" className="text-gray-700 font-medium">
+                {doctor.ratings.average}
+              </Typography>
+              <Typography variant="caption" className="text-gray-500 ml-1">
+                ({doctor.ratings.count})
+              </Typography>
+            </div>
+            <div className="flex items-center">
+              <Icon name="clock" size="small" color="#6b7280" className="mr-1" />
+              <Typography variant="caption" className="text-gray-600">
+                {doctor.experience} years
+              </Typography>
+            </div>
+          </div>
+
+          {/* Qualifications */}
+          <div className="flex flex-wrap gap-2">
+            {doctor.qualifications.slice(0, 2).map((qual, index) => (
+              <span
+                key={index}
+                className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
+              >
+                {qual.degree}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

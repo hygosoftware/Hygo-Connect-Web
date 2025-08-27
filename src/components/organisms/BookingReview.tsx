@@ -129,8 +129,8 @@ const BookingReview: React.FC = () => {
               </button>
             </div>
             
-            <div className="flex items-center space-x-4">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100">
+            <div className="flex items-start space-x-4">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
                 <img
                   src={state.selectedDoctor.profileImage}
                   alt={state.selectedDoctor.fullName}
@@ -141,23 +141,46 @@ const BookingReview: React.FC = () => {
                   }}
                 />
               </div>
-              <div className="flex-1">
-                <Typography variant="h6" className="text-gray-900 font-semibold mb-1">
+              <div className="flex-1 min-w-0">
+                {/* Doctor Name - Single line with ellipsis */}
+                <Typography variant="h6" className="text-gray-900 font-semibold mb-2 truncate">
                   {state.selectedDoctor.fullName}
                 </Typography>
+                
+                {/* Specialty */}
                 <Typography variant="body2" className="text-gray-600 mb-2">
                   {state.selectedDoctor.specializations.join(', ')}
                 </Typography>
-                <div className="flex items-center space-x-4">
+                
+                {/* Location */}
+                <div className="flex items-center mb-3">
+                  <Icon name="location" size="small" color="#6b7280" className="mr-2 flex-shrink-0" />
+                  <Typography variant="body2" className="text-gray-600">
+                    {state.selectedClinic?.clinicName || 'Clinic Location'}
+                  </Typography>
+                </div>
+                
+                {/* Consultation Fee */}
+                <div className="flex items-center justify-between bg-blue-50 rounded-lg p-3 mb-3">
+                  <Typography variant="body2" className="text-gray-700 font-medium">
+                    Consultation Fee
+                  </Typography>
+                  <Typography variant="h6" className="text-[#0e3293] font-bold">
+                    ₹{state.selectedDoctor.consultationFee}
+                  </Typography>
+                </div>
+                
+                {/* Additional Info - Ratings and Experience */}
+                <div className="flex items-center space-x-4 text-sm">
                   <div className="flex items-center">
                     <Icon name="star" size="small" color="#fbbf24" className="mr-1" />
-                    <Typography variant="body2" className="text-gray-700">
+                    <Typography variant="caption" className="text-gray-700">
                       {state.selectedDoctor.ratings.average} ({state.selectedDoctor.ratings.count})
                     </Typography>
                   </div>
                   <div className="flex items-center">
                     <Icon name="clock" size="small" color="#6b7280" className="mr-1" />
-                    <Typography variant="body2" className="text-gray-600">
+                    <Typography variant="caption" className="text-gray-600">
                       {state.selectedDoctor.experience} years
                     </Typography>
                   </div>
