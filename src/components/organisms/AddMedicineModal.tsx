@@ -165,9 +165,9 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       
-      <div className="relative bg-white w-full h-[100dvh] sm:h-auto sm:max-h-[95vh] sm:max-w-4xl sm:rounded-3xl overflow-hidden shadow-2xl add-medicine-modal">
+      <div className="relative bg-white w-full h-[100dvh] sm:h-auto sm:max-h-[95vh] sm:max-w-4xl sm:rounded-3xl overflow-hidden shadow-2xl add-medicine-modal flex flex-col">
         {/* Header */}
-        <div className="relative bg-gradient-to-br from-[#0e3293] to-[#1a4bb8] px-4 sm:px-6 py-6 sm:py-8">
+        <div className="relative bg-gradient-to-br from-[#0e3293] to-[#1a4bb8] px-3 sm:px-6 py-3 sm:py-8">
           {/* Animated background elements */}
           <div className="absolute inset-0 overflow-hidden">
             <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse" />
@@ -175,21 +175,21 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
           </div>
           
           <div className="relative flex items-center justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 sm:space-x-4">
               <button
                 onClick={onClose}
-                className="p-2 hover:bg-white/20 rounded-full transition-all duration-200 active:scale-95"
+                className="p-1.5 sm:p-2 hover:bg-white/20 rounded-full transition-all duration-200 active:scale-95"
               >
-                <X className="w-6 h-6 text-white" />
+                <X className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </button>
               
-              <div className="flex items-center space-x-3">
-                <div className="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/30">
-                  <Pill className="w-7 h-7 text-white" />
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                <div className="w-10 h-10 sm:w-14 sm:h-14 bg-white/20 backdrop-blur-md rounded-xl sm:rounded-2xl flex items-center justify-center border border-white/30">
+                  <Pill className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-xl sm:text-2xl font-bold text-white">Add Medicine</h1>
-                  <p className="text-white/80 text-sm">Set up your medication reminders</p>
+                  <h1 className="text-lg sm:text-2xl font-bold text-white">Add Medicine</h1>
+                  <p className="text-white/80 text-xs sm:text-sm hidden sm:block">Set up your medication reminders</p>
                 </div>
               </div>
             </div>
@@ -219,26 +219,27 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
         )}
 
         {/* Content - Scrollable */}
-        <div className="h-[calc(100dvh-200px)] sm:h-auto sm:max-h-[60vh] overflow-y-auto">
-          <div className="p-4 sm:p-6 space-y-6">
-            {/* Error Messages */}
-            {errors.length > 0 && (
-              <div className="bg-red-50 border border-red-200 rounded-2xl p-4 animate-in slide-in-from-top duration-300">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h3 className="font-semibold text-red-800 mb-2">Please fix these errors:</h3>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-red-700">
-                      {errors.map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
-                    </ul>
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-4 sm:p-6 space-y-6">
+              {/* Error Messages */}
+              {errors.length > 0 && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-4 animate-in slide-in-from-top duration-300">
+                  <div className="flex items-start space-x-3">
+                    <AlertCircle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-red-800 mb-2">Please fix these errors:</h3>
+                      <ul className="list-disc list-inside space-y-1 text-sm text-red-700">
+                        {errors.map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Prescription Upload */}
+              {/* Prescription Upload */}
             <div className="bg-gradient-to-br from-[#0e3293]/5 to-[#0e3293]/10 rounded-2xl p-5 border border-[#0e3293]/20">
               <div className="flex items-center space-x-3 mb-4">
                 <div className="w-10 h-10 bg-[#0e3293]/10 rounded-xl flex items-center justify-center">
@@ -387,7 +388,7 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
                     <Clock className="w-4 h-4 text-[#0e3293] mr-2" />
                     Daily Schedule
                   </h4>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                     {timeSlots.map((timeSlot) => {
                       const isSelected = currentMedicine.timings[timeSlot.key];
                       return (
@@ -406,16 +407,16 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
                               }
                               handleMedicineChange(activeTab, 'timings', newTimings);
                             }}
-                            className={`w-full p-3 rounded-xl border-2 transition-all duration-200 transform hover:scale-105 ${
+                            className={`w-full p-2 sm:p-3 rounded-lg sm:rounded-xl border-2 transition-all duration-200 transform hover:scale-105 ${
                               isSelected
                                 ? `border-transparent bg-gradient-to-br ${timeSlot.color} text-white shadow-lg`
                                 : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                             }`}
                           >
-                            <div className="mb-2 flex items-center justify-center">
-                              {timeSlot.icon === 'Sun' && <Sun className="w-6 h-6" />}
-                              {timeSlot.icon === 'Moon' && <Moon className="w-6 h-6" />}
-                              {timeSlot.icon === 'Sunset' && <Sunset className="w-6 h-6" />}
+                            <div className="mb-1 sm:mb-2 flex items-center justify-center">
+                              {timeSlot.icon === 'Sun' && <Sun className="w-4 h-4 sm:w-6 sm:h-6" />}
+                              {timeSlot.icon === 'Moon' && <Moon className="w-4 h-4 sm:w-6 sm:h-6" />}
+                              {timeSlot.icon === 'Sunset' && <Sunset className="w-4 h-4 sm:w-6 sm:h-6" />}
                             </div>
                             <div className="text-xs font-medium">{timeSlot.label}</div>
                           </button>
@@ -462,31 +463,33 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
                     <Calendar className="w-4 h-4 text-[#0e3293] mr-2" />
                     Treatment Duration
                   </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Duration *</label>
-                      <input
-                        type="text"
-                        value={currentMedicine.duration.value}
-                        onChange={(e) => handleMedicineChange(activeTab, 'duration.value', e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-[#0e3293] focus:ring-1 focus:ring-[#0e3293]/20 transition-colors"
-                        placeholder="7"
-                      />
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Duration *</label>
+                        <input
+                          type="text"
+                          value={currentMedicine.duration.value}
+                          onChange={(e) => handleMedicineChange(activeTab, 'duration.value', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-[#0e3293] focus:ring-1 focus:ring-[#0e3293]/20 transition-colors"
+                          placeholder="7"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
+                        <select
+                          value={currentMedicine.duration.unit}
+                          onChange={(e) => handleMedicineChange(activeTab, 'duration.unit', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-[#0e3293] focus:ring-1 focus:ring-[#0e3293]/20 transition-colors"
+                        >
+                          <option value="days">Days</option>
+                          <option value="weeks">Weeks</option>
+                          <option value="months">Months</option>
+                          <option value="sos">SOS (As needed)</option>
+                        </select>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Unit</label>
-                      <select
-                        value={currentMedicine.duration.unit}
-                        onChange={(e) => handleMedicineChange(activeTab, 'duration.unit', e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-[#0e3293] focus:ring-1 focus:ring-[#0e3293]/20 transition-colors"
-                      >
-                        <option value="days">Days</option>
-                        <option value="weeks">Weeks</option>
-                        <option value="months">Months</option>
-                        <option value="sos">SOS (As needed)</option>
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
                         <input
@@ -510,45 +513,48 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
                 </div>
               </div>
             </div>
-
-            {/* Add Medicine Button */}
+            </div>
+          </div>
+          
+          {/* Add Medicine Button - Sticky at bottom */}
+          <div className="flex-shrink-0 p-4 sm:p-6 pt-0 border-t bg-white">
             <button
               onClick={handleAddMedicine}
-              className="w-full py-4 border-2 border-dashed border-[#0e3293]/30 rounded-2xl text-[#0e3293] hover:border-[#0e3293] hover:bg-[#0e3293]/5 transition-all duration-200 font-medium flex items-center justify-center group"
+              className="w-full py-3 sm:py-4 border-2 border-dashed border-[#0e3293]/30 rounded-xl sm:rounded-2xl text-[#0e3293] hover:border-[#0e3293] hover:bg-[#0e3293]/5 transition-all duration-200 font-medium flex items-center justify-center group"
             >
-              <Plus className="w-5 h-5 mr-2 group-hover:scale-110 transition-transform" />
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5 mr-2 group-hover:scale-110 transition-transform" />
               Add Another Medicine
             </button>
           </div>
         </div>
 
         {/* Footer */}
-        <div className="bg-gray-50 px-4 sm:px-6 py-4 border-t flex items-center justify-between">
-          <div className="text-sm text-gray-600">
+        <div className="flex-shrink-0 bg-gray-50 px-3 sm:px-6 py-3 sm:py-4 border-t flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
+          <div className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
             <span className="font-medium">{medicines.length}</span> medicine{medicines.length > 1 ? 's' : ''} configured
           </div>
           
-          <div className="flex space-x-3">
+          <div className="flex space-x-2 sm:space-x-3 w-full sm:w-auto order-1 sm:order-2">
             <button
               onClick={onClose}
               disabled={loading}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-xl transition-colors font-medium"
+              className="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-colors font-medium text-sm"
             >
               Cancel
             </button>
             <button
               onClick={() => onAddMedicines(medicines, prescriptionFile)}
               disabled={loading}
-              className="px-6 py-2 bg-gradient-to-r from-[#0e3293] to-[#1a4bb8] text-white rounded-xl hover:from-[#0c2a7a] hover:to-[#0e3293] transition-all duration-200 disabled:opacity-50 font-medium shadow-lg flex items-center group"
+              className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gradient-to-r from-[#0e3293] to-[#1a4bb8] text-white rounded-lg sm:rounded-xl hover:from-[#0c2a7a] hover:to-[#0e3293] transition-all duration-200 disabled:opacity-50 font-medium shadow-lg flex items-center justify-center group text-sm"
             >
               {loading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                  <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2" />
                   Adding...
                 </>
               ) : (
                 <>
-                  <Plus className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-2 group-hover:scale-110 transition-transform" />
                   Add Medicine{medicines.length > 1 ? 's' : ''}
                 </>
               )}

@@ -5,9 +5,7 @@ import Image from 'next/image';
 import { UniversalHeader } from '../../components/atoms';
 import { useAuth } from '../../hooks/useAuth';
 import { profileService, UpdateProfileRequest } from '../../services/apiServices';
-import { User, Mail, Phone, Calendar, Heart, Activity, Edit3, Save, X, Camera, Ruler, Weight, Bell, Shield, Settings, Stethoscope, AlertCircle, CheckCircle2, Plus, Trash2 } from 'lucide-react';
-import ProfileCompletionWizard from '../../components/organisms/ProfileCompletionWizard';
-import ProfileSettings from '../../components/organisms/ProfileSettings';
+import { User, Mail, Phone, Calendar, Heart, Activity, Edit3, Save, X, Camera, Ruler, Weight, Stethoscope, AlertCircle, CheckCircle2, Plus, Trash2, Check } from 'lucide-react';
 
 // Types based on actual database schema
 interface ProfileData {
@@ -109,8 +107,6 @@ const ProfileScreen: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [showCompletionWizard, setShowCompletionWizard] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const onChangeProfilePhotoClick = () => {
@@ -523,15 +519,15 @@ const ProfileScreen: React.FC = () => {
 
             {/* Profile Info */}
             <div className="flex-1 text-center lg:text-left">
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">{profileData.FullName || 'Your Name'}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 truncate">{profileData.FullName || 'Your Name'}</h1>
               <div className="space-y-2 mb-4">
-                <div className="text-gray-600 flex items-center justify-center lg:justify-start gap-2">
-                  <Mail className="w-4 h-4" />
-                  {profileData.Email || 'your@email.com'}
+                <div className="text-gray-600 flex items-center justify-center lg:justify-start gap-2 min-w-0">
+                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{profileData.Email || 'your@email.com'}</span>
                 </div>
-                <div className="text-gray-600 flex items-center justify-center lg:justify-start gap-2">
-                  <Phone className="w-4 h-4" />
-                  {profileData.MobileNumber || 'Mobile Number'}
+                <div className="text-gray-600 flex items-center justify-center lg:justify-start gap-2 min-w-0">
+                  <Phone className="w-4 h-4 flex-shrink-0" />
+                  <span className="truncate">{profileData.MobileNumber || 'Mobile Number'}</span>
                 </div>
               </div>
 
@@ -550,52 +546,6 @@ const ProfileScreen: React.FC = () => {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-3">
-              {isEditing ? (
-                <>
-                  <button
-                    onClick={handleSave}
-                    className="text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 disabled:opacity-50 transition-all shadow-lg hover:opacity-90"
-                    style={{ backgroundColor: '#0e3293' }}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'Saving...' : (<><Save className="w-4 h-4" /> Save Changes</>)}
-                  </button>
-                  <button
-                    onClick={() => setIsEditing(false)}
-                    className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-200 transition-colors"
-                  >
-                    <X className="w-4 h-4" /> Cancel
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg hover:opacity-90"
-                    style={{ backgroundColor: '#0e3293' }}
-                  >
-                    <Edit3 className="w-4 h-4" /> Edit Profile
-                  </button>
-                  {calculateProfileCompletion() < 100 && (
-                    <button
-                      onClick={() => setShowCompletionWizard(true)}
-                      className="text-white px-6 py-3 rounded-xl font-medium flex items-center gap-2 transition-all shadow-lg hover:opacity-90"
-                      style={{ backgroundColor: '#0e3293' }}
-                    >
-                      <CheckCircle2 className="w-4 h-4" /> Complete Profile
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowSettings(true)}
-                    className="bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-medium flex items-center gap-2 hover:bg-gray-200 transition-colors"
-                  >
-                    <Settings className="w-4 h-4" /> Settings
-                  </button>
-                </>
-              )}
-            </div>
           </div>
 
           {/* Alerts */}
@@ -639,23 +589,37 @@ const ProfileScreen: React.FC = () => {
         </div>
       </div>
 
-      {/* Modals */}
-      {showCompletionWizard && (
-        <ProfileCompletionWizard
-          onClose={() => setShowCompletionWizard(false)}
-          currentCompletion={calculateProfileCompletion()}
-          profileData={profileData}
-          onUpdateProfile={(data) => {
-            setProfileData(data);
-            handleSave();
-          }}
-        />
-      )}
-
-      {showSettings && (
-        <ProfileSettings
-          onClose={() => setShowSettings(false)}
-        />
+      {/* Floating Action Buttons */}
+      {isEditing ? (
+        <>
+          {/* Save Button - Bottom Right */}
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="fixed bottom-20 md:bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center disabled:opacity-50"
+            style={{ backgroundColor: '#0e3293' }}
+          >
+            <Check className="w-6 h-6" />
+          </button>
+          
+          {/* Cancel Button - Bottom Right (offset) */}
+          <button
+            onClick={() => setIsEditing(false)}
+            className="fixed bottom-20 md:bottom-6 right-24 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center"
+            style={{ backgroundColor: '#6b7280' }}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </>
+      ) : (
+        /* Edit Button */
+        <button
+          onClick={() => setIsEditing(true)}
+          className="fixed bottom-20 md:bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center"
+          style={{ backgroundColor: '#0e3293' }}
+        >
+          <Edit3 className="w-5 h-5" />
+        </button>
       )}
     </div>
   );

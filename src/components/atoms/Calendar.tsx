@@ -103,34 +103,34 @@ const Calendar: React.FC<CalendarProps> = ({
   };
 
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-4 ${className}`}>
+    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 p-3 sm:p-6 max-w-md mx-auto ${className}`}>
       {/* Calendar Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
         <button
           onClick={() => canGoPrevMonth() && navigateMonth('prev')}
           disabled={!canGoPrevMonth()}
-          className={`p-2 rounded-lg transition-colors ${canGoPrevMonth() ? 'hover:bg-gray-100' : 'opacity-50 cursor-not-allowed'}`}
+          className={`p-2 sm:p-3 rounded-lg transition-colors ${canGoPrevMonth() ? 'hover:bg-gray-100' : 'opacity-50 cursor-not-allowed'}`}
         >
           <Icon name="chevron-left" size="small" color="#6b7280" />
         </button>
         
-        <Typography variant="h6" className="text-gray-900 font-semibold">
+        <Typography variant="h6" className="text-gray-900 font-bold text-base sm:text-lg">
           {monthNames[currentMonth.getMonth()]} {currentMonth.getFullYear()}
         </Typography>
         
         <button
           onClick={() => navigateMonth('next')}
-          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          className="p-2 sm:p-3 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <Icon name="chevron-right" size="small" color="#6b7280" />
         </button>
       </div>
 
       {/* Day Names Header */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-3">
         {dayNames.map(day => (
-          <div key={day} className="p-2 text-center">
-            <Typography variant="body2" className="text-gray-500 font-medium text-xs">
+          <div key={day} className="p-1 sm:p-3 text-center">
+            <Typography variant="body2" className="text-gray-600 font-semibold text-xs sm:text-sm">
               {day}
             </Typography>
           </div>
@@ -138,7 +138,7 @@ const Calendar: React.FC<CalendarProps> = ({
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2">
         {calendarDays.map((date, index) => {
           const isCurrentMonthDate = isCurrentMonth(date);
           const isTodayDate = isToday(date);
@@ -153,17 +153,16 @@ const Calendar: React.FC<CalendarProps> = ({
               key={index}
               onClick={() => handleDateClick(date)}
               className={`
-                p-2 h-10 w-10 rounded-lg text-sm font-medium transition-all duration-200 relative
+                p-1 sm:p-3 h-8 w-8 sm:h-12 sm:w-12 rounded-lg sm:rounded-xl text-xs sm:text-sm font-semibold transition-all duration-200 relative flex items-center justify-center
                 ${isCurrentMonthDate ? 'text-gray-900' : 'text-gray-300'}
                 ${isSelectedDate
-                  ? 'bg-blue-600 text-white border-2 border-blue-600 shadow-sm'
-                  : `${isPast ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'}`
+                  ? 'bg-[#0e3293] text-white border-2 border-[#0e3293] shadow-lg sm:transform sm:scale-105'
+                  : `${isPast ? 'opacity-40 cursor-not-allowed' : 'hover:bg-gray-50 hover:shadow-sm'}`
                 }
-                ${!isSelectedDate && isAvailableDate ? 'border-2 border-green-600' : ''}
-                ${!isSelectedDate && isUnavailableDate ? 'border-2 border-red-500' : ''}
-                ${!isSelectedDate && isAvailableDate ? 'bg-green-50' : ''}
-                ${!isSelectedDate && isUnavailableDate ? 'bg-red-50' : ''}
+                ${!isSelectedDate && isAvailableDate ? 'border-2 border-green-500 bg-green-50 text-green-700 hover:bg-green-100' : ''}
+                ${!isSelectedDate && isUnavailableDate ? 'border-2 border-red-400 bg-red-50 text-red-600' : ''}
                 ${(!isCurrentMonthDate || isPast) && 'cursor-not-allowed'}
+                ${isTodayDate && !isSelectedDate ? 'ring-1 sm:ring-2 ring-blue-200' : ''}
               `}
               disabled={!isCurrentMonthDate || isPast}
             >
@@ -174,16 +173,16 @@ const Calendar: React.FC<CalendarProps> = ({
       </div>
 
       {/* Legend */}
-      <div className="flex items-center justify-center mt-4 space-x-6">
+      <div className="flex items-center justify-center mt-6 space-x-8">
         <div className="flex items-center space-x-2">
-          <div className="w-5 h-5 rounded-lg border-2 border-green-600"></div>
-          <Typography variant="body2" className="text-gray-600 text-xs">
+          <div className="w-4 h-4 rounded-lg border-2 border-green-500 bg-green-50"></div>
+          <Typography variant="body2" className="text-gray-700 text-sm font-medium">
             Available
           </Typography>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="w-5 h-5 rounded-lg border-2 border-red-500"></div>
-          <Typography variant="body2" className="text-gray-600 text-xs">
+          <div className="w-4 h-4 rounded-lg border-2 border-red-400 bg-red-50"></div>
+          <Typography variant="body2" className="text-gray-700 text-sm font-medium">
             Unavailable
           </Typography>
         </div>

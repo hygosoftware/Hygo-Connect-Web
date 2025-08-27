@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { ResponsiveNavigation } from '../atoms';
+import { ResponsiveNavigation, BottomNavigation } from '../atoms';
 import { HeaderProvider } from '../atoms/HeaderWrapper';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -88,6 +88,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         <div className={`transition-all duration-300 ${isSidebarExpanded ? 'md:ml-72' : 'md:ml-16'} pb-20 md:pb-0`}>
           {children}
         </div>
+
+        {/* Bottom Navigation - Mobile Only */}
+        <BottomNavigation userId={user?._id || 'demo-user'} />
       </div>
     </HeaderProvider>
   );

@@ -338,16 +338,16 @@ const DateTimeSelection: React.FC = () => {
       );
     }
     return (
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
         {timeSlots.map((slot) => (
           <button
             key={slot.id}
             disabled={!slot.available}
             onClick={() => handleSlotSelect(slot)}
-            className={`w-full px-4 py-3 rounded-xl border transition-colors text-center ${slot.available ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`}
+            className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border transition-colors text-center ${slot.available ? 'border-green-600 text-green-700 hover:bg-green-50' : 'border-gray-300 text-gray-400 cursor-not-allowed'}`}
             aria-disabled={!slot.available}
           >
-            <div className={`text-sm font-medium ${slot.available ? 'text-green-700' : 'text-gray-400'}`}>
+            <div className={`text-xs sm:text-sm font-medium ${slot.available ? 'text-green-700' : 'text-gray-400'}`}>
               {(() => {
                 const raw = rawApiSlots.find((s) => s.id === slot.id);
                 const from = raw?.from || slot.time;
@@ -355,7 +355,7 @@ const DateTimeSelection: React.FC = () => {
                 return to ? `${from} - ${to}` : from;
               })()}
             </div>
-            <div className="text-[11px] mt-1 text-gray-600">
+            <div className="text-[10px] sm:text-[11px] mt-1 text-gray-600">
               Booked: {slot.bookedCount} • Available: {Math.max(0, (slot.maxBookings || 0) - (slot.bookedCount || 0))}
             </div>
           </button>
@@ -439,7 +439,7 @@ const DateTimeSelection: React.FC = () => {
             selectedDate={selectedDate || new Date()}
             onDateSelect={handleDateSelect}
             highlightedDates={availableDates}
-            className="w-full mb-4"
+            className="mb-4"
           />
           
           {/* Legend */}
@@ -547,7 +547,7 @@ const DateTimeSelection: React.FC = () => {
             </div>
 
             {/* Time Slots Grid */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
               {timeSlots
                 .filter(slot => {
                   const hour = parseInt(slot.time.split(':')[0]);
@@ -561,13 +561,13 @@ const DateTimeSelection: React.FC = () => {
                     key={slot.id}
                     disabled={!slot.available}
                     onClick={() => handleSlotSelect(slot)}
-                    className={`w-full px-4 py-3 rounded-xl border transition-colors text-center ${
+                    className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border transition-colors text-center ${
                       slot.available 
                         ? 'border-green-600 text-green-700 hover:bg-green-50' 
                         : 'border-gray-300 text-gray-400 cursor-not-allowed'
                     }`}
                   >
-                    <div className={`text-sm font-medium ${slot.available ? 'text-green-700' : 'text-gray-400'}`}>
+                    <div className={`text-xs sm:text-sm font-medium ${slot.available ? 'text-green-700' : 'text-gray-400'}`}>
                       {(() => {
                         const raw = rawApiSlots.find((s) => s.id === slot.id);
                         const from = raw?.from || slot.time;
@@ -575,7 +575,7 @@ const DateTimeSelection: React.FC = () => {
                         return to ? `${from} - ${to}` : from;
                       })()}
                     </div>
-                    <div className="text-[11px] mt-1 text-gray-600">
+                    <div className="text-[10px] sm:text-[11px] mt-1 text-gray-600">
                       Available: {Math.max(0, (slot.maxBookings || 0) - (slot.bookedCount || 0))}
                     </div>
                   </button>

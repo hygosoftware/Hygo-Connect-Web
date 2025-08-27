@@ -183,7 +183,7 @@ const BookingPayment: React.FC = () => {
         order = await paymentService.createOrder({
           amount: effectiveTotal * 100,
           currency: 'INR',
-          method: 'UPI',
+          method: 'Online',
           receipt: `appointment_${Date.now()}`,
           relatedType: 'appointment',
           relatedId: appointmentId,
@@ -406,9 +406,9 @@ const BookingPayment: React.FC = () => {
         return;
       }
 
-      // Backend expects method enum: 'UPI' | 'Card' | 'Cash' | 'Online'
-      // As per requirement: use 'UPI' for card/upi/online, and 'Cash' for cash
-      const paymentMethodText = selectedMethod === 'cash' ? 'Cash' : 'UPI';
+      // Backend expects method enum: 'Online' | 'Cash' | 'Card' 
+      // Use 'Online' for card/upi/razorpay payments, and 'Cash' for cash
+      const paymentMethodText = selectedMethod === 'cash' ? 'Cash' : 'Online';
 
       const bookingPayload = {
         user: userId,
