@@ -37,6 +37,34 @@ interface AddMedicineModalProps {
 
 const defaultOnAdd: AddMedicinesHandler = () => {};
 
+// Helper function to calculate end date based on start date and duration
+const calculateEndDate = (startDate: string, durationValue: string, durationUnit: string): string => {
+  const start = new Date(startDate);
+  const duration = parseInt(durationValue) || 0;
+  
+  if (durationUnit === 'sos') {
+    return startDate; // For SOS, end date is same as start date
+  }
+  
+  let endDate = new Date(start);
+  
+  switch (durationUnit) {
+    case 'days':
+      endDate.setDate(start.getDate() + duration);
+      break;
+    case 'weeks':
+      endDate.setDate(start.getDate() + (duration * 7));
+      break;
+    case 'months':
+      endDate.setMonth(start.getMonth() + duration);
+      break;
+    default:
+      endDate.setDate(start.getDate() + duration);
+  }
+  
+  return endDate.toISOString().split('T')[0];
+};
+
 const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
   isOpen = true,
   onClose = () => {},
@@ -50,7 +78,7 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
     dose: { value: '1', unit: 'tablet' },
     timings: {},
     timingType: 'before',
-    duration: { value: '7', unit: 'days', startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] }
+    duration: { value: '7', unit: 'days', startDate: new Date().toISOString().split('T')[0], endDate: calculateEndDate(new Date().toISOString().split('T')[0], '7', 'days') }
   }]);
   const [errors, setErrors] = useState<string[]>([]);
   const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
@@ -59,6 +87,7 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
   if (!isOpen) return null;
 
   const handleAddMedicine = () => {
+    const startDate = new Date().toISOString().split('T')[0];
     const newMedicine: MedicineItem = {
       id: Date.now().toString(),
       name: '',
@@ -66,7 +95,7 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
       dose: { value: '1', unit: 'tablet' },
       timings: {},
       timingType: 'before',
-      duration: { value: '7', unit: 'days', startDate: new Date().toISOString().split('T')[0], endDate: new Date().toISOString().split('T')[0] }
+      duration: { value: '7', unit: 'days', startDate, endDate: calculateEndDate(startDate, '7', 'days') }
     };
     setMedicines([...medicines, newMedicine]);
     setActiveTab(medicines.length);
@@ -100,6 +129,23 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
         ...updatedMedicines[index],
         [parent]: { ...safeParentObject, [child]: value }
       };
+
+      // Auto-calculate end date when duration or start date changes
+      if (parent === 'duration' && (child === 'value' || child === 'unit' || child === 'startDate')) {
+        const medicine = updatedMedicines[index];
+        const duration = medicine.duration as any;
+        const startDate = child === 'startDate' ? value : duration.startDate;
+        const durationValue = child === 'value' ? value : duration.value;
+        const durationUnit = child === 'unit' ? value : duration.unit;
+        
+        updatedMedicines[index] = {
+          ...updatedMedicines[index],
+          duration: {
+            ...duration,
+            endDate: calculateEndDate(startDate, durationValue, durationUnit)
+          }
+        };
+      }
     } else {
       updatedMedicines[index] = { ...updatedMedicines[index], [field]: value };
     }
@@ -440,14 +486,25 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
                         <option value="sos">SOS (As needed)</option>
                       </select>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Start Date *</label>
-                      <input
-                        type="date"
-                        value={currentMedicine.duration.startDate}
-                        onChange={(e) => handleMedicineChange(activeTab, 'duration.startDate', e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-[#0e3293] focus:ring-1 focus:ring-[#0e3293]/20 transition-colors"
-                      />
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                        <input
+                          type="date"
+                          value={currentMedicine.duration.startDate}
+                          onChange={(e) => handleMedicineChange(activeTab, 'duration.startDate', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-[#0e3293] focus:ring-1 focus:ring-[#0e3293]/20 transition-colors"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                        <input
+                          type="date"
+                          value={currentMedicine.duration.endDate}
+                          onChange={(e) => handleMedicineChange(activeTab, 'duration.endDate', e.target.value)}
+                          className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg focus:border-[#0e3293] focus:ring-1 focus:ring-[#0e3293]/20 transition-colors"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
