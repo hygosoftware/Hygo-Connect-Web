@@ -10,6 +10,7 @@ interface FilePreviewModalProps {
   folderId: string;
   fileId: string;
   fileName?: string;
+  fileType?: string;
 }
 
 const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
@@ -17,20 +18,51 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   onClose,
   folderId,
   fileId,
-  fileName
+  fileName,
+  fileType: initialFileType = ''
 }) => {
-  const [fileDetails, setFileDetails] = useState<FileDetails | null>(null);
+  const [fileDetails, setFileDetails] = useState<FileDetails | null>(() => {
+    // Initialize with file type from props if available
+    if (initialFileType) {
+      return { 
+        _id: fileId, 
+        fileName: fileName || '', 
+        fileType: initialFileType,
+        filePath: '',
+        fileSize: 0,
+        uploadedAt: new Date().toISOString()
+      };
+    }
+    return null;
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'preview' | 'details'>('preview');
 
   useEffect(() => {
-    console.log('📋 FilePreviewModal useEffect:', { isOpen, folderId, fileId });
+    console.log('📋 FilePreviewModal useEffect:', { isOpen, folderId, fileId, fileType: initialFileType });
     if (isOpen && folderId && fileId) {
+      if (initialFileType) {
+        // If we have fileType from props, use it immediately
+        setFileDetails(prev => ({
+          ...(prev || {} as FileDetails),
+          _id: fileId,
+          fileName: fileName || '',
+          fileType: initialFileType,
+          filePath: prev?.filePath || '',
+          fileSize: prev?.fileSize || 0,
+          uploadedAt: prev?.uploadedAt || new Date().toISOString()
+        }));
+      }
       console.log('📋 Fetching file details...');
       fetchFileDetails();
+    } else {
+      // Reset state when modal is closed
+      setFileDetails(null);
+      setError(null);
+      setLoading(false);
     }
-  }, [isOpen, folderId, fileId]);
+  }, [isOpen, folderId, fileId, initialFileType, fileName]);
 
   const fetchFileDetails = async () => {
     setLoading(true);
@@ -41,13 +73,26 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       const details = await folderService.getFileDetails(folderId, fileId);
       
       if (details) {
-        setFileDetails(details);
+        // Ensure file path is absolute
+        const fileDetails = {
+          ...details,
+          filePath: details.filePath?.startsWith('http') 
+            ? details.filePath 
+            : `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}${details.filePath?.startsWith('/') ? '' : '/'}${details.filePath || ''}`,
+          thumbnailUrl: details.thumbnailUrl?.startsWith('http')
+            ? details.thumbnailUrl
+            : details.thumbnailUrl
+              ? `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}${details.thumbnailUrl.startsWith('/') ? '' : '/'}${details.thumbnailUrl}`
+              : undefined
+        };
+        
+        setFileDetails(fileDetails);
       } else {
         setError('File details not found');
       }
     } catch (err) {
       console.error('❌ Error fetching file details:', err);
-      setError('Failed to load file details');
+      setError(err instanceof Error ? err.message : 'Failed to load file details');
     } finally {
       setLoading(false);
     }
@@ -81,15 +126,26 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   };
 
   const canPreview = (fileType: string): boolean => {
+    if (!fileType) return false;
+    
+    const lowerFileType = fileType.toLowerCase();
+    
+    // Check for image types
+    if (lowerFileType.startsWith('image/')) return true;
+    
+    // Check for specific file extensions that might be missing the image/ prefix
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
+    if (imageExtensions.some(ext => lowerFileType.endsWith(ext))) return true;
+    
+    // Check for other previewable types
     return (
-      fileType.startsWith('image/') ||
-      fileType.startsWith('video/') ||
-      fileType.startsWith('audio/') ||
-      fileType.includes('pdf') ||
-      fileType.includes('text/') ||
-      fileType.includes('json') ||
-      fileType.includes('xml') ||
-      fileType.includes('html')
+      lowerFileType.startsWith('video/') ||
+      lowerFileType.startsWith('audio/') ||
+      lowerFileType.includes('pdf') ||
+      lowerFileType.includes('text/') ||
+      lowerFileType.includes('json') ||
+      lowerFileType.includes('xml') ||
+      lowerFileType.includes('html')
     );
   };
 
@@ -97,22 +153,97 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     if (!fileDetails) return null;
 
     const { fileType, filePath, fileName } = fileDetails;
+    
+    if (loading) {
+      return (
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      );
+    }
+    
+    if (error) {
+      return (
+        <div className="text-center p-8">
+          <Icon name="alert" size="large" className="text-red-500 mx-auto mb-4" />
+          <Typography variant="h6" className="text-red-600 mb-2">Error loading file</Typography>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchFileDetails}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+          >
+            Retry
+          </button>
+        </div>
+      );
+    }
 
-    if (fileType.startsWith('image/')) {
+    // Handle image files
+    if (fileType.startsWith('image/') || 
+        fileType.endsWith('.png') || 
+        fileType.endsWith('.jpg') || 
+        fileType.endsWith('.jpeg') || 
+        fileType.endsWith('.gif') || 
+        fileType.endsWith('.webp') ||
+        fileType.endsWith('.svg')) {
+      
+      // Get the API base URL and userId
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+      
+      // Construct the image URL with the proper file endpoint path
+      const imageUrl = filePath.startsWith('http') 
+        ? filePath 
+        : `${API_BASE}/file/${userId}/${folderId}/${fileId}`;
+      
       return (
         <div className="flex items-center justify-center bg-gray-50 rounded-lg p-4">
-          <img
-            src={filePath}
-            alt={fileName}
-            className="max-w-full max-h-96 object-contain rounded-lg shadow-sm"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-          <div className="hidden text-center text-gray-500">
-            <Icon name="image" size="large" color="#9CA3AF" className="mx-auto mb-2" />
-            <p>Image preview not available</p>
+          <div className="relative w-full h-96 flex items-center justify-center">
+            <img
+              src={imageUrl}
+              alt={fileName || 'Preview'}
+              className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+              onError={(e) => {
+                const img = e.currentTarget;
+                console.error('Error loading image:', imageUrl);
+                img.style.display = 'none';
+                const fallback = img.nextElementSibling as HTMLElement;
+                if (fallback) {
+                  fallback.classList.remove('hidden');
+                  fallback.classList.add('flex', 'flex-col', 'items-center', 'justify-center', 'w-full', 'h-full');
+                }
+              }}
+              onLoad={() => {
+                console.log('Image loaded successfully:', imageUrl);
+              }}
+            />
+            <div className="hidden absolute inset-0 flex-col items-center justify-center text-center text-gray-500 bg-white p-4 rounded-lg">
+              <Icon name="image" size="large" className="text-gray-400 mb-2" />
+              <p className="text-lg font-medium">Image preview not available</p>
+              <p className="text-sm mt-1">The image could not be loaded.</p>
+              <div className="mt-4 space-x-2">
+                <button
+                  onClick={() => window.open(imageUrl, '_blank')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                >
+                  Open in New Tab
+                </button>
+                <button
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = imageUrl;
+                    link.download = fileName || 'download';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors text-sm ml-2"
+                >
+                  Download
+                </button>
+              </div>
+              <p className="text-xs mt-4 text-gray-400">URL: {imageUrl}</p>
+            </div>
           </div>
         </div>
       );
@@ -168,26 +299,53 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     }
 
     if (fileType.includes('pdf')) {
+      // Construct the proper PDF URL
+      const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+      const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+      const directPdfUrl = filePath.startsWith('http') 
+        ? filePath 
+        : `${API_BASE}/file/${userId}/${folderId}/${fileId}`;
+      
+      // Use Google Docs viewer for PDF preview
+      const pdfUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(directPdfUrl)}&embedded=true`;
+      
       return (
-        <div className="bg-gray-50 rounded-lg p-4">
-          <iframe
-            src={filePath}
-            className="w-full h-96 rounded-lg border"
-            title={fileName}
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.nextElementSibling?.classList.remove('hidden');
-            }}
-          />
-          <div className="hidden text-center text-gray-500 py-8">
-            <Icon name="file" size="large" color="#9CA3AF" className="mx-auto mb-2" />
-            <p>PDF preview not available</p>
-            <button
-              onClick={() => window.open(filePath, '_blank')}
-              className="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
-            >
-              Open in New Tab
-            </button>
+        <div className="bg-gray-50 rounded-lg p-4 h-full">
+          <div className="relative w-full h-full min-h-[500px]">
+            <iframe
+              src={pdfUrl}
+              className="w-full h-full rounded-lg border"
+              title={`PDF Viewer - ${fileName}`}
+              onError={(e) => {
+                const iframe = e.currentTarget;
+                iframe.style.display = 'none';
+                const fallback = iframe.nextElementSibling as HTMLElement;
+                if (fallback) {
+                  fallback.classList.remove('hidden');
+                  fallback.classList.add('flex', 'flex-col', 'items-center', 'justify-center', 'h-full', 'p-8');
+                }
+              }}
+            />
+            <div className="hidden absolute inset-0 flex-col items-center justify-center text-center bg-white p-8 rounded-lg">
+              <Icon name="document" size="large" className="text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">PDF Preview Unavailable</h3>
+              <p className="text-gray-500 mb-6">We couldn't load the PDF preview. You can still download the file.</p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => window.open(filePath, '_blank')}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                >
+                  Open in New Tab
+                </button>
+                <a
+                  href={filePath}
+                  download={fileName}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-50 transition-colors"
+                >
+                  Download
+                </a>
+              </div>
+            </div>
           </div>
         </div>
       );
@@ -235,11 +393,14 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-stretch md:items-center justify-center">
+      {/* Semi-transparent overlay */}
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose}></div>
+      {/* Modal content - no blur here */}
+      <div className="relative z-10 bg-white w-full shadow-2xl md:max-w-5xl h-full md:h-auto md:max-h-[95vh] overflow-hidden flex flex-col md:m-4 md:rounded-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
-          <div className="flex items-center space-x-3">
+        <div className="sticky top-0 z-10 flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 border-b border-gray-200 bg-white">
+          <div className="flex items-center space-x-3 mb-3 md:mb-0">
             <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
               <Icon name="file" size="medium" color="#0e3293" />
             </div>
@@ -252,12 +413,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
               </Typography>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          
+          <div className="flex items-center justify-between w-full md:w-auto">
             {/* Tab Navigation */}
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <div className="flex bg-gray-100 rounded-lg p-1 flex-1 md:flex-none mr-2">
               <button
                 onClick={() => setActiveTab('preview')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
+                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                   activeTab === 'preview'
                     ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -267,7 +429,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
               </button>
               <button
                 onClick={() => setActiveTab('details')}
-                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${
+                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
                   activeTab === 'details'
                     ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
@@ -279,6 +441,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
             <button
               onClick={onClose}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+              aria-label="Close"
             >
               <Icon name="close" size="medium" color="#6b7280" />
             </button>
@@ -286,40 +449,40 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overscroll-contain">
           {loading ? (
-            <div className="flex flex-col items-center justify-center py-24">
+            <div className="flex flex-col items-center justify-center h-full py-12 md:py-24">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
               <Typography variant="body1" color="secondary">
                 Loading file...
               </Typography>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center py-24">
+            <div className="flex flex-col items-center justify-center h-full py-12 md:py-24">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
                 <Icon name="alert" size="large" color="#dc2626" />
               </div>
               <Typography variant="h6" className="text-gray-900 mb-2">
                 Error Loading File
               </Typography>
-              <Typography variant="body1" color="secondary" className="text-center mb-4">
+              <Typography variant="body1" color="secondary" className="text-center mb-4 px-4">
                 {error}
               </Typography>
               <button
                 onClick={fetchFileDetails}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
               >
                 Try Again
               </button>
             </div>
           ) : fileDetails ? (
-            <div className="p-6">
+            <div className={`${activeTab === 'preview' ? 'p-0' : 'p-4 md:p-6'}`}>
               {activeTab === 'preview' ? (
-                <div>
+                <div className="h-[calc(100vh-8rem)] md:h-auto">
                   {canPreview(fileDetails.fileType) ? (
-                    renderPreview()
+                    <div className="h-full">{renderPreview()}</div>
                   ) : (
-                    <div className="bg-gray-50 rounded-lg p-12 text-center">
+                    <div className="flex items-center justify-center h-full bg-gray-50 p-4 md:p-12 text-center">
                       <Icon name="file" size="large" color="#9CA3AF" className="mx-auto mb-4" />
                       <Typography variant="h6" className="text-gray-700 mb-2">
                         Preview not supported
@@ -394,10 +557,10 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                             Uploaded
                           </Typography>
                           <Typography variant="body1" className="text-gray-900">
-                            {formatDate(fileDetails.uploadedAt)}
+                            {fileDetails.uploadedAt ? formatDate(fileDetails.uploadedAt) : 'N/A'}
                           </Typography>
                         </div>
-                        {fileDetails.updatedAt && (
+                        {fileDetails.updatedAt && fileDetails.updatedAt !== fileDetails.uploadedAt && (
                           <div>
                             <Typography variant="body2" color="secondary" className="font-medium">
                               Last Modified

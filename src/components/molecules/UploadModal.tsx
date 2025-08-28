@@ -95,11 +95,14 @@ const UploadModal: React.FC<UploadModalProps> = ({
           ));
         }, 200);
 
+        const formData = new FormData();
+        formData.append('file', uploadFile.file);
+        
         const result = await uploadFileToFolder(userId, folderId, uploadFile.file);
 
         clearInterval(progressInterval);
 
-        if (result.success) {
+        if (result) {
           setUploadFiles(prev => prev.map((f, idx) => 
             idx === i ? { ...f, status: 'success' as const, progress: 100 } : f
           ));

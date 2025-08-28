@@ -102,80 +102,83 @@ export default function FileScreen() {
   )
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-[#0e3293] text-white p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <button onClick={() => router.back()}>
-            <Icon name="arrow-left" size="medium" color="white" />
-          </button>
-          <div>
-            <Typography variant="h6" className="font-bold text-white">
-              {folderName || folderInfo?.folderName || "Files"}
-            </Typography>
-            <Typography variant="caption" className="text-blue-200">
-              {filteredFiles.length} file(s)
-              {(() => {
-                const sharedCount = folderInfo?.folderAccess ? folderInfo.folderAccess.length : 0;
-                return sharedCount > 0 ? ` • Shared with ${sharedCount}` : '';
-              })()}
-            </Typography>
+    <div className="min-h-screen bg-gray-50 relative flex">
+      {/* Main Content */}
+      <div className="flex-1">
+        {/* Header */}
+        <div className="bg-[#0e3293] text-white p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.back()}>
+              <Icon name="arrow-left" size="medium" color="white" />
+            </button>
+            <div>
+              <Typography variant="h6" className="font-bold text-white">
+                {folderName || folderInfo?.folderName || "Files"}
+              </Typography>
+              <Typography variant="caption" className="text-blue-200">
+                {filteredFiles.length} file(s)
+                {(() => {
+                  const sharedCount = folderInfo?.folderAccess ? folderInfo.folderAccess.length : 0;
+                  return sharedCount > 0 ? ` • Shared with ${sharedCount}` : '';
+                })()}
+              </Typography>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Search */}
-      <div className="p-4">
-        <SearchBar
-          value={searchText}
-          onChange={setSearchText}
-          placeholder="Search files"
+        {/* Search */}
+        <div className="p-4">
+          <SearchBar
+            value={searchText}
+            onChange={setSearchText}
+            placeholder="Search files"
+          />
+        </div>
+
+        {/* File List */}
+        <div className="px-4 pb-24">
+          {loading ? (
+            <div className="flex flex-col items-center justify-center py-24 text-gray-500">
+              <Icon name="loader" size="large" color="#9CA3AF" className="animate-spin mb-2" />
+              <Typography variant="body1" color="secondary">
+                Loading files...
+              </Typography>
+            </div>
+          ) : filteredFiles.length === 0 ? (
+            <div className="text-center py-24 text-gray-400">
+              <Icon name="file" size="large" color="#D1D5DB" className="mx-auto mb-3" />
+              <Typography variant="body1" color="secondary">
+                No files found
+              </Typography>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredFiles.map((file: any) => (
+                <FileItem
+                  key={file._id}
+                  file={file}
+                  onDelete={handleDelete}
+                  onDownload={handleDownload}
+                  onView={handleView}
+                  onFileClick={handleFileClick}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Floating Button */}
+        <FloatingButton onClick={() => setModalOpen(true)} />
+
+        {/* Upload Modal */}
+        <UploadModal
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          folderId={folderId}
+          userId={userId}
+          onUploadSuccess={fetchFiles}
         />
       </div>
-
-      {/* File List */}
-      <div className="px-4 pb-24">
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 text-gray-500">
-            <Icon name="loader" size="large" color="#9CA3AF" className="animate-spin mb-2" />
-            <Typography variant="body1" color="secondary">
-              Loading files...
-            </Typography>
-          </div>
-        ) : filteredFiles.length === 0 ? (
-          <div className="text-center py-24 text-gray-400">
-            <Icon name="file" size="large" color="#D1D5DB" className="mx-auto mb-3" />
-            <Typography variant="body1" color="secondary">
-              No files found
-            </Typography>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredFiles.map((file: any) => (
-              <FileItem
-                key={file._id}
-                file={file}
-                onDelete={handleDelete}
-                onDownload={handleDownload}
-                onView={handleView}
-                onFileClick={handleFileClick}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Floating Button */}
-      <FloatingButton onClick={() => setModalOpen(true)} />
-
-      {/* Upload Modal */}
-      <UploadModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        folderId={folderId}
-        userId={userId}
-        onUploadSuccess={fetchFiles}
-      />
 
       {/* File Preview Modal */}
       <FilePreviewModal

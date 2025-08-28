@@ -135,9 +135,12 @@ export interface FileDetails {
   fileName: string;
   fileType: string;
   filePath: string;
+  thumbnailUrl?: string;
   fileSize?: number;
-  uploadedAt: string;
+  createdAt?: string;
   updatedAt?: string;
+  createdBy?: string;
+  uploadedAt?: string;
   fileAccess?: string[];
   metadata?: {
     dimensions?: { width: number; height: number };
@@ -149,6 +152,7 @@ export interface FileDetails {
   description?: string;
   uploadedBy?: string;
   folderId?: string;
+  size?: number; // Alias for fileSize for backward compatibility
 }
 
 // Family member types for familyMemberService
@@ -1024,49 +1028,69 @@ export const folderService = {
     }
   },
 
-  // Get file details by folder ID and file ID
+  // Get file details by user ID, folder ID and file ID
   getFileDetails: async (folderId: string, fileId: string): Promise<FileDetails | null> => {
-    console.log('🌐 API Call: Fetching file details for folder ID:', folderId, 'and file ID:', fileId);
-    console.log('🔗 API URL:', `${API_BASE_URL}/File/${folderId}/${fileId}`);
+    // Get the current user ID from localStorage
+    const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+    
+    if (!userId) {
+      console.error('❌ User ID not found. User must be logged in to access file details.');
+      return null;
+    }
 
+    console.log('🌐 API Call: Fetching file details for user:', userId, 'folder:', folderId, 'file:', fileId);
+    console.log('🔗 API URL:', `${API_BASE_URL}/file/${userId}/${folderId}/${fileId}`);
+    
     try {
-      const response = await apiClient.get<FileDetails | { file: FileDetails } | { data: FileDetails }>(`/File/${folderId}/${fileId}`);
-      console.log('✅ API Response received for file details:', response.status);
-      console.log('📦 Raw response data:', response.data);
-      console.log('📊 Response data type:', typeof response.data);
+      // Define response type that could be in different formats
+      type FileDetailsResponse = 
+        | FileDetails
+        | { data: FileDetails }
+        | { file: FileDetails };
 
-      // Handle different response formats
+      const response = await apiClient.get<FileDetailsResponse>(`/file/${userId}/${folderId}/${fileId}`);
       let fileDetails: FileDetails | null = null;
-
-      if (response.data && typeof response.data === 'object') {
-        if ('file' in response.data) {
-          console.log('🔄 Processing response with "file" property');
-          const fileResponse = response.data as { file: FileDetails };
-          fileDetails = fileResponse.file;
-        } else if ('data' in response.data) {
-          console.log('🔄 Processing wrapped response format with "data" property');
-          const wrappedResponse = response.data as { data: FileDetails };
-          fileDetails = wrappedResponse.data;
-        } else if ('_id' in response.data) {
-          console.log('🔄 Processing direct file object response');
-          fileDetails = response.data as FileDetails;
-        } else {
-          console.log('⚠️ Unexpected response format:', response.data);
+      
+      // Handle different response formats
+      if (response.data) {
+        const responseData = response.data;
+        
+        // Case 1: Direct file details object
+        if ('_id' in responseData && 'fileName' in responseData) {
+          fileDetails = responseData as FileDetails;
+        } 
+        // Case 2: Nested data property
+        else if ('data' in responseData && responseData.data) {
+          fileDetails = responseData.data as FileDetails;
+        }
+        // Case 3: Nested file property (for backward compatibility)
+        else if ('file' in responseData && responseData.file) {
+          fileDetails = responseData.file as FileDetails;
         }
       }
-
-      if (fileDetails) {
-        console.log('📋 File details processed:', {
-          id: fileDetails._id,
-          name: fileDetails.fileName,
-          type: fileDetails.fileType,
-          path: fileDetails.filePath,
-          size: fileDetails.fileSize,
-          uploadedAt: fileDetails.uploadedAt,
-          metadata: fileDetails.metadata,
-          tags: fileDetails.tags,
-          description: fileDetails.description
-        });
+      
+      if (!fileDetails) {
+        console.warn('⚠️ Unexpected response format from file details API');
+        return null;
+      }
+      
+      // Log processed details
+      console.log('📋 File details processed:', {
+        id: fileDetails._id,
+        name: fileDetails.fileName,
+        type: fileDetails.fileType,
+        path: fileDetails.filePath,
+        size: fileDetails.fileSize,
+        uploadedAt: fileDetails.uploadedAt,
+        metadata: fileDetails.metadata,
+        tags: fileDetails.tags,
+        description: fileDetails.description
+      });
+      
+      // Ensure required fields are present
+      if (!fileDetails._id || !fileDetails.fileName || !fileDetails.fileType || !fileDetails.filePath) {
+        console.error('❌ Incomplete file details received from API');
+        return null;
       }
 
       return fileDetails;
@@ -1080,9 +1104,9 @@ export const folderService = {
           message: error.message
         });
       } else if (error instanceof Error) {
-        console.error('❌ API Error fetching file details:', error.message);
+        console.error('❌ Error fetching file details:', error.message);
       } else {
-        console.error('❌ API Error fetching file details:', error);
+        console.error('❌ An unknown error occurred while fetching file details');
       }
 
       // Return null on error
@@ -1176,6 +1200,26 @@ export const folderService = {
     } catch (error: unknown) {
       console.error('❌ API Error updating folder:', error);
       return null;
+    }
+  },
+
+  // Add file to folder
+  addFileToFolder: async (userId: string, folderId: string, fileData: FormData) => {
+    try {
+      console.log('🌐 API Call: Adding file to folder for user ID:', userId, 'and folder ID:', folderId);
+      console.log('🔗 API URL:', `${API_BASE_URL}/file/${userId}/${folderId}`);
+      
+      const response = await apiClient.post(`/file/${userId}/${folderId}`, fileData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      
+      console.log('✅ File uploaded successfully:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error("❌ Error adding file to folder:", error.response?.data || error.message);
+      throw error;
     }
   }
 };

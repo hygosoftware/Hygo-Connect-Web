@@ -430,7 +430,9 @@ const RecordsPage: React.FC = () => {
         }
       `}</style>
 
-      <div className="min-h-screen bg-white">
+      <div className={`min-h-screen bg-white transition-all duration-300 ${
+        isAddFolderOpen || isEditFolderOpen || isDeleteConfirmOpen ? 'backdrop-blur-md filter blur-sm' : ''
+      }`}>
         {/* Universal Header */}
         <UniversalHeader
           title="My Medical Records"

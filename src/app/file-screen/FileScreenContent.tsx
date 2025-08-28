@@ -19,7 +19,8 @@ export default function FileScreenContent() {
   const [filePreviewModal, setFilePreviewModal] = useState({
     isOpen: false,
     fileId: '',
-    fileName: ''
+    fileName: '',
+    fileType: ''
   })
 
   const fetchFiles = useCallback(async () => {
@@ -49,11 +50,17 @@ export default function FileScreenContent() {
   }
 
   const handleFileClick = (fileId: string, fileName: string) => {
-    setFilePreviewModal({ isOpen: true, fileId, fileName })
+    const file = files.find(f => f._id === fileId)
+    setFilePreviewModal({ 
+      isOpen: true, 
+      fileId, 
+      fileName, 
+      fileType: file?.fileType || '' 
+    })
   }
 
   const closeFilePreviewModal = () => {
-    setFilePreviewModal({ isOpen: false, fileId: '', fileName: '' })
+    setFilePreviewModal({ isOpen: false, fileId: '', fileName: '', fileType: '' })
   }
 
   const filteredFiles = files.filter((file) =>
@@ -130,6 +137,7 @@ export default function FileScreenContent() {
         folderId={folderId}
         fileId={filePreviewModal.fileId}
         fileName={filePreviewModal.fileName}
+        fileType={filePreviewModal.fileType}
       />
     </div>
   )

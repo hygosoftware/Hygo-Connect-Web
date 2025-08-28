@@ -30,10 +30,12 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
     isOpen: boolean;
     fileId: string;
     fileName: string;
+    fileType?: string;
   }>({
     isOpen: false,
     fileId: '',
-    fileName: ''
+    fileName: '',
+    fileType: ''
   });
 
   useEffect(() => {
@@ -88,11 +90,13 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
   };
 
   const handleFileClick = (fileId: string, fileName: string) => {
+    const file = files.find(f => f._id === fileId);
     // Open file preview modal (includes both preview and details tabs)
     setFilePreviewModal({
       isOpen: true,
       fileId,
-      fileName
+      fileName,
+      fileType: file?.fileType
     });
   };
 
@@ -137,9 +141,10 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
     });
 
   return (
-    <div className={`min-h-screen bg-gray-50 ${className}`}>
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-6">
+    <div className="min-h-screen bg-gray-50">
+      <div>
+        {/* Header */}
+        <div className="bg-white border-b border-gray-200 px-6 py-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <BackButton onClick={() => router.back()} />
@@ -293,15 +298,17 @@ const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' })
         onUploadSuccess={fetchFiles}
       />
 
-      {/* File Preview Modal */}
       <FilePreviewModal
+        key={`${filePreviewModal.fileId}-${filePreviewModal.isOpen}`}
         isOpen={filePreviewModal.isOpen}
         onClose={closeFilePreviewModal}
         folderId={folderId}
         fileId={filePreviewModal.fileId}
         fileName={filePreviewModal.fileName}
+        fileType={filePreviewModal.fileType}
       />
     </div>
+  </div>
   );
 };
 

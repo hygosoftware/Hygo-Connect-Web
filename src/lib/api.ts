@@ -1,3 +1,5 @@
+import { folderService } from '../services/apiServices';
+
 // File Management API Functions
 
 export interface FileItem {
@@ -115,12 +117,43 @@ export const deleteFileFromFolder = async (
 
 // Upload file to folder
 export const uploadFileToFolder = async (
-  _userId: string,
-  _folderId: string,
-  _file: File
+  userId: string,
+  folderId: string,
+  file: File
 ): Promise<{ success: boolean; message: string; file?: FileItem }> => {
-  // Not implemented: Replace with actual API call
-  throw new Error('uploadFileToFolder is not implemented. Connect to real API.');
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    const response = await folderService.addFileToFolder(userId, folderId, formData);
+    
+    if (response && response.success) {
+      return {
+        success: true,
+        message: 'File uploaded successfully',
+        file: {
+          _id: response.data._id,
+          fileName: response.data.fileName,
+          fileSize: response.data.fileSize || 0,
+          fileType: response.data.fileType,
+          uploadDate: response.data.uploadedAt || new Date().toISOString(),
+          fileUrl: response.data.filePath,
+          thumbnailUrl: response.data.fileType.startsWith('image/') ? response.data.filePath : undefined
+        }
+      };
+    } else {
+      return {
+        success: false,
+        message: response?.message || 'Failed to upload file'
+      };
+    }
+  } catch (error) {
+    console.error('Error uploading file:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to upload file'
+    };
+  }
 };
 
 // Get file download URL

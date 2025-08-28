@@ -31,6 +31,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     return !noNavRoutes.includes(pathname);
   };
 
+  // Check if bottom navigation should be hidden
+  const shouldHideBottomNav = () => {
+    return pathname === '/booking' || pathname.startsWith('/booking/');
+  };
+
   // Navigation items with proper routing
   const navigationItems: NavigationItemLocal[] = [
     {
@@ -90,7 +95,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         </div>
 
         {/* Bottom Navigation - Mobile Only */}
-        <BottomNavigation userId={user?._id || 'demo-user'} />
+        {!shouldHideBottomNav() && <BottomNavigation userId={user?._id || 'demo-user'} />}
       </div>
     </HeaderProvider>
   );

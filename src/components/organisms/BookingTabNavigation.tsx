@@ -61,25 +61,23 @@ const BookingTabNavigation: React.FC<BookingTabNavigationProps> = ({
     );
   }
 
-  // Mobile version - bottom tab bar
+  // Mobile version - top tab bar
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 safe-area-pb z-40">
-      <div className="grid grid-cols-2">
+    <div className="bg-white border-b border-gray-200 md:hidden">
+      <div className="grid grid-cols-2 max-w-md mx-auto">
         <button
           onClick={() => onFlowChange('doctor')}
-          className={`flex flex-col items-center justify-center py-3 px-4 transition-colors duration-200 ${
+          className={`relative flex flex-col items-center justify-center py-3 px-4 transition-colors duration-200 ${
             activeFlow === 'doctor'
-              ? 'text-[#0e3293] bg-[#0e3293]/5'
+              ? 'text-[#0e3293]'
               : 'text-gray-500'
           }`}
         >
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
-            activeFlow === 'doctor' ? 'bg-[#0e3293]' : 'bg-gray-100'
-          }`}>
+          <div className="flex items-center justify-center mb-1">
             <Icon 
               name="doctor" 
               size="small" 
-              color={activeFlow === 'doctor' ? 'white' : '#6b7280'} 
+              color={activeFlow === 'doctor' ? '#0e3293' : '#6b7280'} 
             />
           </div>
           <Typography 
@@ -90,23 +88,24 @@ const BookingTabNavigation: React.FC<BookingTabNavigationProps> = ({
           >
             By Doctor
           </Typography>
+          {activeFlow === 'doctor' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0e3293]"></div>
+          )}
         </button>
         
         <button
           onClick={() => onFlowChange('clinic')}
-          className={`flex flex-col items-center justify-center py-3 px-4 transition-colors duration-200 ${
+          className={`relative flex flex-col items-center justify-center py-3 px-4 transition-colors duration-200 ${
             activeFlow === 'clinic'
-              ? 'text-[#0e3293] bg-[#0e3293]/5'
+              ? 'text-[#0e3293]'
               : 'text-gray-500'
           }`}
         >
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-1 ${
-            activeFlow === 'clinic' ? 'bg-[#0e3293]' : 'bg-gray-100'
-          }`}>
+          <div className="flex items-center justify-center mb-1">
             <Icon 
               name="location" 
               size="small" 
-              color={activeFlow === 'clinic' ? 'white' : '#6b7280'} 
+              color={activeFlow === 'clinic' ? '#0e3293' : '#6b7280'} 
             />
           </div>
           <Typography 
@@ -117,6 +116,9 @@ const BookingTabNavigation: React.FC<BookingTabNavigationProps> = ({
           >
             By Clinic
           </Typography>
+          {activeFlow === 'clinic' && (
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0e3293]"></div>
+          )}
         </button>
       </div>
     </div>

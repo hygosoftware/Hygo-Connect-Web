@@ -91,15 +91,16 @@ const FileItem: React.FC<FileItemProps> = ({
 
   return (
     <div 
-      className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 ${className}`}
+      className={`bg-white rounded-xl md:p-4 p-3 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200 group ${className}`}
+      onClick={() => setShowActions(!showActions)}
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseLeave={() => !showActions && setShowActions(false)}
     >
       <div className="flex items-start space-x-3">
         {/* File Icon/Thumbnail */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 relative">
           {isImage && file.thumbnailUrl ? (
-            <div className="w-12 h-12 rounded-lg overflow-hidden bg-gray-100">
+            <div className="w-14 h-14 md:w-12 md:h-12 rounded-xl overflow-hidden bg-gray-100 ring-2 ring-offset-2 ring-blue-500/10 group-hover:ring-blue-500/20 transition-all">
               <img
                 src={file.thumbnailUrl}
                 alt={file.fileName}
@@ -115,19 +116,22 @@ const FileItem: React.FC<FileItemProps> = ({
               </div>
             </div>
           ) : (
-            <div className="w-12 h-12 rounded-lg bg-white flex items-center justify-center">
+            <div className="w-14 h-14 md:w-12 md:h-12 rounded-xl bg-blue-50 flex items-center justify-center ring-2 ring-offset-2 ring-blue-500/10 group-hover:ring-blue-500/20 transition-all">
               <Icon name={fileIcon} size="medium" color="#3B82F6" />
             </div>
           )}
+          <div className="absolute -top-1 -right-1 bg-blue-100 rounded-full px-2 py-0.5 text-xs font-medium text-blue-700 hidden group-hover:block">
+            {getFileTypeDisplay(file.fileType)}
+          </div>
         </div>
 
         {/* File Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between space-x-2">
             <div className="flex-1 min-w-0">
               <Typography
                 variant="subtitle2"
-                className="text-gray-900 truncate cursor-pointer hover:text-blue-600 transition-colors"
+                className="text-gray-900 truncate cursor-pointer font-medium hover:text-blue-600 transition-colors text-base md:text-sm"
                 onClick={handleFileClick}
               >
                 {file.fileName}
@@ -184,36 +188,61 @@ const FileItem: React.FC<FileItemProps> = ({
       {/* Mobile Actions - Show on tap */}
       <div className="md:hidden">
         {showActions && (
-          <div className="flex items-center justify-end space-x-2 mt-3 pt-3 border-t border-gray-100">
-            <button
-              onClick={handleView}
-              className="flex items-center space-x-1 px-3 py-2 text-sm text-blue-600 hover:bg-white rounded-lg transition-colors duration-200"
-            >
-              <Icon name="eye" size="small" />
-              <span>View</span>
-            </button>
-            <button
-              onClick={handleDownload}
-              className="flex items-center space-x-1 px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-200"
-            >
-              <Icon name="download" size="small" />
-              <span>Download</span>
-            </button>
-            <button
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="flex items-center space-x-1 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200 disabled:opacity-50"
-            >
-              {isDeleting ? (
-                <Icon name="loader" size="small" className="animate-spin" />
-              ) : (
-                <Icon name="trash" size="small" />
-              )}
-              <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
-            </button>
+          <div className="animate-slideUp">
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100">
+              <div className="flex-1">
+                <div className="text-xs text-gray-500 mb-1">File Details</div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">{formatFileSize(file.fileSize)}</span>
+                  <span className="text-gray-400">•</span>
+                  <span className="text-sm text-gray-600">{formatDate(file.uploadDate)}</span>
+                </div>
+              </div>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleView(); }}
+                  className="w-10 h-10 flex items-center justify-center text-blue-600 hover:bg-blue-50 rounded-xl transition-all active:scale-95"
+                >
+                  <Icon name="eye" size="small" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDownload(); }}
+                  className="w-10 h-10 flex items-center justify-center text-green-600 hover:bg-green-50 rounded-xl transition-all active:scale-95"
+                >
+                  <Icon name="download" size="small" />
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+                  disabled={isDeleting}
+                  className="w-10 h-10 flex items-center justify-center text-red-600 hover:bg-red-50 rounded-xl transition-all active:scale-95 disabled:opacity-50"
+                >
+                  {isDeleting ? (
+                    <Icon name="loader" size="small" className="animate-spin" />
+                  ) : (
+                    <Icon name="trash" size="small" />
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>
+
+      <style jsx>{`
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideUp {
+          animation: slideUp 0.2s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 };
