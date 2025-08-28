@@ -148,22 +148,22 @@ const HomePage: React.FC = () => {
       title: 'Records',
       onPress: () => router.push('/records'),
     },
-    {
-      iconName: 'robot',
-      title: 'Health Bot',
-      onPress: () => handleFeaturePress('Health Bot'),
-      hasNotification: true,
-    },
+    // {
+    //   iconName: 'robot',
+    //   title: 'Health Bot',
+    //   onPress: () => handleFeaturePress('Health Bot'),
+    //   hasNotification: true,
+    // },
     {
       iconName: 'appointment',
       title: 'Appointment',
       onPress: () => handleFeaturePress('Appointment'),
     },
-    {
-      iconName: 'laboratory',
-      title: 'Laboratory',
-      onPress: () => handleFeaturePress('Laboratory'),
-    },
+    // {
+    //   iconName: 'laboratory',
+    //   title: 'Laboratory',
+    //   onPress: () => handleFeaturePress('Laboratory'),
+    // },
   ];
 
   // Banner data for health promotions

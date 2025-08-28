@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Typography, Icon } from './';
 
 interface AppointmentCardProps {
@@ -54,7 +55,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   reason,
   paymentStatus,
 }) => {
-  const [showQRModal, setShowQRModal] = useState(false);
+  const router = useRouter();
 
   const formatDate = (dateString: string) => {
     try {
@@ -147,20 +148,6 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           icon: <Icon name="x" size="small" color="white" />
         };
       default:
-        const getClinicDisplayName = () => {
-          if (clinic?.clinicName) {
-            const city = clinic.clinicAddress?.city;
-            return city ? `${clinic.clinicName}, ${city}` : clinic.clinicName;
-          }
-          if (clinicName && clinicCity) {
-            return `${clinicName}, ${clinicCity}`;
-          }
-          if (clinicName) {
-            return clinicName;
-          }
-          return 'HYGO Clinic';
-        };
-
         // Default upcoming: show Scheduled unless payment pending
         if (paymentStatus === 'pending') {
           return {
@@ -210,226 +197,88 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   // Modern variant: entirely different flat layout
   if (variant === 'modern') {
     return (
-      <>
-        <div className={`${rootCardClasses} group`} onClick={onPress}>
-          <div className="p-4 sm:p-5">
-            {/* Top row: Doctor + Status badge */}
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                {doctor?.avatar ? (
-                  <img src={doctor.avatar} alt={doctorName} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0 border border-gray-200" />
-                ) : (
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-blue-100 text-blue-900 flex-shrink-0">
-                    <Icon name="doctor" size="small" color="#0E3293" />
-                  </div>
-                )}
-                <div className="min-w-0">
-                  <Typography variant="body1" className="font-semibold text-gray-900 truncate text-sm sm:text-base">{doctorName}</Typography>
-                  <Typography variant="body2" className="text-gray-600 truncate text-xs sm:text-sm">{specialty}</Typography>
+      <div className={`${rootCardClasses} group`} onClick={onPress}>
+        <div className="p-4 sm:p-5">
+          {/* Top row: Doctor + Status badge */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              {doctor?.avatar ? (
+                <img src={doctor.avatar} alt={doctorName} className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0 border border-gray-200" />
+              ) : (
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-blue-100 text-blue-900 flex-shrink-0">
+                  <Icon name="doctor" size="small" color="#0E3293" />
                 </div>
-              </div>
-              {/* Status badge */}
-              <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${
-                paymentStatus === 'pending' ? 'bg-blue-100 text-blue-700' :
-                status === 'ongoing' ? 'bg-green-100 text-green-700' :
-                status === 'completed' ? 'bg-gray-100 text-gray-700' :
-                status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
-              }`}>
-                <span className="inline-block">
-                  {paymentStatus === 'pending' ? <Icon name="wallet" size="small" color="#1d4ed8" /> :
-                   status === 'ongoing' ? <Icon name="clock" size="small" color="#16a34a" /> :
-                   status === 'completed' ? <Icon name="check" size="small" color="#6b7280" /> :
-                   status === 'cancelled' ? <Icon name="x" size="small" color="#dc2626" /> : <Icon name="calendar" size="small" color="#1d4ed8" />}
-                </span>
-                <span className="font-medium">{paymentStatus === 'pending' ? 'Pending Payment' : (status === 'upcoming' ? 'Scheduled' : status?.charAt(0).toUpperCase() + status?.slice(1))}</span>
-              </div>
-            </div>
-
-            {/* Divider */}
-            <div className="h-px bg-gray-100 my-4" />
-
-            {/* Details rows like the screenshot */}
-            <div className="space-y-3">
-              <div className="flex items-center">
-                <Icon name="calendar" size="small" color="#0E3293" />
-                <Typography variant="body2" className="ml-2 text-gray-800 text-sm">{formattedDate}</Typography>
-                <span className="mx-3 text-gray-300">|</span>
-                <Icon name="clock" size="small" color="#0E3293" />
-                <Typography variant="body2" className="ml-2 text-gray-800 text-sm">{formattedTime}</Typography>
-              </div>
-              <div className="flex items-center">
-                <Icon name="location" size="small" color="#0E3293" />
-                <Typography variant="body2" className="ml-2 text-gray-800 text-sm">{mode === 'VideoCall' ? 'Video Appointment' : 'InPerson Appointment'}</Typography>
-              </div>
-              <div className="flex items-center">
-                <div className="w-full bg-blue-50 text-blue-900 rounded-lg px-3 py-2 flex items-center">
-                  <Icon name="hospital" size="small" color="#0E3293" />
-                  <Typography variant="body2" className="ml-2 text-blue-900 text-sm">Clinic</Typography>
-                </div>
-              </div>
-              <div className="flex items-center">
-                <Icon name="document" size="small" color="#6b7280" />
-                <Typography variant="body2" className="ml-2 text-gray-600 text-sm">Reason: {reason || 'General Consultation'}</Typography>
-              </div>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <button
-                className="bg-blue-800 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors"
-                onClick={(e) => { e.stopPropagation(); onPress(); }}
-              >
-                View Details
-              </button>
-              {mode === 'InPerson' && qrCode && (
-                <button
-                  className="bg-gray-100 hover:bg-gray-200 rounded-lg w-10 h-10 flex items-center justify-center transition-colors flex-shrink-0"
-                  onClick={(e) => { e.stopPropagation(); setShowQRModal(true); }}
-                >
-                  <Icon name="qr-code" size="small" color="#0E3293" />
-                </button>
               )}
-              {mode === 'VideoCall' && (
-                <button
-                  className="bg-green-100 hover:bg-green-200 rounded-lg w-10 h-10 flex items-center justify-center transition-colors flex-shrink-0"
-                  onClick={(e) => { e.stopPropagation(); console.log('Join video call'); }}
-                >
-                  <Icon name="video" size="small" color="#059669" />
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* QR Code Modal */}
-        {qrCode && showQRModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-4 sm:p-6 mx-4 max-w-sm w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex flex-col items-center">
-                {qrCode.startsWith('data:image') ? (
-                  <img src={qrCode} alt="QR Code" className="w-48 h-48 sm:w-64 sm:h-64 mb-4 object-contain" />
-                ) : (
-                  <div className="w-48 h-48 sm:w-64 sm:h-64 mb-4 flex items-center justify-center bg-gray-100 rounded-lg">
-                    <Icon name="qr-code" size="large" color="#0E3293" />
-                  </div>
-                )}
-                <Typography variant="h6" className="font-semibold mb-4 text-gray-800 text-center text-lg sm:text-xl">Check-in QR Code</Typography>
-                <Typography variant="body2" className="text-gray-600 mb-6 text-center text-sm sm:text-base">Show this QR code at the reception desk</Typography>
-                <button
-                  className="text-white font-semibold py-2.5 px-6 sm:py-3 sm:px-8 rounded-lg transition-colors duration-200 text-sm sm:text-base hover:opacity-90"
-                  style={{ backgroundColor: '#0E3293' }}
-                  onClick={() => setShowQRModal(false)}
-                >
-                  Close
-                </button>
+              <div className="min-w-0">
+                <Typography variant="body1" className="font-semibold text-gray-900 truncate text-sm sm:text-base">{doctorName}</Typography>
+                <Typography variant="body2" className="text-gray-600 truncate text-xs sm:text-sm">{specialty}</Typography>
               </div>
             </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
-  return (
-    <>
-      <div
-        className={`${rootCardClasses} ${className}`}
-        onClick={onPress}
-      >
-        {/* Header with gradient */}
-        <div className={`${modeInfo.gradient} flex justify-between items-center ${variant === 'compact' ? 'p-2' : 'p-2 sm:p-3'}`}>
-          <div className="flex items-center flex-1 min-w-0">
-            {modeInfo.icon}
-            <Typography variant="body2" className={`text-white font-semibold ml-2 truncate ${variant === 'compact' ? 'text-xs' : 'text-sm sm:text-base'}`}>
-              {modeInfo.label}
-            </Typography>
-          </div>
-
-          <div className={`${statusInfo.color} px-2 py-1 rounded-full flex items-center ${variant === 'compact' ? 'max-w-[60%]' : 'max-w-[50%]'} ml-2`}>
-            {statusInfo.icon}
-            <Typography variant="caption" className={`${statusInfo.textColor} font-medium ml-1 truncate ${variant === 'compact' ? 'text-[10px]' : 'text-xs'}`}>
-              {statusInfo.label.length > 12 ? statusInfo.label.substring(0, 10) + '...' : statusInfo.label}
-            </Typography>
-          </div>
-        </div>
-
-        {/* Main content */}
-        <div className={`${variant === 'compact' ? 'p-3' : 'p-3 sm:p-4'}`}>
-          {/* Doctor info */}
-          <div className="flex items-center mb-3">
-            <div className="relative flex-shrink-0">
-              <div className={`${variant === 'compact' ? 'w-9 h-9' : 'w-10 h-10 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center`} style={{ backgroundColor: '#0E3293' }}>
-                <Icon name="doctor" size="small" color="white" />
-              </div>
-              <div className={`absolute bg-green-400 rounded-full border-2 border-white -bottom-0.5 -right-0.5 ${variant === 'compact' ? 'w-2.5 h-2.5' : 'w-3 h-3 sm:w-4 sm:h-4'}`} />
-            </div>
-
-            <div className="ml-3 flex-1 min-w-0">
-              <Typography variant="body1" className={`font-bold text-gray-900 mb-0.5 truncate ${variant === 'compact' ? 'text-sm' : 'text-sm sm:text-base'}`}>
-                {doctorName}
-              </Typography>
-              <Typography variant="body2" className={`text-gray-600 truncate ${variant === 'compact' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                {specialty}
-              </Typography>
+            {/* Status badge */}
+            <div className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${
+              paymentStatus === 'pending' ? 'bg-blue-100 text-blue-700' :
+              status === 'ongoing' ? 'bg-green-100 text-green-700' :
+              status === 'completed' ? 'bg-gray-100 text-gray-700' :
+              status === 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+            }`}>
+              <span className="inline-block">
+                {paymentStatus === 'pending' ? <Icon name="wallet" size="small" color="#1d4ed8" /> :
+                 status === 'ongoing' ? <Icon name="clock" size="small" color="#16a34a" /> :
+                 status === 'completed' ? <Icon name="check" size="small" color="#6b7280" /> :
+                 status === 'cancelled' ? <Icon name="x" size="small" color="#dc2626" /> : <Icon name="calendar" size="small" color="#1d4ed8" />}
+              </span>
+              <span className="font-medium">{paymentStatus === 'pending' ? 'Pending Payment' : (status === 'upcoming' ? 'Scheduled' : status?.charAt(0).toUpperCase() + status?.slice(1))}</span>
             </div>
           </div>
 
-          {/* Appointment details */}
-          <div className={`bg-gray-50 rounded-xl mb-3 ${variant === 'compact' ? 'p-2' : 'p-2 sm:p-3'}`}>
-            <div className="flex items-center mb-2">
-              <div className={`${variant === 'compact' ? 'w-6 h-6' : 'w-6 h-6 sm:w-8 sm:h-8'} bg-blue-100 rounded-full flex items-center justify-center mr-2 ${variant === 'compact' ? '' : 'sm:mr-3'} flex-shrink-0`}>
-                <Icon name="calendar" size="small" color="#0E3293" />
-              </div>
-              <Typography variant="body2" className={`text-gray-800 font-semibold truncate ${variant === 'compact' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                {formattedDate}
-              </Typography>
-            </div>
+          {/* Divider */}
+          <div className="h-px bg-gray-100 my-4" />
 
+          {/* Details rows like the screenshot */}
+          <div className="space-y-3">
             <div className="flex items-center">
-              <div className={`${variant === 'compact' ? 'w-6 h-6' : 'w-6 h-6 sm:w-8 sm:h-8'} bg-blue-100 rounded-full flex items-center justify-center mr-2 ${variant === 'compact' ? '' : 'sm:mr-3'} flex-shrink-0`}>
-                <Icon name="clock" size="small" color="#0E3293" />
+              <Icon name="calendar" size="small" color="#0E3293" />
+              <Typography variant="body2" className="ml-2 text-gray-800 text-sm">{formattedDate}</Typography>
+              <span className="mx-3 text-gray-300">|</span>
+              <Icon name="clock" size="small" color="#0E3293" />
+              <Typography variant="body2" className="ml-2 text-gray-800 text-sm">{formattedTime}</Typography>
+            </div>
+            <div className="flex items-center">
+              <Icon name="location" size="small" color="#0E3293" />
+              <Typography variant="body2" className="ml-2 text-gray-800 text-sm">{mode === 'VideoCall' ? 'Video Appointment' : 'InPerson Appointment'}</Typography>
+            </div>
+            <div className="flex items-center">
+              <div className="w-full bg-blue-50 text-blue-900 rounded-lg px-3 py-2 flex items-center">
+                <Icon name="hospital" size="small" color="#0E3293" />
+                <Typography variant="body2" className="ml-2 text-blue-900 text-sm">Clinic</Typography>
               </div>
-              <Typography variant="body2" className={`text-gray-800 font-semibold truncate ${variant === 'compact' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
-                {formattedTime}
-              </Typography>
+            </div>
+            <div className="flex items-center">
+              <Icon name="document" size="small" color="#6b7280" />
+              <Typography variant="body2" className="ml-2 text-gray-600 text-sm">Reason: {reason || 'General Consultation'}</Typography>
             </div>
           </div>
 
-          {/* Action buttons */}
-          <div className="flex justify-between items-center gap-2">
+          {/* Actions */}
+          <div className="mt-4 flex items-center justify-end gap-2">
             <button
-              className={`text-white font-semibold ${variant === 'compact' ? 'py-2 px-3 text-xs' : 'py-2 sm:py-2.5 px-3 sm:px-4 text-xs sm:text-sm'} rounded-lg flex-1 transition-colors duration-200 hover:opacity-90`}
-              style={{ backgroundColor: '#0E3293' }}
-              onClick={(e) => {
-                e.stopPropagation();
-                onPress();
-              }}
+              className="bg-blue-800 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-sm transition-colors"
+              onClick={(e) => { e.stopPropagation(); onPress(); }}
             >
               View Details
             </button>
-
-            {/* Show QR code button only for in-person appointments */}
-            {mode === 'InPerson' && qrCode && (
+            {mode === 'InPerson' && qrCode && appointmentId && (
               <button
-                className={`bg-gray-100 hover:bg-gray-200 rounded-lg ${variant === 'compact' ? 'w-9 h-9' : 'w-10 h-10 sm:w-12 sm:h-12'} flex items-center justify-center transition-colors duration-200 flex-shrink-0`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowQRModal(true);
-                }}
+                className="bg-gray-100 hover:bg-gray-200 rounded-lg w-10 h-10 flex items-center justify-center transition-colors flex-shrink-0"
+                onClick={(e) => { e.stopPropagation(); router.push(`/qr-code/${appointmentId}`); }}
               >
                 <Icon name="qr-code" size="small" color="#0E3293" />
               </button>
             )}
-
-            {/* Show video call link button for video appointments */}
             {mode === 'VideoCall' && (
               <button
-                className="bg-green-100 hover:bg-green-200 rounded-lg w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center transition-colors duration-200 flex-shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  console.log('Join video call');
-                  // Here you would typically open the video call link
-                }}
+                className="bg-green-100 hover:bg-green-200 rounded-lg w-10 h-10 flex items-center justify-center transition-colors flex-shrink-0"
+                onClick={(e) => { e.stopPropagation(); console.log('Join video call'); }}
               >
                 <Icon name="video" size="small" color="#059669" />
               </button>
@@ -437,41 +286,115 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
           </div>
         </div>
       </div>
+    );
+  }
 
-      {/* QR Code Modal */}
-      {qrCode && showQRModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-4 sm:p-6 mx-4 max-w-sm w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex flex-col items-center">
-              {qrCode.startsWith('data:image') ? (
-                <img
-                  src={qrCode}
-                  alt="QR Code"
-                  className="w-48 h-48 sm:w-64 sm:h-64 mb-4 object-contain"
-                />
-              ) : (
-                <div className="w-48 h-48 sm:w-64 sm:h-64 mb-4 flex items-center justify-center bg-gray-100 rounded-lg">
-                  <Icon name="qr-code" size="large" color="#0E3293" />
-                </div>
-              )}
-              <Typography variant="h6" className="font-semibold mb-4 text-gray-800 text-center text-lg sm:text-xl">
-                Check-in QR Code
-              </Typography>
-              <Typography variant="body2" className="text-gray-600 mb-6 text-center text-sm sm:text-base">
-                Show this QR code at the reception desk
-              </Typography>
-              <button
-                className="text-white font-semibold py-2.5 px-6 sm:py-3 sm:px-8 rounded-lg transition-colors duration-200 text-sm sm:text-base hover:opacity-90"
-                style={{ backgroundColor: '#0E3293' }}
-                onClick={() => setShowQRModal(false)}
-              >
-                Close
-              </button>
+  return (
+    <div
+      className={`${rootCardClasses} ${className}`}
+      onClick={onPress}
+    >
+      {/* Header with gradient */}
+      <div className={`${modeInfo.gradient} flex justify-between items-center ${variant === 'compact' ? 'p-2' : 'p-2 sm:p-3'}`}>
+        <div className="flex items-center flex-1 min-w-0">
+          {modeInfo.icon}
+          <Typography variant="body2" className={`text-white font-semibold ml-2 truncate ${variant === 'compact' ? 'text-xs' : 'text-sm sm:text-base'}`}>
+            {modeInfo.label}
+          </Typography>
+        </div>
+
+        <div className={`${statusInfo.color} px-2 py-1 rounded-full flex items-center ${variant === 'compact' ? 'max-w-[60%]' : 'max-w-[50%]'} ml-2`}>
+          {statusInfo.icon}
+          <Typography variant="caption" className={`${statusInfo.textColor} font-medium ml-1 truncate ${variant === 'compact' ? 'text-[10px]' : 'text-xs'}`}>
+            {statusInfo.label.length > 12 ? statusInfo.label.substring(0, 10) + '...' : statusInfo.label}
+          </Typography>
+        </div>
+      </div>
+
+      {/* Main content */}
+      <div className={`${variant === 'compact' ? 'p-3' : 'p-3 sm:p-4'}`}>
+        {/* Doctor info */}
+        <div className="flex items-center mb-3">
+          <div className="relative flex-shrink-0">
+            <div className={`${variant === 'compact' ? 'w-9 h-9' : 'w-10 h-10 sm:w-12 sm:h-12'} rounded-full flex items-center justify-center`} style={{ backgroundColor: '#0E3293' }}>
+              <Icon name="doctor" size="small" color="white" />
             </div>
+            <div className={`absolute bg-green-400 rounded-full border-2 border-white -bottom-0.5 -right-0.5 ${variant === 'compact' ? 'w-2.5 h-2.5' : 'w-3 h-3 sm:w-4 sm:h-4'}`} />
+          </div>
+
+          <div className="ml-3 flex-1 min-w-0">
+            <Typography variant="body1" className={`font-bold text-gray-900 mb-0.5 truncate ${variant === 'compact' ? 'text-sm' : 'text-sm sm:text-base'}`}>
+              {doctorName}
+            </Typography>
+            <Typography variant="body2" className={`text-gray-600 truncate ${variant === 'compact' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
+              {specialty}
+            </Typography>
           </div>
         </div>
-      )}
-    </>
+
+        {/* Appointment details */}
+        <div className={`bg-gray-50 rounded-xl mb-3 ${variant === 'compact' ? 'p-2' : 'p-2 sm:p-3'}`}>
+          <div className="flex items-center mb-2">
+            <div className={`${variant === 'compact' ? 'w-6 h-6' : 'w-6 h-6 sm:w-8 sm:h-8'} bg-blue-100 rounded-full flex items-center justify-center mr-2 ${variant === 'compact' ? '' : 'sm:mr-3'} flex-shrink-0`}>
+              <Icon name="calendar" size="small" color="#0E3293" />
+            </div>
+            <Typography variant="body2" className={`text-gray-800 font-semibold truncate ${variant === 'compact' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
+              {formattedDate}
+            </Typography>
+          </div>
+
+          <div className="flex items-center">
+            <div className={`${variant === 'compact' ? 'w-6 h-6' : 'w-6 h-6 sm:w-8 sm:h-8'} bg-blue-100 rounded-full flex items-center justify-center mr-2 ${variant === 'compact' ? '' : 'sm:mr-3'} flex-shrink-0`}>
+              <Icon name="clock" size="small" color="#0E3293" />
+            </div>
+            <Typography variant="body2" className={`text-gray-800 font-semibold truncate ${variant === 'compact' ? 'text-xs' : 'text-xs sm:text-sm'}`}>
+              {formattedTime}
+            </Typography>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex justify-between items-center gap-2">
+          <button
+            className={`text-white font-semibold ${variant === 'compact' ? 'py-2 px-3 text-xs' : 'py-2 sm:py-2.5 px-3 sm:px-4 text-xs sm:text-sm'} rounded-lg flex-1 transition-colors duration-200 hover:opacity-90`}
+            style={{ backgroundColor: '#0E3293' }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onPress();
+            }}
+          >
+            View Details
+          </button>
+
+          {/* Show QR code button only for in-person appointments */}
+          {mode === 'InPerson' && qrCode && appointmentId && (
+            <button
+              className={`bg-gray-100 hover:bg-gray-200 rounded-lg ${variant === 'compact' ? 'w-9 h-9' : 'w-10 h-10 sm:w-12 sm:h-12'} flex items-center justify-center transition-colors duration-200 flex-shrink-0`}
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/qr-code/${appointmentId}`);
+              }}
+            >
+              <Icon name="qr-code" size="small" color="#0E3293" />
+            </button>
+          )}
+
+          {/* Show video call link button for video appointments */}
+          {mode === 'VideoCall' && (
+            <button
+              className="bg-green-100 hover:bg-green-200 rounded-lg w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center transition-colors duration-200 flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                console.log('Join video call');
+                // Here you would typically open the video call link
+              }}
+            >
+              <Icon name="video" size="small" color="#059669" />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 

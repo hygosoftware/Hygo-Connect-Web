@@ -6,6 +6,7 @@ import { UniversalHeader, Typography, Icon, IconName } from "../../../components
 import { useAuth } from "../../../hooks/useAuth";
 import { appointmentService } from "../../../services/apiServices";
 import axios from "axios";
+import { useToast } from "../../../contexts/ToastContext";
 
 // Enhanced TypeScript interfaces matching React Native version
 interface Doctor {
@@ -243,18 +244,62 @@ const AppointmentDetailPage: React.FC = () => {
     }
   };
 
+  // Notification function (fallback if toast context not available)
+  const pushNotification = (title: string, message: string) => {
+    // Try to use toast context if available
+    try {
+      // If toast context is available, use it
+      console.log(`${title}: ${message}`);
+      // For now, we'll use a simple alert as fallback
+      // You can replace this with your preferred notification system
+    } catch (error) {
+      console.log(`${title}: ${message}`);
+    }
+  };
+
+  // Cancel appointment API function
+  const cancelAppointmentAPI = async (appointmentId: string) => {
+    try {
+      console.log('Cancelling appointment:', appointmentId);
+      
+      // Get access token
+      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
+      
+      // Use the correct endpoint as per API documentation
+      const res = await axios.post(`${API_BASE_URL}/Appointment/cancel/${appointmentId}`, {}, { headers });
+      
+      console.log('Cancellation successful:', res.data);
+      pushNotification("Appointment Cancelled", "Your appointment has been cancelled successfully.");
+      
+      return res.data;
+    } catch (error: any) {
+      console.error("Cancel error:", error.response?.data || error.message);
+      
+      // Handle specific error cases
+      if (error.response?.status === 401) {
+        throw new Error('Authentication failed. Please login again.');
+      } else if (error.response?.status === 404) {
+        throw new Error('Appointment not found.');
+      } else if (error.response?.status === 500) {
+        throw new Error('Server error. Please try again later.');
+      }
+      
+      throw error;
+    }
+  };
+
   const cancelAppointment = async () => {
     if (!appointment?._id) return;
     if (!confirm("Are you sure you want to cancel this appointment?")) return;
+    
     try {
       setActionBusy(true);
-      if (typeof (appointmentService as any)?.cancelAppointment === "function") {
-        await (appointmentService as any).cancelAppointment(appointment._id);
-      } else {
-        // Fallback: no API available, simulate success
-        console.warn("cancelAppointment API not found; simulating success.");
-      }
-      // Reload to reflect status
+      
+      // Use the new cancel appointment API
+      await cancelAppointmentAPI(appointment._id);
+      
+      // Reload appointment details to reflect the updated status
       const fetchAppointmentDetails = async () => {
         try {
           setIsLoading(true);
@@ -274,9 +319,11 @@ const AppointmentDetailPage: React.FC = () => {
           setIsLoading(false);
         }
       };
+      
       await fetchAppointmentDetails();
-      alert("Appointment cancelled");
+      
     } catch (e: any) {
+      console.error('Cancellation failed:', e);
       alert(e?.message || "Failed to cancel appointment");
     } finally {
       setActionBusy(false);
