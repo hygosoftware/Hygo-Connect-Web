@@ -58,11 +58,12 @@ const FileDetailsModal: React.FC<FileDetailsModalProps> = ({
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
   };
 
-  const formatDate = (dateString: string): string => {
+  const formatDate = (dateString?: string): string => {
+    if (!dateString) return 'Date not available';
     try {
       return new Date(dateString).toLocaleString();
     } catch {
-      return dateString;
+      return 'Invalid date';
     }
   };
 
