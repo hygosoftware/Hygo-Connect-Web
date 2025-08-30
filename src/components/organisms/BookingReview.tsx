@@ -1,13 +1,112 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Typography, Icon, Button } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { useToast } from '../../contexts/ToastContext';
+import { userSubscriptionService, appointmentService } from '../../services/apiServices';
+import { TokenManager } from '../../services/auth';
+
+interface SubscriptionDetails {
+  _id: string;
+  status: string;
+  isActive: boolean;
+  remainingBookings: number;
+  remainingFreeAppointments: number;
+}
 
 const BookingReview: React.FC = () => {
   const { state, setStep } = useBooking();
   const { showToast } = useToast();
+  const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const checkSubscription = useCallback(async () => {
+    try {
+      const { userId } = TokenManager.getTokens();
+      if (!userId) return;
+      const sub = await userSubscriptionService.getActiveSubscription(userId);
+      if (sub) setSubscription(sub as unknown as SubscriptionDetails);
+    } catch (error) {
+      // Non-blocking UI hint
+      console.error('Failed to fetch subscription:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    void checkSubscription();
+  }, [checkSubscription]);
+
+  // Determine if the subscription grants a free appointment (same logic as BookingPayment)
+  const hasFreeAppointment = useCallback((): boolean => {
+    let raw = subscription as any;
+    if (!raw) return false;
+
+    const unwrap = (val: any): any => {
+      if (!val || typeof val !== 'object') return val;
+      if ('data' in val && (val as any).data != null) return (val as any).data;
+      if ('subscription' in val && (val as any).subscription != null) return (val as any).subscription;
+      if ('subscriptions' in val && (val as any).subscriptions != null) return (val as any).subscriptions;
+      return val;
+    };
+    raw = unwrap(unwrap(raw));
+
+    const isActiveValue = (val: any): boolean => {
+      if (val === true || val === 1) return true;
+      if (typeof val === 'string') {
+        const v = val.toLowerCase();
+        return v === 'true' || v === 'active' || v === 'yes' || v === 'enabled';
+      }
+      return false;
+    };
+
+    const getRemaining = (obj: any): number | undefined => {
+      if (!obj || typeof obj !== 'object') return undefined;
+      const candidates = [
+        'remainingFreeAppointments',
+        'remainingAppointments',
+        'remainingBookings',
+        'freeAppointmentsLeft',
+        'freeAppointmentsRemaining'
+      ];
+      for (const key of candidates) {
+        const v = (obj as any)[key];
+        if (typeof v === 'number') return v;
+        if (typeof v === 'string' && v.trim() !== '' && !isNaN(Number(v))) return Number(v);
+      }
+      return undefined;
+    };
+
+    const isActive = (obj: any): boolean => {
+      if (!obj || typeof obj !== 'object') return false;
+      const flags = ['isActive', 'status', 'is_active', 'active', 'subscriptionStatus'];
+      for (const f of flags) {
+        if (f in obj) return isActiveValue((obj as any)[f]);
+      }
+      return false;
+    };
+
+    const evaluate = (obj: any): boolean => {
+      if (!obj) return false;
+      const active = isActive(obj);
+      const rem = getRemaining(obj);
+      if (typeof rem === 'number') return active && rem > 0;
+      return active;
+    };
+
+    if (Array.isArray(raw)) {
+      const withRemaining = raw.find((s) => evaluate(s) && typeof getRemaining(s) === 'number');
+      if (withRemaining) return true;
+      return raw.some((s) => evaluate(s));
+    }
+
+    const result = evaluate(raw);
+    if (process && (process as any).env && (process as any).env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.debug('[BookingReview] subscription check', { raw, result });
+    }
+    return result;
+  }, [subscription]);
 
   const formatTime = (time: string) => {
     const [hours, minutes] = time.split(':');
@@ -39,6 +138,151 @@ const BookingReview: React.FC = () => {
 
     setStep('payment');
   };
+
+  // Convert 12-hour to 24-hour format
+  const to24Hour = (time12h: string): string => {
+    const m = time12h.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (m) {
+      let h = parseInt(m[1], 10);
+      const min = parseInt(m[2], 10);
+      const ampm = m[3].toUpperCase();
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    }
+    // Already 24-hour format
+    const m24 = time12h.match(/^(\d{1,2}):(\d{2})$/);
+    if (m24) {
+      const h = Math.min(23, Math.max(0, parseInt(m24[1], 10)));
+      const min = Math.min(59, Math.max(0, parseInt(m24[2], 10)));
+      return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+    }
+    return '';
+  };
+
+  // Normalize selected slot to { from, to }
+  const getTimeRange = useCallback((): { from: string; to: string } | null => {
+    const slot: any = state.selectedSlot as any;
+    if (!slot) return null;
+    
+    // Try direct startTime/endTime first
+    if (slot.startTime && slot.endTime) {
+      const from24 = to24Hour(slot.startTime);
+      const to24 = to24Hour(slot.endTime);
+      if (from24 && to24 && from24 !== to24) {
+        return { from: from24, to: to24 };
+      }
+    }
+    
+    // Try parsing from slot ID pattern: `${from}-${to}-${idx}`
+    if (slot.id) {
+      const idParts = slot.id.split('-');
+      if (idParts.length >= 2) {
+        const fromTime = idParts[0];
+        const toTime = idParts[1];
+        if (fromTime && toTime && fromTime !== toTime) {
+          const from24 = to24Hour(fromTime);
+          const to24 = to24Hour(toTime);
+          if (from24 && to24) {
+            return { from: from24, to: to24 };
+          }
+        }
+      }
+    }
+    
+    // Try parsing from time string with dash separator
+    const raw = String(slot.time || slot.label || slot.value || '');
+    if (raw) {
+      const parts = raw.split('-').map((s) => s.trim()).filter(Boolean);
+      if (parts.length >= 2) {
+        const from24 = to24Hour(parts[0]);
+        const to24 = to24Hour(parts[1]);
+        if (from24 && to24 && from24 !== to24) {
+          return { from: from24, to: to24 };
+        }
+      }
+      
+      // Fallback: create a 30-minute slot from the main time
+      const baseTime = to24Hour(raw);
+      if (baseTime) {
+        const [hours, minutes] = baseTime.split(':').map(Number);
+        const endTime = new Date();
+        endTime.setHours(hours, minutes + 30, 0, 0);
+        const endHours = endTime.getHours();
+        const endMinutes = endTime.getMinutes();
+        const toTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+        return { from: baseTime, to: toTime };
+      }
+    }
+    
+    return null;
+  }, [state.selectedSlot]);
+
+  const handleConfirmWithSubscription = useCallback(async () => {
+    try {
+      setIsProcessing(true);
+      if (!state.selectedDoctor || !state.selectedClinic || !state.selectedDate || !state.selectedSlot || !state.bookingDetails) {
+        showToast({ type: 'error', title: 'Missing Information', message: 'Please ensure all booking details are complete before confirming.' });
+        return;
+      }
+      const eligible = hasFreeAppointment();
+      if (!eligible) {
+        showToast({ type: 'warning', title: 'Subscription Not Applicable', message: 'Your subscription does not cover this appointment.' });
+        return;
+      }
+
+      const { userId } = TokenManager.getTokens();
+      if (!userId) {
+        showToast({ type: 'error', title: 'Authentication Required', message: 'Please sign in to proceed.' });
+        return;
+      }
+
+      const yyyy = state.selectedDate.getFullYear();
+      const mm = String(state.selectedDate.getMonth() + 1).padStart(2, '0');
+      const dd = String(state.selectedDate.getDate()).padStart(2, '0');
+      const appointmentDate = `${yyyy}-${mm}-${dd}`;
+
+      const timeRange = getTimeRange();
+      if (!timeRange) {
+        showToast({ type: 'error', title: 'Invalid Time', message: 'Could not parse selected time slot. Please reselect.' });
+        return;
+      }
+
+      const payload = {
+        user: String(userId),
+        doctor: String(state.selectedDoctor._id),
+        clinic: String(state.selectedClinic._id),
+        appointmentDate,
+        timeSlot: { from: timeRange.from, to: timeRange.to },
+        consultationFee: state.selectedDoctor.consultationFee || 0,
+        paymentMethod: 'Subscription',
+        payment: { amount: 0, isPaid: true, method: 'Subscription', status: 'paid' }
+      } as const;
+
+      const appointment = await appointmentService.bookAppointment(payload);
+
+      try {
+        await userSubscriptionService.useService({
+          userId,
+          service: 'appointment',
+          appointmentId: appointment?._id,
+          action: 'use',
+          count: 1,
+        });
+      } catch (e) {
+        console.warn('[BookingReview] Failed to record subscription usage', e);
+      }
+
+      showToast({ type: 'success', title: 'Appointment Confirmed', message: 'Your appointment has been confirmed using your subscription.' });
+      setStep('confirmation');
+    } catch (error) {
+      console.error('Confirm with subscription failed:', error);
+      const msg = (error as any)?.response?.data?.message || (error as Error)?.message || 'Failed to confirm booking';
+      showToast({ type: 'error', title: 'Booking Failed', message: msg });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [state, hasFreeAppointment, getTimeRange, showToast, setStep]);
 
   const handleEditDetails = () => {
     setStep('details');
@@ -363,44 +607,67 @@ const BookingReview: React.FC = () => {
             <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
               Payment Summary
             </Typography>
-            
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <Typography variant="body1" className="text-gray-600">
-                  Consultation Fee
-                </Typography>
-                <Typography variant="body1" className="text-gray-900 font-medium">
-                  ₹{state.selectedDoctor.consultationFee}
-                </Typography>
-              </div>
-              <div className="flex justify-between">
-                <Typography variant="body1" className="text-gray-600">
-                  Platform Fee
-                </Typography>
-                <Typography variant="body1" className="text-gray-900 font-medium">
-                  ₹50
-                </Typography>
-              </div>
-              <div className="border-t border-gray-200 pt-3">
-                <div className="flex justify-between">
-                  <Typography variant="h6" className="text-gray-900 font-semibold">
-                    Total Amount
-                  </Typography>
-                  <Typography variant="h6" className="text-[#0e3293] font-bold">
-                    ₹{state.selectedDoctor.consultationFee + 50}
-                  </Typography>
+            {(() => {
+              const base = state.selectedDoctor?.consultationFee || 0;
+              const eligible = hasFreeAppointment();
+              const total = eligible ? 0 : base;
+              return (
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <Typography variant="body1" className="text-gray-600">
+                      Consultation Fee
+                    </Typography>
+                    <Typography variant="body1" className="text-gray-900 font-medium">
+                      ₹{base}
+                    </Typography>
+                  </div>
+                  {eligible && (
+                    <div className="flex justify-between text-green-600">
+                      <Typography variant="body1">Subscription Discount</Typography>
+                      <Typography variant="body1">-₹{base}</Typography>
+                    </div>
+                  )}
+                  <div className="border-t border-gray-200 pt-3">
+                    <div className="flex justify-between">
+                      <Typography variant="h6" className="text-gray-900 font-semibold">
+                        Total Amount
+                      </Typography>
+                      <Typography variant="h6" className="text-[#0e3293] font-bold">
+                        {total === 0 ? 'FREE' : `₹${total}`}
+                      </Typography>
+                    </div>
+                  </div>
+                  {eligible && (
+                    <div className="text-xs text-green-600 text-center">
+                      {typeof (subscription as any)?.remainingFreeAppointments === 'number'
+                        ? `${(subscription as any).remainingFreeAppointments} free appointment(s) remaining in your subscription`
+                        : 'Your active subscription will cover this appointment for free'}
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
 
-          {/* Proceed Button */}
-          <Button
-            onClick={handleProceedToPayment}
-            className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
-          >
-            Proceed to Payment
-          </Button>
+          {/* Action Button (single) */}
+          {hasFreeAppointment() ? (
+            <Button
+              onClick={() => { void handleConfirmWithSubscription(); }}
+              disabled={isProcessing}
+              loading={isProcessing}
+              className="w-full bg-green-600 hover:bg-green-600/90 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
+            >
+              Confirm Booking (Free with Subscription)
+            </Button>
+          ) : (
+            <Button
+              onClick={handleProceedToPayment}
+              disabled={isProcessing}
+              className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
+            >
+              Proceed to Payment
+            </Button>
+          )}
         </div>
       </div>
     </div>

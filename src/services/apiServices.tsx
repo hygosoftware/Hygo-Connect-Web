@@ -2344,6 +2344,60 @@ export const userSubscriptionService = {
       return null;
     }
   },
+  // Prefer this new endpoint which explicitly reports availability
+  checkAvailability: async (
+    userId: string
+  ): Promise<{ hasActiveSubscription: boolean; subscriptionDetails?: any } | null> => {
+    try {
+      const res = await apiClient.get(`/UserSubscription/check-availability/${userId}`);
+      const data = res.data as any;
+      // Normalize a few common shapes
+      if (data && typeof data === 'object') {
+        if (typeof data.hasActiveSubscription === 'boolean') {
+          return {
+            hasActiveSubscription: data.hasActiveSubscription,
+            subscriptionDetails: data.subscriptionDetails || data.details || data.subscription,
+          };
+        }
+        if ('data' in data && typeof (data as any).data === 'object') {
+          const d = (data as any).data;
+          return {
+            hasActiveSubscription: Boolean(d.hasActiveSubscription),
+            subscriptionDetails: d.subscriptionDetails || d.details || d.subscription,
+          };
+        }
+      }
+      // Fallback
+      return {
+        hasActiveSubscription: false,
+      };
+    } catch (error: any) {
+      console.error('Error checking subscription availability:', error?.response?.data || error?.message || error);
+      return null;
+    }
+  },
+
+  // Record subscription service usage when an appointment is covered
+  useService: async (payload: any): Promise<any> => {
+    try {
+      console.log('🔄 Recording subscription usage:', payload);
+      const requestBody = {
+        userId: payload.userId,
+        service: payload.service || 'appointment',
+        appointmentId: payload.appointmentId,
+        action: payload.action || 'use',
+        count: payload.count || 1,
+        timestamp: new Date().toISOString()
+      };
+      const res = await apiClient.post(`/UserSubscription/use-service`, requestBody);
+      console.log('✅ Subscription usage recorded successfully:', res.data);
+      return res.data;
+    } catch (error: any) {
+      console.error('❌ Error recording subscription service usage:', error?.response?.data || error?.message || error);
+      // Don't throw error to prevent blocking appointment booking
+      return null;
+    }
+  },
 }
 
 export const subscriptionservices = {

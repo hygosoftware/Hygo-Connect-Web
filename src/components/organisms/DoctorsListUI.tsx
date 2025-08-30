@@ -374,9 +374,9 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="space-y-3">
             {displayDoctors.map((doctor, index) => (
-              <DoctorCard
+              <DoctorListItem
                 key={doctor._id}
                 doctor={doctor}
                 onPress={() => onDoctorPress(doctor)}
@@ -391,108 +391,106 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
   );
 };
 
-// Doctor Card Component
-interface DoctorCardProps {
+// Doctor List Item Component (Mobile-style list)
+interface DoctorListItemProps {
   doctor: Doctor;
   onPress: () => void;
   getFullImageUrl: (imagePath: string) => string;
   index: number;
 }
 
-const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onPress, getFullImageUrl, index }) => {
+const DoctorListItem: React.FC<DoctorListItemProps> = ({ doctor, onPress, getFullImageUrl, index }) => {
   const profileImageUrl = getFullImageUrl(doctor.profileImage);
 
   return (
     <div
-      className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 cursor-pointer group hover:-translate-y-1"
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 cursor-pointer group hover:bg-gray-50"
       onClick={onPress}
       style={{
-        animationDelay: `${index * 100}ms`,
-        animation: 'fadeInUp 0.6s ease-out forwards'
+        animationDelay: `${index * 50}ms`,
+        animation: 'fadeInUp 0.4s ease-out forwards'
       }}
     >
-      <div className="p-6">
-        {/* Doctor Image and Status */}
-        <div className="relative w-20 h-20 mx-auto mb-4">
-          <div className="w-full h-full rounded-full overflow-hidden border-3 border-gray-100 bg-gray-50">
-            <Image
-              src={profileImageUrl || "/placeholder.svg"}
-              alt={doctor.fullName}
-              width={80}
-              height={80}
-              className="w-full h-full object-cover"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = '/placeholder.svg?height=80&width=80';
-              }}
-            />
+      <div className="p-4">
+        <div className="flex items-center space-x-4">
+          {/* Doctor Image and Status */}
+          <div className="relative flex-shrink-0">
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-100 bg-gray-50">
+              <Image
+                src={profileImageUrl || "/placeholder.svg"}
+                alt={doctor.fullName}
+                width={64}
+                height={64}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = '/placeholder.svg?height=64&width=64';
+                }}
+              />
+            </div>
+            {/* {doctor.isAvailableNow && (
+              <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-1.5 py-0.5 rounded-full shadow-sm font-medium">
+                <div className="flex items-center">
+                  <div className="w-1.5 h-1.5 bg-white rounded-full mr-1 animate-pulse"></div>
+                  Now
+                </div>
+              </div>
+            )} */}
           </div>
-          {doctor.isAvailableNow && (
-            <div className="absolute -top-1 -right-1 bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow-lg font-medium">
-              <div className="flex items-center">
-                <div className="w-2 h-2 bg-white rounded-full mr-1 animate-pulse"></div>
-                Now
+
+          {/* Doctor Info */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-lg text-gray-900 group-hover:text-[#0E3293] transition-colors truncate">
+                  {doctor.fullName}
+                </h3>
+                
+                {/* Specialization */}
+                <p className="text-sm text-gray-600 mt-0.5 truncate">
+                  {doctor.specializations?.[0] || 'General consultant'}
+                </p>
+                
+                {/* Clinic Info */}
+                {doctor.clinic && doctor.clinic.length > 0 && (
+                  <div className="flex items-center mt-1 text-xs text-gray-500">
+                    <Building2 className="w-3 h-3 mr-1 flex-shrink-0" />
+                    <span className="truncate">{doctor.clinic[0].clinicName}</span>
+                  </div>
+                )}
+                
+                {/* Experience and Rating */}
+                <div className="flex items-center mt-2 space-x-4 text-xs text-gray-600">
+                  <div className="flex items-center">
+                    <Clock className="w-3 h-3 mr-1" />
+                    <span>{doctor.experience || 0} years exp.</span>
+                  </div>
+                  <div className="flex items-center">
+                    <Star className="w-3 h-3 mr-1 text-yellow-500 fill-current" />
+                    <span>{doctor.ratings?.average || 0}</span>
+                    <span className="ml-1">({doctor.ratings?.count || 0})</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Right side - Availability and Price */}
+              <div className="flex flex-col items-end ml-4 flex-shrink-0">
+                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  doctor.isAvailableNow 
+                    ? 'bg-green-100 text-green-700' 
+                    : 'bg-gray-100 text-gray-600'
+                }`}>
+                  {doctor.isAvailableNow ? 'Available' : 'Busy'}
+                </div>
+                
+                <div className="text-right mt-2">
+                  <div className="text-lg font-bold text-[#0E3293]">
+                    ₹{doctor.consultationFee || 500}
+                  </div>
+                  <div className="text-xs text-gray-500">Consultation Fee</div>
+                </div>
               </div>
             </div>
-          )}
-        </div>
-
-        {/* Doctor Info */}
-        <div className="text-center">
-          <h3 className="font-bold text-lg text-gray-900 mb-2 group-hover:text-[#0E3293] transition-colors">
-            {doctor.fullName}
-          </h3>
-
-          {/* Specializations */}
-          <div className="flex justify-center flex-wrap gap-1 mb-3">
-            {doctor.specializations?.slice(0, 2).map((spec, idx) => (
-              <span
-                key={idx}
-                className="bg-[#0E3293]/10 text-[#0E3293] text-xs px-3 py-1 rounded-full font-medium"
-              >
-                {spec}
-              </span>
-            ))}
-            {doctor.specializations && doctor.specializations.length > 2 && (
-              <span className="text-[#0E3293] text-xs font-medium">
-                +{doctor.specializations.length - 2} more
-              </span>
-            )}
-          </div>
-
-          {/* Clinic Info */}
-          {doctor.clinic && doctor.clinic.length > 0 && (
-            <div className="flex items-center justify-center mb-3 text-gray-600 text-sm">
-              <Building2 className="w-4 h-4 mr-1" />
-              <span className="truncate">
-                {doctor.clinic[0].clinicName}
-                {doctor.clinic.length > 1 && ` +${doctor.clinic.length - 1}`}
-              </span>
-            </div>
-          )}
-
-          {/* Stats */}
-          <div className="flex justify-between items-center text-sm text-gray-600 mb-4">
-            <div className="flex items-center">
-              <Clock className="w-4 h-4 mr-1" />
-              <span>{doctor.experience || 0} yrs</span>
-            </div>
-            <div className="flex items-center">
-              <Star className="w-4 h-4 mr-1 text-yellow-500 fill-current" />
-              <span>{doctor.ratings?.average || 0}</span>
-            </div>
-            <div className="flex items-center">
-              <Users className="w-4 h-4 mr-1" />
-              <span>{doctor.ratings?.count || 0}</span>
-            </div>
-          </div>
-
-          {/* Consultation Fee */}
-          <div className="bg-[#0E3293]/5 rounded-xl p-3">
-            <div className="text-[#0E3293] font-bold text-lg">
-              ₹{doctor.consultationFee || 0}
-            </div>
-            <div className="text-gray-600 text-sm">Consultation Fee</div>
           </div>
         </div>
       </div>

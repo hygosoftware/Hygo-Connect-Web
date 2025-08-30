@@ -176,9 +176,9 @@ const DoctorDetailsPage: React.FC = () => {
                   e.currentTarget.src = '/images/default-doctor.png';
                 }}
               />
-              {doctor.isAvailableNow && (
+              {/* {doctor.isAvailableNow && (
                 <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-400 rounded-full border-2 border-white"></div>
-              )}
+              )} */}
             </div>
 
             {/* Doctor Info */}

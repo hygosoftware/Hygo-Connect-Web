@@ -407,7 +407,8 @@ const HealthCardUpgradeContent: React.FC = () => {
               <Typography variant="body1" className="text-gray-600 mb-6">
                 Your subscription to {selectedPlan.subscriptionName} has been activated successfully.
               </Typography>
-              <div className="space-y-4">
+              {/* Add extra bottom spacing to avoid overlap with BottomNavigation on mobile */}
+              <div className="space-y-4 mb-28 md:mb-4">
                 <Button
                   onClick={() => router.push('/health-card')}
                   className="w-full py-3 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
@@ -416,7 +417,7 @@ const HealthCardUpgradeContent: React.FC = () => {
                 </Button>
                 <Button
                   onClick={() => router.push('/dashboard')}
-                  className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200"
+                  className="w-full py-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   Go to Dashboard
                 </Button>

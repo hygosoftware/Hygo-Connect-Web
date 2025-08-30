@@ -1,0 +1,440 @@
+'use client';
+
+import React, { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+import { Typography, Button } from '../atoms';
+import { useBooking } from '../../contexts/BookingContext';
+import { useToast } from '../../contexts/ToastContext';
+import { getRazorpayConfig } from '../../lib/razorpay';
+import { appointmentService, paymentService, userSubscriptionService } from '../../services/apiServices';
+import { TokenManager } from '../../services/auth';
+import { PaymentMethodCard } from '../molecules/PaymentMethodCard';
+import { CashConfirmationModal } from '../molecules/CashConfirmationModal';
+
+type PaymentMethod = 'card' | 'upi' | 'cash' | 'wallet';
+type PaymentStatus = 'idle' | 'processing' | 'success' | 'failed' | 'pending';
+
+interface SubscriptionDetails {
+  _id: string;
+  status: string;
+  isActive: boolean;
+  remainingBookings: number;
+  remainingFreeAppointments: number;
+}
+
+interface PaymentMethodType {
+  id: PaymentMethod;
+  name: string;
+  icon: string;
+  description?: string;
+}
+
+const PAYMENT_METHODS: PaymentMethodType[] = [
+  { id: 'card', name: 'Credit/Debit Card', icon: 'credit-card' },
+  { id: 'upi', name: 'UPI', icon: 'mobile' },
+  { id: 'wallet', name: 'Wallet', icon: 'wallet' },
+  { id: 'cash', name: 'Pay at Clinic', icon: 'dollar-sign' },
+];
+
+const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  }).format(amount);
+};
+
+const extractErrorMessage = (error: unknown): string => {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String(error.message);
+  }
+  return 'An unknown error occurred';
+};
+
+declare global {
+  interface Window {
+    Razorpay: new (options: Record<string, unknown>) => {
+      open: () => void;
+    };
+  }
+}
+
+const BookingPayment: React.FC = () => {
+  const router = useRouter();
+  const { state, setStep } = useBooking();
+  const { showToast } = useToast();
+  
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(null);
+  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('idle');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [subscription, setSubscription] = useState<SubscriptionDetails | null>(null);
+  const [showCashConfirm, setShowCashConfirm] = useState(false);
+  const [totalAmount, setTotalAmount] = useState(0);
+
+  // Check if booking information is complete
+  const isBookingComplete = Boolean(
+    state.selectedDoctor &&
+    state.selectedClinic &&
+    state.selectedDate &&
+    state.selectedSlot &&
+    state.bookingDetails?.patientName &&
+    state.bookingDetails?.patientPhone
+  );
+
+  // Check user's subscription status
+  const checkSubscription = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const { userId } = TokenManager.getTokens();
+      if (!userId) {
+        showToast({
+          type: 'error',
+          title: 'Authentication Required',
+          message: 'Please sign in to continue with booking.'
+        });
+        return;
+      }
+
+      const subscription = await userSubscriptionService.getActiveSubscription(userId);
+      if (subscription) {
+        setSubscription(subscription as unknown as SubscriptionDetails);
+      }
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'Failed to check subscription status.'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [showToast]);
+
+  // Calculate total amount based on subscription
+  useEffect(() => {
+    if (!state.selectedDoctor) return;
+    
+    const baseAmount = state.selectedDoctor.consultationFee || 0;
+    
+    if (subscription?.isActive && subscription.remainingFreeAppointments > 0) {
+      setTotalAmount(0);
+    } else {
+      setTotalAmount(baseAmount);
+    }
+  }, [state.selectedDoctor, subscription]);
+
+  // Load subscription on mount
+  useEffect(() => {
+    checkSubscription();
+  }, [checkSubscription]);
+
+  // Handle payment method selection
+  const handleSelectMethod = (method: PaymentMethod) => {
+    setSelectedMethod(method);
+  };
+
+  // Process online payment (card/UPI)
+  const processOnlinePayment = useCallback(async () => {
+    if (!selectedMethod || !window.Razorpay) {
+      showToast({
+        type: 'error',
+        title: 'Payment Error',
+        message: 'Payment service is not available. Please try again later.'
+      });
+      return;
+    }
+
+    try {
+      setIsProcessing(true);
+      
+      // Create appointment first
+      const appointmentData = {
+        doctorId: state.selectedDoctor?._id,
+        clinicId: state.selectedClinic?._id,
+        date: state.selectedDate,
+        timeSlot: state.selectedSlot,
+        patientDetails: state.bookingDetails,
+        paymentMethod: selectedMethod,
+        amount: totalAmount,
+        status: 'pending',
+        isPaid: false,
+        subscriptionUsed: subscription?.isActive && subscription.remainingFreeAppointments > 0,
+        subscriptionId: subscription?._id
+      };
+
+      const appointment = await appointmentService.bookAppointment(appointmentData);
+
+      // If subscription covers the payment, we're done
+      if (totalAmount === 0) {
+        setPaymentStatus('success');
+        showToast({
+          type: 'success',
+          title: 'Appointment Booked',
+          message: 'Your appointment has been confirmed using your subscription.'
+        });
+        setStep('confirmation');
+        return;
+      }
+
+      // Otherwise, create Razorpay order
+      const order = await paymentService.createOrder({
+        amount: totalAmount * 100, // Convert to paise
+        currency: 'INR',
+        receipt: `appt_${appointment._id}`,
+        notes: {
+          appointmentId: appointment._id,
+          doctorId: state.selectedDoctor?._id,
+          patientId: TokenManager.getTokens().userId
+        }
+      });
+
+      // Configure Razorpay options
+      const options = {
+        ...getRazorpayConfig(),
+        amount: order.amount,
+        currency: order.currency,
+        order_id: order.id,
+        name: 'HYGO Connect',
+        description: `Appointment with Dr. ${state.selectedDoctor?.name || ''}`,
+        prefill: {
+          name: state.bookingDetails?.patientName || '',
+          email: state.bookingDetails?.patientEmail || '',
+          contact: state.bookingDetails?.patientPhone || ''
+        },
+        handler: async (response: any) => {
+          try {
+            // Verify payment with backend
+            await paymentService.verifyPayment({
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              appointmentId: appointment._id
+            });
+
+            setPaymentStatus('success');
+            showToast({
+              type: 'success',
+              title: 'Payment Successful',
+              message: 'Your payment was successful and appointment has been confirmed.'
+            });
+            setStep('confirmation');
+          } catch (error) {
+            console.error('Payment verification failed:', error);
+            showToast({
+              type: 'error',
+              title: 'Payment Verification Failed',
+              message: 'Please contact support if amount was deducted.'
+            });
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            showToast({
+              type: 'warning',
+              title: 'Payment Cancelled',
+              message: 'You cancelled the payment. Please complete payment to confirm your appointment.'
+            });
+          }
+        }
+      };
+
+      // Open Razorpay checkout
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      console.error('Payment error:', error);
+      setPaymentStatus('failed');
+      showToast({
+        type: 'error',
+        title: 'Payment Failed',
+        message: extractErrorMessage(error)
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [selectedMethod, state, subscription, totalAmount, showToast, setStep]);
+
+  // Handle cash payment
+  const handleCashPayment = useCallback(async () => {
+    if (!selectedMethod) return;
+
+    try {
+      setIsProcessing(true);
+      
+      const appointmentData = {
+        doctorId: state.selectedDoctor?._id,
+        clinicId: state.selectedClinic?._id,
+        date: state.selectedDate,
+        timeSlot: state.selectedSlot,
+        patientDetails: state.bookingDetails,
+        paymentMethod: 'cash',
+        amount: totalAmount,
+        status: 'confirmed',
+        isPaid: false,
+        subscriptionUsed: subscription?.isActive && subscription.remainingFreeAppointments > 0,
+        subscriptionId: subscription?._id
+      };
+
+      await appointmentService.bookAppointment(appointmentData);
+      
+      setPaymentStatus('success');
+      showToast({
+        type: 'success',
+        title: 'Appointment Booked',
+        message: 'Your appointment has been confirmed. Please pay at the clinic.'
+      });
+      setStep('confirmation');
+    } catch (error) {
+      console.error('Error booking appointment:', error);
+      setPaymentStatus('failed');
+      showToast({
+        type: 'error',
+        title: 'Booking Failed',
+        message: extractErrorMessage(error)
+      });
+    } finally {
+      setIsProcessing(false);
+      setShowCashConfirm(false);
+    }
+  }, [selectedMethod, state, subscription, totalAmount, showToast, setStep]);
+
+  // Handle payment submission
+  const handleSubmit = useCallback(async () => {
+    if (!selectedMethod) {
+      showToast({
+        type: 'warning',
+        title: 'Select Payment Method',
+        message: 'Please select a payment method to continue.'
+      });
+      return;
+    }
+
+    if (selectedMethod === 'cash') {
+      setShowCashConfirm(true);
+      return;
+    }
+
+    await processOnlinePayment();
+  }, [selectedMethod, processOnlinePayment, showToast]);
+
+  // Render loading state
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Render error state if booking is incomplete
+  if (!isBookingComplete) {
+    return (
+      <div className="p-6 text-center">
+        <Typography variant="h5" className="text-red-600 mb-4">
+          Incomplete Booking Information
+        </Typography>
+        <Typography className="text-gray-600 mb-6">
+          Please complete all the booking details before proceeding to payment.
+        </Typography>
+        <Button
+          onClick={() => setStep('details')}
+          className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg"
+        >
+          Back to Booking Details
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-3xl mx-auto p-4">
+      <div className="bg-white rounded-xl shadow-sm p-6 mb-6">
+        <Typography variant="h5" className="font-semibold mb-6">
+          Select Payment Method
+        </Typography>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+          {PAYMENT_METHODS.map((method) => (
+            <PaymentMethodCard
+              key={method.id}
+              icon={method.icon}
+              title={method.name}
+              description={method.description}
+              isSelected={selectedMethod === method.id}
+              onClick={() => handleSelectMethod(method.id)}
+            />
+          ))}
+        </div>
+
+        {/* Order Summary */}
+        <div className="border-t border-gray-200 pt-6">
+          <Typography variant="h6" className="font-semibold mb-4">
+            Order Summary
+          </Typography>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <Typography className="text-gray-600">Consultation Fee</Typography>
+              <Typography>{formatCurrency(state.selectedDoctor?.consultationFee || 0)}</Typography>
+            </div>
+            
+            {subscription?.isActive && subscription.remainingFreeAppointments > 0 && (
+              <div className="flex justify-between text-green-600">
+                <Typography>Subscription Discount</Typography>
+                <Typography>-{formatCurrency(state.selectedDoctor?.consultationFee || 0)}</Typography>
+              </div>
+            )}
+            
+            <div className="border-t border-gray-200 my-2"></div>
+            
+            <div className="flex justify-between font-semibold text-lg">
+              <Typography>Total Amount</Typography>
+              <Typography className={totalAmount === 0 ? 'text-green-600' : ''}>
+                {totalAmount === 0 ? 'FREE' : formatCurrency(totalAmount)}
+              </Typography>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 sticky bottom-0 bg-white p-4 border-t border-gray-200">
+        <Button
+          onClick={() => setStep('details')}
+          variant="outline"
+          className="w-full sm:w-auto"
+          disabled={isProcessing}
+        >
+          Back
+        </Button>
+        
+        <Button
+          onClick={handleSubmit}
+          className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white"
+          disabled={!selectedMethod || isProcessing}
+          loading={isProcessing}
+        >
+          {isProcessing ? 'Processing...' : 'Confirm & Pay'}
+        </Button>
+      </div>
+
+      {/* Cash Payment Confirmation Modal */}
+      <CashConfirmationModal
+        isOpen={showCashConfirm}
+        onClose={() => setShowCashConfirm(false)}
+        onConfirm={handleCashPayment}
+        isLoading={isProcessing}
+        doctorName={state.selectedDoctor?.name || 'the doctor'}
+        clinicName={state.selectedClinic?.name || 'the clinic'}
+        amount={totalAmount}
+      />
+    </div>
+  );
+};
+
+export default BookingPayment;

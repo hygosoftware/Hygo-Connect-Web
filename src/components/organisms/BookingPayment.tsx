@@ -30,16 +30,11 @@ const BookingPayment: React.FC = () => {
     state.selectedSlot &&
     state.bookingDetails;
 
-  // Debug logging to identify missing fields
-  useEffect(() => {
-  }, [state, isBookingComplete]);
   const [selectedMethod, setSelectedMethod] = useState<'card' | 'cash' | null>(null);
   const [showCashConfirm, setShowCashConfirm] = useState(false);
   const [subscriptionChecked, setSubscriptionChecked] = useState(false);
   const baseTotalAmount = state.selectedDoctor ? state.selectedDoctor.consultationFee + 50 : 0;
   const [effectiveTotal, setEffectiveTotal] = useState<number>(baseTotalAmount);
-
-  // Removed desktop-specific checks as only Razorpay and Cash are supported
 
   // Load Razorpay script
   useEffect(() => {
@@ -68,7 +63,6 @@ const BookingPayment: React.FC = () => {
           ?? anyErr?.response?.data?.errors?.[0]?.message
           ?? anyErr?.message;
         if (typeof msg === 'string' && msg.trim()) return msg;
-        // Attempt to stringify known shapes
         const data = anyErr?.response?.data;
         if (data && typeof data === 'object') {
           const s = JSON.stringify(data);
@@ -106,12 +100,46 @@ const BookingPayment: React.FC = () => {
       }
     };
     void init();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseTotalAmount]);
 
   const handlePaymentMethodSelect = (method: 'card' | 'cash') => {
     setSelectedMethod(method);
     setPaymentMethod(method);
+  };
+
+  // FIXED: Better time parsing and validation
+  const parseTimeSlot = (slotId: string, slotTime: string) => {
+    // Extract from/to from slot id pattern: `${from}-${to}-${idx}`
+    const idParts = slotId.split('-');
+    
+    if (idParts.length >= 2) {
+      const fromTime = idParts[0];
+      const toTime = idParts[1];
+      
+      // Validate that we have different times
+      if (fromTime && toTime && fromTime !== toTime) {
+        const from24 = to24Hour(fromTime);
+        const to24 = to24Hour(toTime);
+        
+        if (from24.hhmm && to24.hhmm) {
+          return { from: from24.hhmm, to: to24.hhmm };
+        }
+      }
+    }
+    
+    // Fallback: create a 30-minute slot from the main slot time
+    const baseTime = to24Hour(slotTime);
+    if (baseTime.hhmm) {
+      const endTime = new Date();
+      endTime.setHours(baseTime.hours, baseTime.minutes + 30, 0, 0);
+      const endHours = endTime.getHours();
+      const endMinutes = endTime.getMinutes();
+      const toTime = `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+      
+      return { from: baseTime.hhmm, to: toTime };
+    }
+    
+    return null;
   };
 
   const handleRazorpayPayment = async (appointmentData?: Record<string, unknown>) => {
@@ -125,7 +153,6 @@ const BookingPayment: React.FC = () => {
     }
 
     try {
-      // Prefer server-provided Razorpay order if available
       const apptAny = (appointmentData || {}) as any;
       const appointmentId = String(
         apptAny?._id ||
@@ -136,10 +163,11 @@ const BookingPayment: React.FC = () => {
         apptAny?.data?.appointment?._id ||
         ''
       );
+      
       if (!appointmentId) {
         throw new Error('Missing related appointmentId for payment');
       }
-      // Detect existing order details from server response
+
       const serverOrderId = String(
         apptAny?.razorpayOrder?.orderId ||
         apptAny?.razorpayOrder?.id ||
@@ -149,11 +177,13 @@ const BookingPayment: React.FC = () => {
         apptAny?.data?.payment?.transactionId ||
         ''
       );
+      
       const serverAmountPaise = Number(
         apptAny?.razorpayOrder?.amount ??
         apptAny?.data?.razorpayOrder?.amount ??
         NaN
       );
+      
       const { userId, userInfo } = TokenManager.getTokens();
       const resolvedUserId = String(
         userId ||
@@ -162,6 +192,7 @@ const BookingPayment: React.FC = () => {
         (state as any)?.bookingDetails?.patient?._id ||
         ''
       );
+      
       if (!resolvedUserId) {
         showToast({
           type: 'error',
@@ -170,7 +201,7 @@ const BookingPayment: React.FC = () => {
         });
         throw new Error('Missing userId for payment order creation');
       }
-      // Use existing order if provided by server; otherwise create a new one
+
       let order: any = null;
       if (serverOrderId) {
         order = {
@@ -188,7 +219,7 @@ const BookingPayment: React.FC = () => {
           relatedType: 'appointment',
           relatedId: appointmentId,
           userId: resolvedUserId,
-          user: resolvedUserId, // legacy
+          user: resolvedUserId,
           notes: {
             appointment_id: appointmentId,
             doctor_id: String(state.selectedDoctor?._id ?? ''),
@@ -199,16 +230,16 @@ const BookingPayment: React.FC = () => {
           }
         });
       }
+      
       const config = getRazorpayConfig();
 
       const options = {
         ...config,
-        amount: Number(order?.amount) || effectiveTotal * 100, // Amount in paise
+        amount: Number(order?.amount) || effectiveTotal * 100,
         order_id: order.id,
         description: `Appointment with ${(state.selectedDoctor?.fullName || '').replace(/^Dr\.\s*/i, '')}`,
         handler: async function (response: import('../../lib/razorpay').RazorpayPaymentData) {
           try {
-            // Verify payment on backend
             const verification = await paymentService.verifyPayment({
               razorpay_order_id: response.razorpay_order_id,
               razorpay_payment_id: response.razorpay_payment_id,
@@ -225,7 +256,6 @@ const BookingPayment: React.FC = () => {
               v?.paymentStatus === 'paid' ||
               messageText.includes('verified') ||
               messageText.includes('success') ||
-              // If backend returned 200 with some payload, consider success unless explicitly falsey
               (v !== undefined && v !== null && v !== false)
             );
 
@@ -236,9 +266,6 @@ const BookingPayment: React.FC = () => {
                 title: 'Payment successful!',
                 message: 'Your appointment has been booked and payment confirmed.'
               });
-
-              // Store appointment data in context for confirmation page
-              // You might want to add this to your BookingContext
               setStep('confirmation');
             } else {
               throw new Error('Payment verification failed');
@@ -266,11 +293,6 @@ const BookingPayment: React.FC = () => {
               title: 'Payment cancelled',
               message: 'Payment was cancelled. Your appointment is reserved for 10 minutes. Please complete payment to confirm.'
             });
-
-            // Note: In production, you might want to:
-            // 1. Set a timer to cancel the appointment if payment isn't completed
-            // 2. Send the appointment ID to a cleanup service
-            // 3. Show a countdown timer to the user
           }
         }
       };
@@ -287,6 +309,38 @@ const BookingPayment: React.FC = () => {
     }
   };
 
+  // FIXED: Better time conversion and validation
+  const to24Hour = (time12h: string): { hhmm: string; hours: number; minutes: number } => {
+    // Handle AM/PM format
+    const m = time12h.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+    if (m) {
+      let h = parseInt(m[1], 10);
+      const min = parseInt(m[2], 10);
+      const ampm = m[3].toUpperCase();
+      if (ampm === 'PM' && h !== 12) h += 12;
+      if (ampm === 'AM' && h === 12) h = 0;
+      return { 
+        hhmm: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`, 
+        hours: h, 
+        minutes: min 
+      };
+    }
+    
+    // Handle 24-hour format
+    const m24 = time12h.match(/^(\d{1,2}):(\d{2})$/);
+    if (m24) {
+      const h = Math.min(23, Math.max(0, parseInt(m24[1], 10)));
+      const min = Math.min(59, Math.max(0, parseInt(m24[2], 10)));
+      return { 
+        hhmm: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`, 
+        hours: h, 
+        minutes: min 
+      };
+    }
+    
+    return { hhmm: '', hours: 0, minutes: 0 };
+  };
+
   const handlePayment = async () => {
     if (!selectedMethod) {
       showToast({
@@ -301,16 +355,11 @@ const BookingPayment: React.FC = () => {
       setLoading(true);
       setPaymentStatus('processing');
 
-      // Step 1: Book the appointment first
-
-      // Get current user ID from auth
       const { userId } = TokenManager.getTokens();
-
       if (!userId) {
         throw new Error('User not authenticated. Please log in to book an appointment.');
       }
 
-      // Require explicitly selected clinic id
       const resolvedClinicId = String(state.selectedClinic?._id || '');
       if (!resolvedClinicId) {
         setLoading(false);
@@ -323,46 +372,34 @@ const BookingPayment: React.FC = () => {
         return;
       }
 
-      // Helpers to format time and combine to UTC ISO
-      const to24Hour = (time12h: string): { hhmm: string; hours: number; minutes: number } => {
-        // accepts formats like "10:00 AM" or "02:30 pm"
-        const m = time12h.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-        if (!m) {
-          // fallback: try HH:mm
-          const m24 = time12h.match(/^(\d{1,2}):(\d{2})$/);
-          if (m24) {
-            const h = Math.min(23, Math.max(0, parseInt(m24[1], 10)));
-            const min = Math.min(59, Math.max(0, parseInt(m24[2], 10)));
-            return { hhmm: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`, hours: h, minutes: min };
-          }
-          return { hhmm: '', hours: 0, minutes: 0 };
+      // FIXED: Better time slot parsing and validation
+      const slot = state.selectedSlot;
+      let timeSlotData: { from: string; to: string } | null = null;
+      
+      // Try to get time slot data from different sources
+      if (slot?.startTime && slot?.endTime) {
+        // Use direct startTime/endTime if available
+        const from24 = to24Hour(slot.startTime);
+        const to24 = to24Hour(slot.endTime);
+        if (from24.hhmm && to24.hhmm) {
+          timeSlotData = { from: from24.hhmm, to: to24.hhmm };
         }
-        let h = parseInt(m[1], 10);
-        const min = parseInt(m[2], 10);
-        const ampm = m[3].toUpperCase();
-        if (ampm === 'PM' && h !== 12) h += 12;
-        if (ampm === 'AM' && h === 12) h = 0;
-        return { hhmm: `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`, hours: h, minutes: min };
-      };
+      } else {
+        // Parse from slot ID and time
+        timeSlotData = parseTimeSlot(slot?.id || '', slot?.time || '');
+      }
+      
+      if (!timeSlotData || !timeSlotData.from || !timeSlotData.to || timeSlotData.from === timeSlotData.to) {
+        setLoading(false);
+        showToast({
+          type: 'error',
+          title: 'Invalid time slot',
+          message: 'Time slot must have different start and end times.'
+        });
+        setStep('slot');
+        return;
+      }
 
-      const combineDateAndTimeToUTC = (dateOnly: Date | null, timeText: string): string => {
-        if (!dateOnly || !timeText) return '';
-        const { hours, minutes } = to24Hour(timeText);
-        if (isNaN(hours) || isNaN(minutes)) return '';
-        const d = new Date(dateOnly);
-        // set local time, then output UTC ISO
-        d.setHours(hours, minutes, 0, 0);
-        return d.toISOString();
-      };
-
-      // Prepare booking data matching required schema
-      // Extract from/to from slot id pattern: `${from}-${to}-${idx}` created in DateTimeSelection
-      const idParts = (state.selectedSlot?.id || '').split('-');
-      const rawFromFromId = idParts.length >= 2 ? idParts[0] : '';
-      const rawToFromId = idParts.length >= 2 ? idParts[1] : '';
-      const from24 = to24Hour(rawFromFromId || (state.selectedSlot?.time || ''));
-      const to24Parsed = to24Hour(rawToFromId || (state.selectedSlot?.time || ''));
-      // Appointment date as YYYY-MM-DD (local) to avoid UTC day drift on backend
       const toYyyyMmDd = (dateOnly: Date | null): string => {
         if (!dateOnly) return '';
         const y = dateOnly.getFullYear();
@@ -370,21 +407,20 @@ const BookingPayment: React.FC = () => {
         const d = String(dateOnly.getDate()).padStart(2, '0');
         return `${y}-${m}-${d}`;
       };
+      
       const appointmentDateStr = toYyyyMmDd(state.selectedDate || null);
-
-      // Validate computed time and date
-      if (!from24.hhmm || !to24Parsed.hhmm || !appointmentDateStr) {
+      if (!appointmentDateStr) {
         setLoading(false);
         showToast({
           type: 'error',
-          title: 'Invalid time selection',
-          message: 'Please select a valid date and time slot.'
+          title: 'Invalid date selection',
+          message: 'Please select a valid appointment date.'
         });
         setStep('date');
         return;
       }
 
-      // Client-side availability pre-check to avoid avoidable 400s
+      // Client-side availability pre-check
       const targetClinicId = String(state.selectedClinic?._id || '');
       const targetDay = state.selectedDate
         ? state.selectedDate.toLocaleDateString('en-US', { weekday: 'long' })
@@ -395,6 +431,7 @@ const BookingPayment: React.FC = () => {
       const availableForDayClinic = availList.some((a: any) =>
         String(a?.clinic) === targetClinicId && String(a?.day) === targetDay
       );
+      
       if (!availableForDayClinic) {
         setLoading(false);
         showToast({
@@ -406,43 +443,63 @@ const BookingPayment: React.FC = () => {
         return;
       }
 
-      // Backend expects method enum: 'Online' | 'Cash' | 'Card' 
-      // Use 'Online' for card/upi/razorpay payments, and 'Cash' for cash
-      const paymentMethodText = selectedMethod === 'cash' ? 'Cash' : 'Online';
+      // FIXED: Determine correct payment method and status
+      let paymentMethodText: string;
+      let paymentStatus: string;
+      let isPaid: boolean;
 
+      if (effectiveTotal === 0) {
+        // Subscription covers the cost
+        paymentMethodText = 'Subscription';
+        paymentStatus = 'paid';
+        isPaid = true;
+      } else if (selectedMethod === 'cash') {
+        paymentMethodText = 'Cash';
+        paymentStatus = 'pending';
+        isPaid = false;
+      } else {
+        paymentMethodText = 'Online';
+        paymentStatus = 'pending';
+        isPaid = false;
+      }
+
+      // FIXED: Complete booking payload with all required fields
       const bookingPayload = {
         user: userId,
         doctor: state.selectedDoctor?._id || '',
         clinic: resolvedClinicId,
         appointmentDate: appointmentDateStr,
         timeSlot: {
-          from: from24.hhmm,
-          to: to24Parsed.hhmm
+          from: timeSlotData.from,
+          to: timeSlotData.to
         },
         mode: 'InPerson',
         consultationFee: state.selectedDoctor?.consultationFee || 0,
-        purpose: 'General Consultation',
+        purpose: 'General Consultation', // FIXED: Always provide a purpose
         status: 'Scheduled',
         symptoms: [] as string[],
-        notes: '',
+        notes: '', // FIXED: Always provide notes (empty string instead of undefined)
         paymentMethod: paymentMethodText,
         payment: {
-          amount: effectiveTotal || state.selectedDoctor?.consultationFee || 0,
-          isPaid: effectiveTotal === 0 ? true : false,
+          amount: effectiveTotal,
+          isPaid: isPaid,
           method: paymentMethodText,
-          status: effectiveTotal === 0 ? 'succeeded' : 'pending'
+          status: paymentStatus
         },
         isFollowUp: false,
         createdBy: userId,
-        userName: state.bookingDetails?.patientName || 'Myself',
-        doctorName: state.selectedDoctor?.fullName || '',
+        userName: state.bookingDetails?.patientName || 'Patient', // FIXED: Always provide userName
+        doctorName: state.selectedDoctor?.fullName || 'Doctor', // FIXED: Always provide doctorName
         isRescheduled: false,
         isDeleted: false
       };
-      // Book the appointment via backend
+
+      console.log('Booking payload:', bookingPayload); // Debug log
+
+      // Book the appointment
       const appointmentResult = await appointmentService.bookAppointment(bookingPayload);
 
-      // If amount is zero (subscription covered), skip Razorpay entirely
+      // Handle different payment scenarios
       if (effectiveTotal === 0) {
         setLoading(false);
         setPaymentStatus('success');
@@ -455,7 +512,6 @@ const BookingPayment: React.FC = () => {
         return;
       }
 
-      // If user selected cash, skip Razorpay
       if (selectedMethod === 'cash') {
         setLoading(false);
         setPaymentStatus('success');
@@ -468,13 +524,14 @@ const BookingPayment: React.FC = () => {
         return;
       }
 
-      // Proceed to Razorpay for card/online payments
+      // Proceed to Razorpay for online payments
       setLoading(false);
       await handleRazorpayPayment(appointmentResult as any);
+      
     } catch (error) {
       console.error('Booking or payment error:', error);
       setPaymentStatus('failed');
-      // Detect slot availability error shape and surface suggestions
+      
       const anyErr = error as any;
       const available = anyErr?.availableSlots || anyErr?.response?.data?.availableSlots;
       if (Array.isArray(available) && available.length) {
@@ -496,14 +553,13 @@ const BookingPayment: React.FC = () => {
         });
       }
     } finally {
-      // Safety: ensure loading is cleared even if a branch above missed it
       setLoading(false);
     }
   };
 
   const PaymentMethodCard: React.FC<{
     method: 'card' | 'cash';
-    icon: 'credit-card' | 'hospital'; // Use 'hospital' icon for cash
+    icon: 'credit-card' | 'hospital';
     title: string;
     description: string;
   }> = ({ method, icon, title, description }) => (
@@ -537,8 +593,6 @@ const BookingPayment: React.FC = () => {
       </div>
     </button>
   );
-
-  // Removed UPI QR flow
 
   // Show validation error if booking information is incomplete
   if (!isBookingComplete) {
@@ -636,6 +690,16 @@ const BookingPayment: React.FC = () => {
                 ₹50
               </Typography>
             </div>
+            {effectiveTotal === 0 && (
+              <div className="flex justify-between">
+                <Typography variant="body1" className="text-green-600">
+                  Subscription Discount
+                </Typography>
+                <Typography variant="body1" className="text-green-600">
+                  -₹{baseTotalAmount}
+                </Typography>
+              </div>
+            )}
             <div className="border-t border-gray-200 pt-3">
               <div className="flex justify-between">
                 <Typography variant="h6" className="text-gray-900 font-semibold">
@@ -649,8 +713,9 @@ const BookingPayment: React.FC = () => {
           </div>
         </div>
 
-        <>
-            {/* Payment Methods */}
+        {/* Payment Methods - Only show if amount > 0 */}
+        {effectiveTotal > 0 && (
+          <>
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
               <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
                 Select Payment Method
@@ -716,8 +781,27 @@ const BookingPayment: React.FC = () => {
                 )}
               </div>
             )}
+          </>
+        )}
 
-            {/* Pay Button */}
+        {/* Pay Button */}
+        {effectiveTotal === 0 ? (
+          <Button
+            onClick={async () => await handlePayment()}
+            disabled={state.loading}
+            className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 disabled:bg-gray-400 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
+          >
+            {state.loading ? (
+              <div className="flex items-center justify-center">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                Processing...
+              </div>
+            ) : (
+              'Book Appointment - Free'
+            )}
+          </Button>
+        ) : (
+          <>
             {selectedMethod === 'cash' && (
               <Button
                 onClick={() => setShowCashConfirm(true)}
@@ -736,7 +820,7 @@ const BookingPayment: React.FC = () => {
             )}
             {selectedMethod === 'card' && (
               <Button
-                onClick={() => { void handlePayment(); }}
+                onClick={async () => await handlePayment()}
                 disabled={state.loading}
                 className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 disabled:bg-gray-400 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
               >
@@ -750,40 +834,41 @@ const BookingPayment: React.FC = () => {
                 )}
               </Button>
             )}
-
-            {/* Cash confirmation popup */}
-            {showCashConfirm && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm">
-                <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
-                  <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
-                    Confirm Cash Payment
-                  </Typography>
-                  <Typography variant="body2" className="text-gray-700 mb-6">
-                    Are you sure you want to pay in cash at the clinic? Your appointment will be reserved, but payment must be made at the front desk.
-                  </Typography>
-                  <div className="flex justify-end gap-3">
-                    <Button
-                      variant="secondary"
-                      onClick={() => setShowCashConfirm(false)}
-                      className="px-4 py-2 rounded-lg"
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      onClick={async () => {
-                        setShowCashConfirm(false);
-                        setSelectedMethod('cash');
-                        await handlePayment();
-                      }}
-                      className="bg-[#0e3293] text-white hover:bg-[#0e3293]/90 px-4 py-2 rounded-lg"
-                    >
-                      Confirm & Book
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
           </>
+        )}
+
+        {/* Cash confirmation popup */}
+        {showCashConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 backdrop-blur-sm">
+            <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6">
+              <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
+                Confirm Cash Payment
+              </Typography>
+              <Typography variant="body2" className="text-gray-700 mb-6">
+                Are you sure you want to pay in cash at the clinic? Your appointment will be reserved, but payment must be made at the front desk.
+              </Typography>
+              <div className="flex justify-end gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowCashConfirm(false)}
+                  className="px-4 py-2 rounded-lg"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={async () => {
+                    setShowCashConfirm(false);
+                    setSelectedMethod('cash');
+                    await handlePayment();
+                  }}
+                  className="bg-[#0e3293] text-white hover:bg-[#0e3293]/90 px-4 py-2 rounded-lg"
+                >
+                  Confirm & Book
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Security Note */}
         <div className="mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
@@ -796,7 +881,7 @@ const BookingPayment: React.FC = () => {
               <Typography variant="caption" className="text-green-700">
                 Your payment is processed by Razorpay, India&apos;s most trusted payment gateway.
                 All transactions are encrypted with 256-bit SSL and PCI DSS compliant.
-             mm        </Typography>
+              </Typography>
             </div>
           </div>
         </div>

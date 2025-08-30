@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useCloseSidebarOnNavigation } from '../../hooks/useCloseSidebarOnNavigation';
 import { useRouter, usePathname } from 'next/navigation';
 import { ResponsiveNavigation, BottomNavigation } from '../atoms';
 import { HeaderProvider } from '../atoms/HeaderWrapper';
@@ -36,6 +37,13 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
     return pathname === '/booking' || pathname.startsWith('/booking/');
   };
 
+  // Helper to close sidebar on desktop/tablet
+  const closeSidebarIfDesktopOrTablet = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 768 && isSidebarExpanded) {
+      setIsSidebarExpanded(false);
+    }
+  };
+
   // Navigation items with proper routing
   const navigationItems: NavigationItemLocal[] = [
     {
@@ -43,28 +51,40 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       icon: 'home',
       path: '/home',
       isActive: pathname === '/home',
-      onPress: () => router.push('/home')
+      onPress: () => {
+        closeSidebarIfDesktopOrTablet();
+        router.push('/home');
+      }
     },
     {
       title: 'Records',
       icon: 'records',
       path: '/records',
       isActive: pathname === '/records' || pathname.startsWith('/file-screen'),
-      onPress: () => router.push('/records')
+      onPress: () => {
+        closeSidebarIfDesktopOrTablet();
+        router.push('/records');
+      }
     },
     {
       title: 'PillPal',
       icon: 'pills',
       path: '/pillpal',
       isActive: pathname === '/pillpal',
-      onPress: () => router.push('/pillpal')
+      onPress: () => {
+        closeSidebarIfDesktopOrTablet();
+        router.push('/pillpal');
+      }
     },
     {
       title: 'Profile',
       icon: 'user',
       path: '/profile',
       isActive: pathname === '/profile',
-      onPress: () => router.push('/profile')
+      onPress: () => {
+        closeSidebarIfDesktopOrTablet();
+        router.push('/profile');
+      }
     },
   ];
 
@@ -74,6 +94,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   if (!shouldShowNavigation()) {
     return <>{children}</>;
   }
+
 
   return (
     <HeaderProvider onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>

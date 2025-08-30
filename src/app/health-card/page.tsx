@@ -284,57 +284,51 @@ const HealthCardPage: React.FC = () => {
 
       <div className="px-4 md:px-6 py-8 space-y-8">
         {/* Virtual Health Card */}
-        <div className="max-w-md mx-auto">
-          <div className="bg-gradient-to-br from-[#0E3293] to-blue-600 rounded-2xl p-8 text-white shadow-2xl relative overflow-visible">
-            {/* User avatar */}
-            <div className="absolute -top-8 left-1/2 transform -translate-x-1/2">
-              <div className="w-20 h-20 rounded-full bg-white border-4 border-[#0E3293] flex items-center justify-center shadow-lg">
-                <Icon name="user" className="text-[#0E3293] w-12 h-12" />
-              </div>
-            </div>
-            <div className="flex flex-col items-center mt-12 mb-6">
-              <Typography variant="h6" className="font-bold mb-1 text-center text-white">
-                {userProfile?.name || 'Loading...'}
-              </Typography>
-              <Typography variant="body2" className="opacity-80 text-center text-white">
-                Digital Health ID
-              </Typography>
-            </div>
-            <div className="flex justify-between mb-4">
-              <div>
-                <Typography variant="body2" className="opacity-80 mb-1 text-white">
-                  Card Number
-                </Typography>
-                <Typography variant="body1" className="font-mono text-white">
-                  {cardNumber || userProfile?.id || 'HYGO001'}
-                </Typography>
-              </div>
-              <div className="text-right">
-                <Typography variant="body2" className="opacity-80 mb-1 text-white">
-                  Member Since
-                </Typography>
-                <Typography variant="body1" className="text-white">
-                  {userProfile?.memberSince || '2024'}
-                </Typography>
-              </div>
-            </div>
-            <div className="pt-4 border-t border-white/20 flex items-center justify-between">
-              <div>
-                <Typography variant="body2" className="opacity-80 mb-1 text-white">
-                  Current Plan
-                </Typography>
-                <Typography variant="body1" className="font-semibold text-white">
-                  {userProfile?.plan || 'None'}
-                </Typography>
-              </div>
-              <span className={`ml-2 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wide ${
-                hasActiveSubscription ? 'bg-white/20' : 'bg-red-500/80'
-              }`}>
-                {hasActiveSubscription ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-          </div>
-        </div>
+        <div className="max-w-lg mx-auto">
+  <div className="relative rounded-xl bg-[#0E3293] text-white px-4 py-4 sm:px-6 sm:py-6 overflow-visible" style={{minHeight:'148px'}}>
+    {/* Floating icon button */}
+    <button className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/30 hover:bg-white/50 rounded-full p-1.5 sm:p-2 shadow-md transition-all border border-white/30">
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+        <rect x="4" y="4" width="14" height="14" rx="3" fill="#fff" fillOpacity=".8"/>
+        <path d="M7 11h4m-2-2v4" stroke="#0E3293" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    </button>
+    {/* Card header and plan badge */}
+    <div className="flex flex-col gap-1 mb-3">
+      <div>
+        <div className="font-bold text-lg md:text-xl leading-tight text-left">HYGO Health</div>
+        <div className="text-xs md:text-sm opacity-80">Digital Health Card</div>
+      </div>
+      <div className="flex md:block justify-end">
+        <span className="bg-blue-800/60 rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-wide shadow border border-white/10 whitespace-nowrap">
+          {userProfile?.plan || 'No Plan'}
+        </span>
+      </div>
+    </div>
+    {/* Cardholder/plan row */}
+    <div className="flex flex-col gap-1 mt-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="uppercase text-xs opacity-70">Card Holder</div>
+        <div className="font-bold text-base md:text-lg">{userProfile?.name || 'Loading...'}</div>
+      </div>
+      <div className="md:text-right">
+        <div className="uppercase text-xs opacity-70">Plan</div>
+        <div className="font-bold text-base md:text-lg">{userProfile?.plan || 'No Plan'}</div>
+      </div>
+    </div>
+    {/* Card ID / Valid Until row */}
+    <div className="flex flex-col gap-1 mt-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="uppercase text-xs opacity-70">Card ID</div>
+        <div className="font-mono text-base md:text-lg tracking-widest">{cardNumber || userProfile?.id || 'HYGO001'}</div>
+      </div>
+      <div className="md:text-right">
+        <div className="uppercase text-xs opacity-70">Valid Until</div>
+        <div className="font-bold text-base md:text-lg">{activePlan?.duration?.unit === 'year' && activePlan?.duration?.value ? `Aug ${2026}` : '—'}</div>
+      </div>
+    </div>
+  </div>
+</div>
 
         {/* Card Details (from active subscription) */}
         <div className="max-w-3xl mx-auto">

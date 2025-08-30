@@ -47,8 +47,8 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   onSidebarToggle,
   isMobileMenuOpen: isMobileMenuOpenProp,
 }) => {
-  // Sidebar expansion state (controlled internally)
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(isSidebarExpandedProp);
+  // Sidebar expansion state: use controlled prop for desktop
+  const isSidebarExpanded = isSidebarExpandedProp;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // User helpers
@@ -79,12 +79,9 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
 
   // Sidebar toggle
   const handleSidebarToggle = () => {
-    setIsSidebarExpanded((prev) => {
-      const next = !prev;
-      if (onSidebarToggle) onSidebarToggle(next);
-      return next;
-    });
+    if (onSidebarToggle) onSidebarToggle(!isSidebarExpanded);
   };
+
 
   // Mobile menu toggle
   const handleMobileMenuToggle = () => {

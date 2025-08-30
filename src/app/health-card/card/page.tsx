@@ -289,13 +289,55 @@
 //   );
 // };
 
+import React from "react";
+
 export default function HealthCardCardPage() {
+  // Mock data
+  const cardNumber = "1234 5678 9012 3456";
+  const holderName = "John Doe";
+  const expiry = "12/29";
+  const plan = "Monthly Plan";
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="text-center text-gray-700">
-        <p className="text-lg font-semibold">Health Card</p>
-        <p className="text-sm mt-2">This page is under construction.</p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-white p-6">
+      <div className="w-full max-w-md">
+        <div className="relative rounded-3xl shadow-2xl bg-gradient-to-br from-[#0E3293] to-blue-600 text-white p-8 overflow-hidden">
+          {/* Metallic chip */}
+          <div className="absolute top-6 left-8 w-12 h-8 bg-gradient-to-br from-yellow-300 to-yellow-500 rounded-lg shadow-inner border border-yellow-400"></div>
+
+          {/* Card Brand */}
+          <div className="flex justify-between items-center mb-6">
+            <div className="font-bold text-lg tracking-wider">HYGO HEALTH CARD</div>
+            <div className="bg-white/20 rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-wider">{plan}</div>
+          </div>
+
+          {/* Card Number */}
+          <div className="mb-6">
+            <div className="text-2xl font-mono tracking-widest mb-1">{cardNumber}</div>
+            <div className="text-xs opacity-70">Card Number</div>
+          </div>
+
+          {/* Cardholder and Expiry */}
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <div className="uppercase text-xs opacity-70">Card Holder</div>
+              <div className="font-semibold text-lg tracking-wide">{holderName}</div>
+            </div>
+            <div>
+              <div className="uppercase text-xs opacity-70">Valid Thru</div>
+              <div className="font-semibold text-lg tracking-wide">{expiry}</div>
+            </div>
+          </div>
+
+          {/* QR Code Placeholder */}
+          <div className="flex justify-end">
+            <div className="w-16 h-16 bg-white rounded-lg flex items-center justify-center shadow-md">
+              <span className="text-xs text-[#0E3293] font-bold">QR</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
+

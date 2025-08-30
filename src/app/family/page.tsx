@@ -226,9 +226,7 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         else setSelectedMember(uiMembers[0].id);
       }
 
-      if (uiMembers.length === 0) {
-        setError('No family members found. You can add new members using the + button.');
-      }
+     
 
     } catch (error: any) {
       let errorMessage = 'Failed to load family members';

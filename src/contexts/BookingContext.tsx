@@ -12,6 +12,8 @@ export interface TimeSlot {
   available: boolean; // Calculated based on bookedCount < maxBookings
   bookedCount: number; // Current number of booked appointments
   maxBookings: number; // Maximum number of appointments per slot (appointmentLimit)
+  startTime?: string; // Format: "10:00" (24-hour format from API)
+  endTime?: string; // Format: "11:00" (24-hour format from API)
 }
 
 export interface BookingDetails {
