@@ -172,9 +172,9 @@ const DoctorDetailsPage: React.FC = () => {
                 src={doctorHelpers.getFullImageUrl(doctor.profileImage)}
                 alt={doctor.fullName}
                 className="w-24 h-24 rounded-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = '/images/default-doctor.png';
-                }}
+                // onError={(e) => {
+                //   e.currentTarget.src = '/images/default-doctor.png';
+                // }}
               />
               {/* {doctor.isAvailableNow && (
                 <div className="absolute bottom-0 right-0 w-6 h-6 bg-green-400 rounded-full border-2 border-white"></div>

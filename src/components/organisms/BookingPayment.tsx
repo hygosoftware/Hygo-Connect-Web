@@ -342,7 +342,8 @@ const BookingPayment: React.FC = () => {
   };
 
   const handlePayment = async () => {
-    if (!selectedMethod) {
+    // When total is zero (subscription covers cost), we don't require selecting a payment method
+    if (effectiveTotal > 0 && !selectedMethod) {
       showToast({
         type: 'warning',
         title: 'Payment method required',

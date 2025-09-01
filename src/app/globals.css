@@ -170,6 +170,13 @@ input[type="number"] {
   opacity: 1 !important;
 }
 
+/* Ensure select text is visible across browsers */
+select,
+select option {
+  color: #111827 !important; /* gray-900 */
+  -webkit-text-fill-color: #111827 !important;
+}
+
 input::placeholder {
   color: #9CA3AF !important;
   opacity: 1 !important;

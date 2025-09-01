@@ -1,23 +1,78 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Typography, Icon, Button } from '../atoms';
 import { useBooking } from '../../contexts/BookingContext';
 import { BookingDetails } from '../../contexts/BookingContext';
+import { familyMemberService, type FamilyMember } from '../../services/apiServices';
+import { TokenManager } from '../../services/auth';
 
-// Mock family members data - in real app, this would come from user's profile
-const mockFamilyMembers = [
-  { id: '1', name: 'John Doe (Father)', age: 45, gender: 'male' },
-  { id: '2', name: 'Jane Doe (Mother)', age: 42, gender: 'female' },
-  { id: '3', name: 'Mike Doe (Brother)', age: 20, gender: 'male' },
-  { id: '4', name: 'Sarah Doe (Sister)', age: 18, gender: 'female' },
-];
+// Helper functions to normalize API data
+const getMemberId = (m: FamilyMember): string => String(m._id || m.id || '');
+const getMemberName = (m: FamilyMember): string => String(m.FullName || '');
+const getMemberGender = (m: FamilyMember): 'male' | 'female' | 'other' | undefined => {
+  const g = (m.Gender || '').toString().toLowerCase();
+  if (g === 'male' || g === 'm') return 'male';
+  if (g === 'female' || g === 'f') return 'female';
+  return g ? 'other' : undefined;
+};
+const parseNumber = (val: unknown): number | undefined => {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') {
+    const n = parseInt(val, 10);
+    return isNaN(n) ? undefined : n;
+  }
+  return undefined;
+};
+const getAgeFromMember = (m: FamilyMember): number | undefined => {
+  const age = parseNumber(m.Age);
+  if (age !== undefined) return age;
+  if (m.DateOfBirth) {
+    const dob = new Date(m.DateOfBirth);
+    if (!isNaN(dob.getTime())) {
+      const today = new Date();
+      let a = today.getFullYear() - dob.getFullYear();
+      const monthDiff = today.getMonth() - dob.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate())) a--;
+      return a;
+    }
+  }
+  return undefined;
+};
 
 const BookingDetailsForm: React.FC = () => {
   const { state, setBookingDetails, setStep } = useBooking();
 
   const [patientType, setPatientType] = useState<'self' | 'family'>('self');
   const [selectedFamilyMember, setSelectedFamilyMember] = useState<string>('');
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState<boolean>(false);
+  const [membersError, setMembersError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Preload family members when component mounts
+    const loadMembers = async () => {
+      try {
+        setLoadingMembers(true);
+        setMembersError(null);
+        const { userId } = TokenManager.getTokens();
+        if (!userId) {
+          setMembersError('User not authenticated.');
+          setFamilyMembers([]);
+          return;
+        }
+        const list = await familyMemberService.getFamilyMembers(userId);
+        setFamilyMembers(Array.isArray(list) ? list : []);
+      } catch (e) {
+        console.error('Failed to load family members', e);
+        setMembersError('Failed to load family members.');
+        setFamilyMembers([]);
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+    loadMembers();
+  }, []);
 
   const handleSubmit = () => {
     let bookingDetails: BookingDetails;
@@ -34,14 +89,14 @@ const BookingDetailsForm: React.FC = () => {
         notes: ''
       };
     } else {
-      const familyMember = mockFamilyMembers.find(m => m.id === selectedFamilyMember);
+      const familyMember = familyMembers.find(m => getMemberId(m) === selectedFamilyMember);
       if (!familyMember) return;
 
       bookingDetails = {
         patientType: 'family',
-        patientName: familyMember.name,
-        patientAge: familyMember.age,
-        patientGender: familyMember.gender as 'male' | 'female',
+        patientName: getMemberName(familyMember),
+        patientAge: getAgeFromMember(familyMember),
+        patientGender: getMemberGender(familyMember),
         patientPhone: '',
         patientEmail: '',
         symptoms: '',
@@ -142,15 +197,24 @@ const BookingDetailsForm: React.FC = () => {
               <select
                 value={selectedFamilyMember}
                 onChange={(e) => setSelectedFamilyMember(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0e3293] focus:border-[#0e3293] bg-white text-base sm:text-sm"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#0e3293] focus:border-[#0e3293] bg-white text-base sm:text-sm text-gray-900"
               >
-                <option value="">Choose a family member</option>
-                {mockFamilyMembers.map((member) => (
-                  <option key={member.id} value={member.id}>
-                    {member.name}
-                  </option>
-                ))}
+                <option value="">{loadingMembers ? 'Loading...' : 'Choose a family member'}</option>
+                {familyMembers.map((member) => {
+                  const id = getMemberId(member);
+                  const name = getMemberName(member) || 'Unnamed Member';
+                  return (
+                    <option key={id} value={id}>
+                      {name}
+                    </option>
+                  );
+                })}
               </select>
+              {membersError && (
+                <Typography variant="caption" className="text-red-600 mt-2 block">
+                  {membersError}
+                </Typography>
+              )}
             </div>
           )}
 
@@ -172,13 +236,19 @@ const BookingDetailsForm: React.FC = () => {
                   {patientType === 'self'
                     ? 'Yourself'
                     : selectedFamilyMember
-                      ? mockFamilyMembers.find(m => m.id === selectedFamilyMember)?.name
+                      ? getMemberName(
+                          familyMembers.find(m => getMemberId(m) === selectedFamilyMember) || ({} as FamilyMember)
+                        )
                       : 'Select a family member'
                   }
                 </Typography>
                 {patientType === 'family' && selectedFamilyMember && (
                   <Typography variant="caption" className="text-gray-600">
-                    {mockFamilyMembers.find(m => m.id === selectedFamilyMember)?.age} years old
+                    {(() => {
+                      const m = familyMembers.find(f => getMemberId(f) === selectedFamilyMember);
+                      const a = m ? getAgeFromMember(m) : undefined;
+                      return a !== undefined ? `${a} years old` : '';
+                    })()}
                   </Typography>
                 )}
               </div>
@@ -189,7 +259,7 @@ const BookingDetailsForm: React.FC = () => {
           <div className="mt-6 sm:mt-8 pt-6 border-t border-gray-200">
             <Button
               onClick={handleSubmit}
-              disabled={patientType === 'family' && !selectedFamilyMember}
+              disabled={(patientType === 'family' && !selectedFamilyMember) || loadingMembers}
               className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 disabled:bg-gray-400 disabled:cursor-not-allowed text-white py-3 sm:py-3 px-4 sm:px-6 rounded-xl font-medium text-base sm:text-lg transition-colors"
             >
               Continue to Review

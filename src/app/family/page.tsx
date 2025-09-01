@@ -181,7 +181,6 @@ const convertUiToApiMember = (uiMember: Partial<FamilyMember>): CreateFamilyMemb
   }] : [],
   DateOfBirth: uiMember.dateOfBirth,
   BloodGroup: uiMember.bloodGroup,
-  Allergies: uiMember.allergies || [],
 });
 
 const FamilyPage: React.FC = () => {
@@ -308,9 +307,15 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         if (addedMember) {
           const uiMember = convertApiToUiMember(addedMember);
           uiMember.relation = newMemberRelation.trim(); // Set the relation from form
-
+          // Optimistically add to list and select
           setFamilyMembers([...familyMembers, uiMember]);
           if (!selectedMember) {
+            setSelectedMember(uiMember.id);
+          }
+          // Refresh list from server to ensure data is up-to-date
+          await loadFamilyMembers();
+          // Ensure the newly added member stays selected if available
+          if (uiMember.id) {
             setSelectedMember(uiMember.id);
           }
           setNewMemberName('');

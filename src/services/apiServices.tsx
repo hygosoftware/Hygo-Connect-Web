@@ -1273,7 +1273,35 @@ export const familyMemberService = {
   addFamilyMember: async (userId: string, member: CreateFamilyMemberRequest): Promise<FamilyMember | null> => {
     try {
       console.log('👪 Adding family member for user:', userId);
-      const response = await apiClient.post<FamilyMember | { data: FamilyMember }>(`/add/${userId}`, member);
+      // Build multipart/form-data payload
+      const form = new FormData();
+
+      // Helper to append only defined values; stringify objects/arrays
+      const append = (key: string, value: unknown) => {
+        if (value === undefined || value === null) return;
+        if (typeof value === 'object') {
+          form.append(key, JSON.stringify(value));
+        } else {
+          form.append(key, String(value));
+        }
+      };
+
+      // Required/optional fields (intentionally omitting Allergies)
+      append('FullName', member.FullName);
+      append('Email', member.Email);
+      append('MobileNumber', member.MobileNumber); // array -> stringified
+      append('DateOfBirth', member.DateOfBirth);
+      append('BloodGroup', member.BloodGroup);
+      append('Gender', member.Gender);
+      append('Height', member.Height);
+      append('Weight', member.Weight);
+      append('Country', member.Country);
+      append('State', member.State);
+      append('City', member.City);
+
+      const response = await apiClient.post<FamilyMember | { data: FamilyMember }>(`/add/${userId}`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
       const data = response.data as any;
       const created = (data && typeof data === 'object' && 'data' in data) ? data.data : data;
       return created || null;
@@ -1606,7 +1634,12 @@ export const paymentService = {
 export const doctorHelpers = {
   // Get full image URL for doctor profile
   getFullImageUrl: (imagePath: string): string => {
-    if (!imagePath) return '/images/default-doctor.png';
+    // Fallback immediately if not provided
+    // if (!imagePath || typeof imagePath !== 'string') return '/images/default-doctor.png';
+
+    // If the provided path (even a full URL) points to the backend's default image, use local asset
+    const imagePathLower = imagePath.toLowerCase();
+    
 
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return imagePath;
@@ -1618,7 +1651,11 @@ export const doctorHelpers = {
     // Remove any existing API path prefixes to avoid duplication
     cleanPath = cleanPath.replace(/^api\/V0\//, '');
     cleanPath = cleanPath.replace(/^uploads\//, '');
+    cleanPath = cleanPath.replace(/^images\//, '');
 
+    // If the backend doesn't host the default image, use local public asset
+   
+    // Prefer backend uploads path for real images
     return `${API_BASE_URL}/uploads/${cleanPath}`;
   },
 
@@ -2330,7 +2367,7 @@ export const userSubscriptionService = {
   getActiveSubscription: async (userId: string): Promise<unknown | null> => {
     try {
       const response = await apiClient.get(`/UserSubscription/${userId}`);
-      console.log("response.data", response.data)
+      console.log("response.data 111111111", response.data)
       const raw = response.data as unknown;
       if (raw && typeof raw === 'object' && (raw as any).data !== undefined) {
         return (raw as any).data as unknown;

@@ -1,5 +1,16 @@
 import { folderService } from '../services/apiServices';
 
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
+
+// Get auth token from localStorage
+const getAuthToken = (): string | null => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('accessToken');
+  }
+  return null;
+};
+
 // File Management API Functions
 
 export interface FileItem {
@@ -107,12 +118,45 @@ export const getAllFileFromFolder = async (
 
 // Delete a file from folder
 export const deleteFileFromFolder = async (
-  _userId: string,
-  _folderId: string,
-  _fileId: string
+  userId: string,
+  folderId: string,
+  fileId: string
 ): Promise<{ success: boolean; message: string }> => {
-  // Not implemented: Replace with actual API call
-  throw new Error('deleteFileFromFolder is not implemented. Connect to real API.');
+  try {
+    console.log('🌐 API Call: Deleting file:', fileId, 'from folder:', folderId);
+    
+    const token = getAuthToken();
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in again.');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/file/${userId}/${folderId}/${fileId}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to delete file' }));
+      throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ File deleted successfully:', result);
+    
+    return {
+      success: true,
+      message: result.message || 'File deleted successfully'
+    };
+  } catch (error) {
+    console.error('❌ Error deleting file:', error);
+    return {
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to delete file'
+    };
+  }
 };
 
 // Upload file to folder

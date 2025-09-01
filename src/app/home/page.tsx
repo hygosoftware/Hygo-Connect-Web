@@ -172,7 +172,7 @@ const HomePage: React.FC = () => {
       id: '1',
       title: 'Vaccination',
       description: 'Schedule your COVID-19 vaccination or booster today',
-      imageUri: 'https://images.unsplash.com/photo-1601132359864-c974e79890b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      imageUri: '/images/default-doctor.png',
       actionText: 'Book Now',
       onPress: () => handleFeaturePress('Vaccination'),
     },

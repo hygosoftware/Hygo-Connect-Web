@@ -247,7 +247,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
   onNewMemberMobileChange,
 }) => {
   const [searchText, setSearchText] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [toast, setToast] = useState<ToastProps>({ visible: false, message: '', type: 'info' });
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
 
@@ -323,7 +323,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
         <div className="flex items-center">
           <button
             onClick={onGoBack}
-            className="p-2 hover:bg-blue-700 rounded-lg transition-colors md:hidden mr-2"
+            className="p-2 hover:bg-blue-700 rounded-lg transition-colors mr-2"
           >
             <Icon name="arrow-left" size="medium" color="white" />
           </button>
@@ -351,7 +351,7 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
           </div>
           <button
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="bg-[#0e3293] rounded-xl p-3 hover:bg-blue-700 transition-colors"
+            className="hidden md:block bg-[#0e3293] rounded-xl p-3 hover:bg-blue-700 transition-colors"
           >
             <Icon name={viewMode === 'grid' ? 'menu' : 'home'} size="small" color="white" />
           </button>
@@ -603,31 +603,17 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
         {/* Mobile: old layout (grid/list) */}
         <div className="md:hidden">
           {filteredMembers.length > 0 ? (
-            viewMode === 'grid' ? (
-              <div className="flex flex-wrap gap-4 justify-start">
-                {filteredMembers.filter(member => member && member.id).map((member) => (
-                  <FamilyMemberCard
-                    key={member.id}
-                    member={member}
-                    onPress={() => handleMemberPress(member)}
-                    onEdit={() => handleEditPress(member)}
-                    onDelete={() => handleDeletePress(member.id)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredMembers.filter(member => member && member.id).map((member) => (
-                  <FamilyMemberListItem
-                    key={member.id}
-                    member={member}
-                    onPress={() => handleMemberPress(member)}
-                    onEdit={() => handleEditPress(member)}
-                    onDelete={() => handleDeletePress(member.id)}
-                  />
-                ))}
-              </div>
-            )
+            <div className="space-y-3">
+              {filteredMembers.filter(member => member && member.id).map((member) => (
+                <FamilyMemberListItem
+                  key={member.id}
+                  member={member}
+                  onPress={() => handleMemberPress(member)}
+                  onEdit={() => handleEditPress(member)}
+                  onDelete={() => handleDeletePress(member.id)}
+                />
+              ))}
+            </div>
           ) : (
             <EmptyState />
           )}
@@ -649,8 +635,14 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
 
       {/* Add/Edit Modal */}
       {showAddMember && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-xl">
+        <>
+          {/* Backdrop with blur */}
+          <div
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-40"
+            onClick={handleCancel}
+          />
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            <div className="bg-white rounded-2xl p-6 w-11/12 max-w-md shadow-xl">
             <h2 className="text-xl font-bold text-[#0e3293] mb-4 text-center">
               {editingMemberId ? 'Edit Family Member' : 'Add Family Member'}
             </h2>
@@ -679,22 +671,23 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
             />
 
 
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={handleCancel}
-                className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSubmit}
-                className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
-              >
-                Save
-              </button>
+              <div className="flex gap-2 mt-2">
+                <button
+                  onClick={handleCancel}
+                  className="flex-1 bg-gray-200 text-gray-800 py-3 rounded-xl font-medium hover:bg-gray-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSubmit}
+                  className="flex-1 bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors"
+                >
+                  Save
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </>
       )}
 
       {/* Toast Notification */}

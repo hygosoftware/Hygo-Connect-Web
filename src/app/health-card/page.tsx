@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Icon, Button, Typography, UniversalHeader } from '../../components/atoms';
 import { subscriptionservices, userSubscriptionService } from '../../services/apiServices';
 import { TokenManager } from '../../services/auth';
+import { ApiUserSubscription, ApiSubscriptionPlan, ApiAvailableService } from '../../types/healthCard';
 
 interface SubscriptionPlan {
   _id: string;
@@ -27,6 +28,9 @@ interface UsedService {
   date: string;
   type: string;
   status: string;
+  serviceId: string;
+  totalAllowed: number;
+  usedCount: number;
 }
 
 interface UserProfile {
@@ -34,6 +38,9 @@ interface UserProfile {
   id: string;
   memberSince: string;
   plan: string;
+  subscriptionStatus?: string;
+  subscriptionEndDate?: string;
+  subscriptionStartDate?: string;
 }
 
 const HealthCardPage: React.FC = () => {
@@ -45,33 +52,40 @@ const HealthCardPage: React.FC = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [cardNumber, setCardNumber] = useState<string | null>(null);
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean>(false);
-
+  const [activeSubscription, setActiveSubscription] = useState<ApiUserSubscription | null>(null);
   const [usedServices, setUsedServices] = useState<UsedService[]>([]);
 
   useEffect(() => {
     void fetchSubscriptionPlans();
     loadUserProfile();
-    fetchUsedServices();
   }, []);
 
-  const fetchUsedServices = () => {
+  const fetchUsedServices = (subscription: ApiUserSubscription | null) => {
     try {
-      const tokens = TokenManager.getTokens();
-      const userId = tokens.userId;
-      
-      if (!userId) {
-        console.log('No user ID available for fetching services');
+      if (!subscription) {
+        setUsedServices([]);
         return;
       }
 
-      // TODO: Replace with your actual services API endpoint
-      // Example: const response = await apiClient.get(`/user/${userId}/services`);
-      // For now, setting empty array since no API endpoint provided
-      setUsedServices([]);
+      // Extract used services from subscription data
+      const services: UsedService[] = subscription.availableServices.map((service, index) => {
+        const serviceInfo = subscription.subscription.availableServices.find(s => s._id === service.service);
+        return {
+          id: service._id,
+          name: serviceInfo?.serviceName || `Service ${index + 1}`,
+          date: subscription.subscriptionStartDate,
+          type: 'Health Service',
+          status: service.used.length > 0 ? 'Used' : 'Available',
+          serviceId: service.service,
+          totalAllowed: service.totalAllowed,
+          usedCount: service.used.length
+        };
+      });
       
-      console.log('Used services loaded (currently empty - replace with actual API)');
+      setUsedServices(services);
+      console.log('Used services loaded from subscription data:', services);
     } catch (error) {
-      console.error('Error fetching used services:', error);
+      console.error('Error processing used services:', error);
       setUsedServices([]);
     }
   };
@@ -104,68 +118,62 @@ const HealthCardPage: React.FC = () => {
       if (!userId) {
         // Anonymous: no active subscription context
         setActivePlan(null);
+        setActiveSubscription(null);
         setHasActiveSubscription(false);
         return;
       }
+      
       const active = await userSubscriptionService.getActiveSubscription(userId);
-      // Try to find planId in common shapes
+      console.log('Active subscription response:', active);
+      
+      let activeSubscriptionData: ApiUserSubscription | null = null;
       let planId: string | undefined;
+      
       if (Array.isArray(active)) {
-        // Prefer status === 'active', otherwise pick the most recent by subscriptionStartDate, else first
-        const pick =
-          active.find((it) => it && typeof it === 'object' && (it as any).status === 'active') ||
-          active
-            .slice()
-            .sort((a, b) => {
-              const aDate = (a && typeof a === 'object' && (a as any).subscriptionStartDate) ? Date.parse((a as any).subscriptionStartDate) : 0;
-              const bDate = (b && typeof b === 'object' && (b as any).subscriptionStartDate) ? Date.parse((b as any).subscriptionStartDate) : 0;
-              return bDate - aDate;
-            })[0] ||
-          active[0];
-
-        if (pick && typeof pick === 'object') {
-          const obj = pick as Record<string, unknown>;
-          const subField = obj.subscription as unknown;
-          if (typeof (obj as any).subscriptionNumber === 'string') {
-            setCardNumber((obj as any).subscriptionNumber as string);
-          }
-          if (typeof obj.subscriptionId === 'string') {
-            planId = obj.subscriptionId;
-          } else if (subField && typeof subField === 'object' && '_id' in subField && typeof (subField as any)._id === 'string') {
-            planId = (subField as any)._id;
-          } else if (typeof subField === 'string') {
-            planId = subField;
-          }
+        // Find active subscription
+        const activeItem = active.find((item: any) => 
+          item && typeof item === 'object' && item.status === 'active'
+        ) || active[0];
+        
+        if (activeItem) {
+          activeSubscriptionData = activeItem as ApiUserSubscription;
+          planId = activeItem.subscription?._id;
+          setCardNumber(activeItem.subscriptionNumber);
         }
       } else if (active && typeof active === 'object') {
-        const obj = active as Record<string, unknown>;
-        const planField = obj.plan as unknown;
-        if (typeof (obj as any).subscriptionNumber === 'string') {
-          setCardNumber((obj as any).subscriptionNumber as string);
-        }
-        if (typeof obj.planId === 'string') {
-          planId = obj.planId;
-        } else if (typeof obj.subscriptionId === 'string') {
-          planId = obj.subscriptionId;
-        } else if (planField && typeof planField === 'object' && '_id' in planField && typeof (planField as any)._id === 'string') {
-          planId = (planField as any)._id;
-        } else if (typeof planField === 'string') {
-          planId = planField;
-        }
+        activeSubscriptionData = active as ApiUserSubscription;
+        planId = (active as any).subscription?._id;
+        setCardNumber((active as any).subscriptionNumber);
       }
+      
+      setActiveSubscription(activeSubscriptionData);
+      
       const plan = plans.find(p => p._id === planId) || null;
       setActivePlan(plan);
-      setHasActiveSubscription(!!plan);
-      if (plan) {
-        setUserProfile(prev => prev ? { ...prev, plan: plan.subscriptionName || prev.plan } : prev);
+      setHasActiveSubscription(!!activeSubscriptionData && activeSubscriptionData.status === 'active');
+      
+      if (activeSubscriptionData) {
+        setUserProfile(prev => prev ? { 
+          ...prev, 
+          plan: activeSubscriptionData.subscription.subscriptionName || prev.plan,
+          subscriptionStatus: activeSubscriptionData.status,
+          subscriptionEndDate: activeSubscriptionData.subscriptionEndDate,
+          subscriptionStartDate: activeSubscriptionData.subscriptionStartDate
+        } : prev);
+        
+        // Fetch used services from subscription data
+        fetchUsedServices(activeSubscriptionData);
       } else {
-        setUserProfile(prev => prev ? { ...prev, plan: 'None' } : prev);
+        setUserProfile(prev => prev ? { ...prev, plan: 'None', subscriptionStatus: 'none' } : prev);
+        fetchUsedServices(null);
       }
     } catch (e) {
-      console.warn('Could not resolve active subscription plan');
+      console.warn('Could not resolve active subscription plan:', e);
       setActivePlan(null);
+      setActiveSubscription(null);
       setHasActiveSubscription(false);
-      setUserProfile(prev => prev ? { ...prev, plan: 'None' } : prev);
+      setUserProfile(prev => prev ? { ...prev, plan: 'None', subscriptionStatus: 'none' } : prev);
+      fetchUsedServices(null);
     }
   };
 
@@ -206,7 +214,6 @@ const HealthCardPage: React.FC = () => {
         <UniversalHeader
           title="Subscription Plans"
           subtitle="Choose your perfect health plan"
-          variant="gradient"
           icon="health-card"
           showBackButton={true}
           onBackPress={() => setShowSubscriptions(false)}
@@ -221,9 +228,9 @@ const HealthCardPage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-              {subscriptionPlans.map((plan) => (
+              {subscriptionPlans.map((plan, idx) => (
                 <div
-                  key={plan._id}
+                  key={`${plan._id}-${idx}`}
                   className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
                 >
                   <div className="text-center mb-6">
@@ -245,8 +252,8 @@ const HealthCardPage: React.FC = () => {
                     <Typography variant="body2" className="text-gray-600 mb-3 font-medium">
                       Available Services:
                     </Typography>
-                    {plan.availableServices?.map((service) => (
-                      <div key={service._id} className="flex items-center space-x-3">
+                    {plan.availableServices?.map((service, sIdx) => (
+                      <div key={`${service._id}-${sIdx}`} className="flex items-center space-x-3">
                         <Icon name="check" className="text-green-500 w-4 h-4" />
                         <Typography variant="body2" className="text-gray-700">
                           {service.serviceName}
@@ -257,7 +264,7 @@ const HealthCardPage: React.FC = () => {
 
                   <Button
                     onClick={() => handlePlanSelect(plan)}
-                    className="w-full py-3 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                    className="w-full py-3 bg-[#0E3293] hover:bg-[#0A2470] text-white font-semibold rounded-xl shadow-md transition-all duration-200"
                   >
                     Select Plan
                   </Button>
@@ -276,7 +283,6 @@ const HealthCardPage: React.FC = () => {
       <UniversalHeader
         title="Health Card"
         subtitle="Your digital health companion"
-        variant="gradient"
         icon="health-card"
         showBackButton={true}
         onBackPress={handleGoBack}
@@ -286,13 +292,6 @@ const HealthCardPage: React.FC = () => {
         {/* Virtual Health Card */}
         <div className="max-w-lg mx-auto">
   <div className="relative rounded-xl bg-[#0E3293] text-white px-4 py-4 sm:px-6 sm:py-6 overflow-visible" style={{minHeight:'148px'}}>
-    {/* Floating icon button */}
-    <button className="absolute top-2 right-2 sm:top-4 sm:right-4 bg-white/30 hover:bg-white/50 rounded-full p-1.5 sm:p-2 shadow-md transition-all border border-white/30">
-      <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-        <rect x="4" y="4" width="14" height="14" rx="3" fill="#fff" fillOpacity=".8"/>
-        <path d="M7 11h4m-2-2v4" stroke="#0E3293" strokeWidth="2" strokeLinecap="round"/>
-      </svg>
-    </button>
     {/* Card header and plan badge */}
     <div className="flex flex-col gap-1 mb-3">
       <div>
@@ -300,8 +299,16 @@ const HealthCardPage: React.FC = () => {
         <div className="text-xs md:text-sm opacity-80">Digital Health Card</div>
       </div>
       <div className="flex md:block justify-end">
-        <span className="bg-blue-800/60 rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-wide shadow border border-white/10 whitespace-nowrap">
-          {userProfile?.plan || 'No Plan'}
+        <span className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-wide shadow border border-white/10 whitespace-nowrap ${
+          userProfile?.subscriptionStatus === 'active' ? 'bg-green-800/60' :
+          userProfile?.subscriptionStatus === 'expired' ? 'bg-red-800/60' :
+          userProfile?.subscriptionStatus === 'cancelled' ? 'bg-gray-800/60' :
+          'bg-blue-800/60'
+        }`}>
+          {userProfile?.subscriptionStatus === 'active' ? 'ACTIVE' :
+           userProfile?.subscriptionStatus === 'expired' ? 'EXPIRED' :
+           userProfile?.subscriptionStatus === 'cancelled' ? 'CANCELLED' :
+           'NO PLAN'}
         </span>
       </div>
     </div>
@@ -324,7 +331,15 @@ const HealthCardPage: React.FC = () => {
       </div>
       <div className="md:text-right">
         <div className="uppercase text-xs opacity-70">Valid Until</div>
-        <div className="font-bold text-base md:text-lg">{activePlan?.duration?.unit === 'year' && activePlan?.duration?.value ? `Aug ${2026}` : '—'}</div>
+        <div className="font-bold text-base md:text-lg">
+          {userProfile?.subscriptionEndDate ? 
+            new Date(userProfile.subscriptionEndDate).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            }) : '—'
+          }
+        </div>
       </div>
     </div>
   </div>
@@ -333,21 +348,21 @@ const HealthCardPage: React.FC = () => {
         {/* Card Details (from active subscription) */}
         <div className="max-w-3xl mx-auto">
           <Typography variant="h5" className="text-gray-900 font-bold mb-6 text-center">
-            Card Details
+            Subscription Details
           </Typography>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+          <div className="bg-white rounded-2xl p-6 shadow border border-gray-100">
             {loading ? (
               <Typography variant="body2" className="text-gray-600 text-center">
-                Loading card details...
+                Loading subscription details...
               </Typography>
-            ) : !activePlan ? (
+            ) : !activeSubscription ? (
               <div className="text-center space-y-4">
                 <Typography variant="body2" className="text-gray-600">
-                  No subscription found.
+                  No active subscription found.
                 </Typography>
                 <Button
                   onClick={handleSubscribe}
-                  className="px-6 py-3 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
+                  className="px-6 py-3 bg-[#0E3293] hover:bg-[#0A2470] text-white font-semibold rounded-xl shadow-md transition-all duration-200"
                 >
                   Purchase Now
                 </Button>
@@ -356,33 +371,76 @@ const HealthCardPage: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <Typography variant="h6" className="text-gray-900 font-bold">
-                    {activePlan.subscriptionName}
+                    {activeSubscription.subscription.subscriptionName}
                   </Typography>
-                  <Typography variant="h6" className="text-[#0E3293] font-bold">
-                    ₹{activePlan.price}
-                  </Typography>
+                  <div className="text-right">
+                    <Typography variant="h6" className="text-[#0E3293] font-bold">
+                      ₹{activeSubscription.subscription.price}
+                    </Typography>
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      activeSubscription.status === 'active' ? 'bg-green-100 text-green-800' :
+                      activeSubscription.status === 'expired' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {activeSubscription.status.toUpperCase()}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between">
-                  <Typography variant="body1" className="text-gray-900 font-semibold">
-                    Duration
-                  </Typography>
-                  <Typography variant="body2" className="text-gray-600">
-                    {activePlan.duration?.value} {activePlan.duration?.unit}{activePlan.duration?.value && activePlan.duration.value > 1 ? 's' : ''}
-                  </Typography>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Typography variant="body1" className="text-gray-900 font-semibold">
+                      Duration
+                    </Typography>
+                    <Typography variant="body2" className="text-gray-600">
+                      {activeSubscription.subscription.duration?.value} {activeSubscription.subscription.duration?.unit}{activeSubscription.subscription.duration?.value > 1 ? 's' : ''}
+                    </Typography>
+                  </div>
+                  <div>
+                    <Typography variant="body1" className="text-gray-900 font-semibold">
+                      Valid Until
+                    </Typography>
+                    <Typography variant="body2" className="text-gray-600">
+                      {new Date(activeSubscription.subscriptionEndDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </Typography>
+                  </div>
                 </div>
+                
                 <div className="pt-3 border-t border-gray-200">
                   <Typography variant="body1" className="text-gray-900 font-semibold mb-3">
                     Available Services
                   </Typography>
                   <div className="space-y-2">
-                    {activePlan.availableServices?.map((service) => (
-                      <div key={service._id} className="flex items-center space-x-3">
-                        <Icon name="check" className="text-green-500 w-4 h-4" />
-                        <Typography variant="body2" className="text-gray-700">
-                          {service.serviceName}
-                        </Typography>
-                      </div>
-                    ))}
+                    {activeSubscription.availableServices?.map((svc, aIdx) => {
+                      const usedCount = Array.isArray(svc.used) ? svc.used.length : 0;
+                      const totalAllowed = svc.totalAllowed;
+                      // Resolve name from plan's availableServices (which may be object list or string IDs)
+                      const planServices: any[] = (activeSubscription.subscription?.availableServices as any[]) || [];
+                      const svcId = (svc as any)?.service?._id || (svc as any)?.service;
+                      const matchedPlan = planServices.find((p: any) => {
+                        const planId = (typeof p === 'string') ? p : p?._id;
+                        return String(planId) === String(svcId);
+                      });
+                      const name = (matchedPlan && matchedPlan.serviceName) || (svc as any)?.serviceName || `Service ${aIdx + 1}`;
+                      const key = `${(svc as any)?._id || svcId}-${aIdx}`;
+                      return (
+                        <div key={key} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Icon name="check" className="text-green-500 w-4 h-4" />
+                            <Typography variant="body2" className="text-gray-700">
+                              {name}
+                            </Typography>
+                          </div>
+                          <Typography variant="body2" className="text-gray-500">
+                            {usedCount}/{totalAllowed === -1 ? 'Unlimited' : totalAllowed} used
+                          </Typography>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -390,26 +448,26 @@ const HealthCardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Used Services */}
+        {/* Service Usage */}
         <div className="max-w-4xl mx-auto">
           <Typography variant="h5" className="text-gray-900 font-bold mb-6 text-center">
-            Recent Services
+            Service Usage
           </Typography>
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
             {usedServices.length === 0 ? (
               <div className="flex flex-col items-center py-8">
                 <Icon name="info" className="w-12 h-12 text-gray-300 mb-4" />
                 <Typography variant="body1" className="text-gray-600 mb-2">
-                  No services used yet
+                  No services available
                 </Typography>
                 <Typography variant="body2" className="text-gray-400">
-                  Your recent health services will appear here.
+                  {hasActiveSubscription ? 'Your subscription services will appear here.' : 'Purchase a subscription to access health services.'}
                 </Typography>
               </div>
             ) : (
               <div className="space-y-4">
-                {usedServices.map((service) => (
-                  <div key={service.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                {usedServices.map((service, uIdx) => (
+                  <div key={`${service.id || service.serviceId}-${uIdx}`} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-[#0E3293] rounded-full flex items-center justify-center">
                         <Icon name={service.type === 'Consultation' ? 'appointment' : 'heart'} className="w-5 h-5 text-white" />
@@ -419,18 +477,27 @@ const HealthCardPage: React.FC = () => {
                           {service.name}
                         </Typography>
                         <Typography variant="body2" className="text-gray-600">
-                          {service.type} • {new Date(service.date).toLocaleDateString()}
+                          Used: {service.usedCount}/{service.totalAllowed === -1 ? 'Unlimited' : service.totalAllowed} • Available since {new Date(service.date).toLocaleDateString()}
                         </Typography>
                       </div>
                     </div>
                     <div className="text-right">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        service.status === 'Completed' ? 'bg-green-100 text-green-800' :
-                        service.status === 'Delivered' ? 'bg-blue-100 text-blue-800' :
-                        'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {service.status}
-                      </span>
+                      <div className="flex flex-col items-end space-y-1">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          service.totalAllowed === -1 ? 'bg-purple-100 text-purple-800' :
+                          service.usedCount === 0 ? 'bg-green-100 text-green-800' :
+                          service.usedCount < service.totalAllowed ? 'bg-blue-100 text-blue-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {service.totalAllowed === -1 ? 'Unlimited' :
+                           service.usedCount === 0 ? 'Available' :
+                           service.usedCount < service.totalAllowed ? 'Partially Used' :
+                           'Fully Used'}
+                        </span>
+                        <Typography variant="body2" className="text-gray-500 text-xs">
+                          {service.totalAllowed === -1 ? 'Unlimited remaining' : `${service.totalAllowed - service.usedCount} remaining`}
+                        </Typography>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -439,67 +506,7 @@ const HealthCardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Subscription Plans Preview */}
-        <div className="max-w-6xl mx-auto mt-12">
-          <Typography variant="h5" className="text-gray-900 font-bold mb-6 text-center">
-            Subscription Plan Options
-          </Typography>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subscriptionPlans.slice(0,3).map((plan) => (
-              <div
-                key={plan._id}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
-              >
-                <div className="text-center mb-6">
-                  <Typography variant="h6" className="text-gray-900 font-bold mb-2">
-                    {plan.subscriptionName || 'Subscription Plan'}
-                  </Typography>
-                  <div className="text-3xl font-bold text-[#0E3293] mb-2">
-                    ₹{plan.price || 0}
-                  </div>
-                  <Typography variant="body2" className="text-gray-600">
-                    {plan.duration ? 
-                      `${plan.duration.value} ${plan.duration.unit}${plan.duration.value > 1 ? 's' : ''}` : 
-                      'Duration not specified'
-                    }
-                  </Typography>
-                </div>
-                <div className="space-y-3 mb-6">
-                  <Typography variant="body2" className="text-gray-600 mb-3 font-medium">
-                    Available Services:
-                  </Typography>
-                  {plan.availableServices?.slice(0, 3).map((service) => (
-                    <div key={service._id} className="flex items-center space-x-3">
-                      <Icon name="check" className="text-green-500 w-4 h-4" />
-                      <Typography variant="body2" className="text-gray-700">
-                        {service.serviceName}
-                      </Typography>
-                    </div>
-                  ))}
-                  {plan.availableServices && plan.availableServices.length > 3 && (
-                    <Typography variant="body2" className="text-gray-400 ml-7">
-                      +{plan.availableServices.length - 3} more
-                    </Typography>
-                  )}
-                </div>
-                <Button
-                  onClick={() => handlePlanSelect(plan)}
-                  className="w-full py-3 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200"
-                >
-                  Select Plan
-                </Button>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-8">
-            <Button
-              onClick={handleSubscribe}
-              className="px-8 py-4 bg-gradient-to-r from-[#0E3293] to-blue-600 hover:from-[#0A2470] hover:to-blue-700 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
-            >
-              View All Plans
-            </Button>
-          </div>
-        </div>
+        {/* Subscription Plans Preview removed for minimal UI */}
       </div>
     </div>
   );

@@ -1,5 +1,74 @@
 // Health Card Subscription Types
 
+// API Response interfaces matching your actual data structure
+export interface ApiSubscriptionService {
+  _id: string;
+  serviceName: string;
+}
+
+export interface ApiAvailableService {
+  service: string;
+  totalAllowed: number;
+  used: any[];
+  _id: string;
+}
+
+export interface ApiSubscriptionPlan {
+  duration: {
+    value: number;
+    unit: string;
+  };
+  _id: string;
+  subscriptionName: string;
+  price: number;
+  availableServices: ApiSubscriptionService[];
+  adminId: string;
+  allowFamilyMembers: boolean;
+  isDeleted: boolean;
+  createdAt: string;
+  __v: number;
+}
+
+export interface ApiCardHolder {
+  _id: string;
+  Email: string;
+  UserID: string;
+  mobileTokens: any[];
+  UserType: string;
+  FullName?: string;
+  MobileNumber?: any[];
+  profilePhoto?: string;
+  Gender?: string;
+  DateOfBirth?: string;
+  Age?: number;
+  BloodGroup?: string;
+  Height?: number;
+  Weight?: number;
+  Country?: string;
+  State?: string;
+  City?: string;
+  Address?: string;
+  ChronicDiseases?: string[];
+  Allergies?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ApiUserSubscription {
+  _id: string;
+  CardHolder: ApiCardHolder;
+  availableServices: ApiAvailableService[];
+  familyMembers: any[];
+  purchasedAt: string;
+  status: 'active' | 'expired' | 'cancelled' | 'suspended';
+  subscription: ApiSubscriptionPlan;
+  subscriptionEndDate: string;
+  subscriptionNumber: string;
+  subscriptionStartDate: string;
+  __v: number;
+}
+
+// Legacy interfaces for backward compatibility
 export interface SubscriptionPlan {
   id: string;
   name: string;
@@ -46,94 +115,4 @@ export interface PaymentDetails {
   currency: string;
   transactionId?: string;
 }
-
-// Mock data for subscription plans
-export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
-  {
-    id: 'free-basic',
-    name: 'Basic Free',
-    type: 'free',
-    price: 0,
-    duration: 'Forever',
-    description: 'Basic health card with no benefits',
-    color: 'gray',
-    benefits: [
-      'Digital health card',
-      'Basic profile storage',
-      'No consultation benefits',
-      'No discounts available'
-    ]
-  },
-  {
-    id: 'daily-plan',
-    name: 'Daily Plan',
-    type: 'daily',
-    price: 5,
-    duration: '1 Day',
-    description: 'Perfect for single consultations',
-    color: '#0e3293',
-    benefits: [
-      '1 free doctor consultation',
-      '10% discount on medicines',
-      'Priority booking',
-      'Digital health card',
-      'Basic health tips'
-    ]
-  },
-  {
-    id: 'monthly-plan',
-    name: 'Monthly Plan',
-    type: 'monthly',
-    price: 30,
-    duration: '30 Days',
-    description: 'Great for regular health monitoring',
-    color: '#0e3293',
-    isPopular: true,
-    benefits: [
-      '5 free doctor consultations',
-      '15% discount on medicines',
-      'Priority booking',
-      'Digital health card',
-      'Health tips & reminders',
-      'Basic lab test discounts'
-    ]
-  },
-  {
-    id: 'quarterly-plan',
-    name: 'Quarterly Plan',
-    type: 'quarterly',
-    price: 80,
-    duration: '90 Days',
-    description: 'Best value for families',
-    color: '#0e3293',
-    benefits: [
-      '15 free doctor consultations',
-      '20% discount on medicines',
-      'Priority booking',
-      'Digital health card',
-      'Advanced health insights',
-      '15% lab test discounts',
-      'Family member coverage'
-    ]
-  },
-  {
-    id: 'annual-plan',
-    name: 'Annual Plan',
-    type: 'annual',
-    price: 300,
-    duration: '365 Days',
-    description: 'Complete healthcare solution',
-    color: '#0e3293',
-    benefits: [
-      'Unlimited doctor consultations',
-      '25% discount on medicines',
-      'Priority booking',
-      'Digital health card',
-      'Premium health insights',
-      '25% lab test discounts',
-      'Family member coverage',
-      'Annual health checkup',
-      '24/7 health support'
-    ]
-  }
-];
+// Note: Mock SUBSCRIPTION_PLANS removed to rely solely on API-driven data.
