@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { UniversalHeader, FeatureCard, Icon, AppointmentCard, Typography, DailyTips, AutoScrollBanner, DoctorCard } from '../../components/atoms';
 import type { IconName } from '../../components/atoms/Icon';
@@ -172,7 +173,7 @@ const HomePage: React.FC = () => {
       id: '1',
       title: 'Vaccination',
       description: 'Schedule your COVID-19 vaccination or booster today',
-      imageUri: '/images/default-doctor.png',
+      imageUri: 'https://img.freepik.com/free-photo/doctor-with-stethoscope-hands-hospital-background_1423-1.jpg',
       actionText: 'Book Now',
       onPress: () => handleFeaturePress('Vaccination'),
     },
@@ -200,7 +201,90 @@ const HomePage: React.FC = () => {
       actionText: 'Order Now',
       onPress: () => handleFeaturePress('Medicine Delivery'),
     },
+    {
+      id: '2',
+      title: 'Health Check-up',
+      description: 'Complete health packages at special prices',
+      imageUri: 'https://images.unsplash.com/photo-1559757175-0eb30cd8c063?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      actionText: 'Check Offers',
+      onPress: () => handleFeaturePress('Health Check-up'),
+    },
+    {
+      id: '4',
+      title: 'Medicine Delivery',
+      description: 'Get medicines delivered at your doorstep',
+      imageUri: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      actionText: 'Order Now',
+      onPress: () => handleFeaturePress('Medicine Delivery'),
+    },
   ];
+ 
+  // Auto-scroll desktop health promotions
+  const promoScrollRef = useRef<HTMLDivElement | null>(null);
+  const [duplication, setDuplication] = useState(1);
+  useEffect(() => {
+    const container = promoScrollRef.current;
+    if (!container) return;
+
+    const getStep = () => {
+      const first = container.firstElementChild as HTMLElement | null;
+      const cardWidth = first?.getBoundingClientRect().width ?? 320; // fallback width for w-80
+      const gap = 16; // Tailwind space-x-4
+      return cardWidth + gap;
+    };
+
+    // Start after a short delay to ensure layout is measured
+    const tick = () => {
+      const c = promoScrollRef.current;
+      if (!c) return;
+      // Compute one full set width for seamless looping
+      const first = c.firstElementChild as HTMLElement | null;
+      const cardWidth = first?.getBoundingClientRect().width ?? 320;
+      const gap = 16;
+      const oneSetWidth = bannerData.length * cardWidth + Math.max(0, bannerData.length - 1) * gap;
+
+      // If we've scrolled beyond one set, jump back by exactly one set (no animation)
+      if (c.scrollLeft >= oneSetWidth) {
+        c.scrollTo({ left: c.scrollLeft - oneSetWidth });
+      }
+
+      // Advance by one card (with gap)
+      c.scrollBy({ left: getStep(), behavior: 'smooth' });
+    };
+
+    const startId = window.setTimeout(() => {
+      // initial move so it looks active right away
+      tick();
+      const intervalId = window.setInterval(tick, 3000);
+      // Store interval id on the element to clear later
+      (container as any)._autoScrollId = intervalId;
+    }, 300);
+
+    return () => {
+      window.clearTimeout(startId);
+      const id = (container as any)._autoScrollId as number | undefined;
+      if (id) window.clearInterval(id);
+    };
+  }, [bannerData.length]);
+
+  // Ensure overflow on very wide screens by duplicating items
+  useEffect(() => {
+    const updateDuplication = () => {
+      const c = promoScrollRef.current;
+      if (!c) return;
+      const first = c.firstElementChild as HTMLElement | null;
+      const cardWidth = first?.getBoundingClientRect().width ?? 320;
+      const gap = 16;
+      const singleRowWidth = bannerData.length * cardWidth + Math.max(0, bannerData.length - 1) * gap;
+      if (singleRowWidth <= 0) return;
+      const needed = Math.max(1, Math.ceil((c.clientWidth + 1) / singleRowWidth) + 1);
+      setDuplication(Math.max(2, Math.min(needed, 4))); // ensure at least two sets for seamless loop
+    };
+
+    updateDuplication();
+    window.addEventListener('resize', updateDuplication);
+    return () => window.removeEventListener('resize', updateDuplication);
+  }, [bannerData.length]);
 
   // Convert API doctors to format expected by DoctorCard component
   const convertedDoctors = doctors.map(doctor => ({
@@ -399,10 +483,55 @@ const HomePage: React.FC = () => {
             </Typography>
           </div>
 
-          <AutoScrollBanner
-            data={bannerData}
-            autoScrollInterval={4000}
-          />
+          {/* Mobile: keep auto scroll banner */}
+          <div className="md:hidden">
+            <AutoScrollBanner
+              data={bannerData}
+              autoScrollInterval={4000}
+            />
+          </div>
+
+          {/* Desktop: grid cards with non-cropped images (now horizontally scrollable) */}
+          <div className="hidden md:block">
+            <div ref={promoScrollRef} className="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide">
+              {Array.from({ length: duplication }).map((_, dupIndex) => (
+                <React.Fragment key={`dup-${dupIndex}`}>
+                  {bannerData.map((item, index) => (
+                    <div
+                      key={`${item.id}-${index}-${dupIndex}`}
+                      className="flex-shrink-0 w-80 group bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="relative w-full aspect-[16/9] bg-gray-50">
+                        <Image
+                          src={item.imageUri}
+                          alt={item.title}
+                          fill
+                          sizes="(min-width: 768px) 25vw"
+                          className="object-contain p-2"
+                        />
+                      </div>
+                      <div className="p-4">
+                        <Typography variant="body1" className="text-gray-900 font-semibold">
+                          {item.title}
+                        </Typography>
+                        <Typography variant="body2" className="text-gray-600 mt-1">
+                          {item.description}
+                        </Typography>
+                        <button
+                          className="mt-3 inline-flex items-center bg-blue-800 hover:bg-blue-900 text-white py-2 px-4 rounded-full transition-colors duration-200"
+                          onClick={item.onPress}
+                        >
+                          <Typography variant="body2" className="text-white font-medium">
+                            {item.actionText}
+                          </Typography>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* Top Doctors Section */}

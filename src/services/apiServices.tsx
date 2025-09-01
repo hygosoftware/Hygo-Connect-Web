@@ -1633,29 +1633,30 @@ export const paymentService = {
 // Helper functions
 export const doctorHelpers = {
   // Get full image URL for doctor profile
-  getFullImageUrl: (imagePath: string): string => {
-    // Fallback immediately if not provided
-    // if (!imagePath || typeof imagePath !== 'string') return '/images/default-doctor.png';
-
-    // If the provided path (even a full URL) points to the backend's default image, use local asset
-    const imagePathLower = imagePath.toLowerCase();
-    
-
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
+  getFullImageUrl: (imagePath?: string | null): string => {
+    // Guard: invalid input -> local default image
+    if (!imagePath || typeof imagePath !== 'string' || imagePath.trim() === '') {
+      return '/images/default-doctor.png';
     }
 
-    // Clean the path to avoid double slashes and duplicate paths
-    let cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+    const safePath = imagePath.trim();
 
-    // Remove any existing API path prefixes to avoid duplication
-    cleanPath = cleanPath.replace(/^api\/V0\//, '');
-    cleanPath = cleanPath.replace(/^uploads\//, '');
-    cleanPath = cleanPath.replace(/^images\//, '');
+    // Absolute URL: return as-is
+    if (safePath.startsWith('http://') || safePath.startsWith('https://')) {
+      return safePath;
+    }
 
-    // If the backend doesn't host the default image, use local public asset
-   
-    // Prefer backend uploads path for real images
+    // Normalize and strip known prefixes
+    let cleanPath = safePath.startsWith('/') ? safePath.substring(1) : safePath;
+    cleanPath = cleanPath.replace(/^api\/v0\//i, '');
+    cleanPath = cleanPath.replace(/^uploads\//i, '');
+    cleanPath = cleanPath.replace(/^images\//i, '');
+
+    // Fallback if API base URL is missing
+    if (!API_BASE_URL) {
+      return '/images/default-doctor.png';
+    }
+
     return `${API_BASE_URL}/uploads/${cleanPath}`;
   },
 

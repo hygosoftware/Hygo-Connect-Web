@@ -4,6 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { Search, Filter, MapPin, Star, Clock, Users, X, Stethoscope, Building2, RefreshCw, AlertCircle } from 'lucide-react';
 import { UniversalHeader, Input, Icon, Typography } from '../atoms';
+import { doctorHelpers } from '../../services/apiServices';
 
 interface Qualification {
   _id: string;
@@ -101,16 +102,6 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
   onRetry = () => { },
   onErrorDetails = () => { },
 }) => {
-  const getFullImageUrl = (imagePath: string) => {
-    if (!imagePath) return '/placeholder.svg?height=80&width=80';
-    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-      return imagePath;
-    }
-    let cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
-    cleanPath = cleanPath.replace(/^api\/V0\//, '');
-    cleanPath = cleanPath.replace(/^uploads\//, '');
-    return `https://hygo-backend.onrender.com/api/V0/uploads/${cleanPath}`;
-  };
 
   const availableDoctors = doctors.filter(d => d.isAvailableNow).length;
   const displayDoctors = filteredDoctors.length > 0 ? filteredDoctors : doctors;
@@ -380,7 +371,7 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
                 key={doctor._id}
                 doctor={doctor}
                 onPress={() => onDoctorPress(doctor)}
-                getFullImageUrl={getFullImageUrl}
+                getFullImageUrl={(p: string) => doctorHelpers.getFullImageUrl(p)}
                 index={index}
               />
             ))}
@@ -417,14 +408,14 @@ const DoctorListItem: React.FC<DoctorListItemProps> = ({ doctor, onPress, getFul
           <div className="relative flex-shrink-0">
             <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-100 bg-gray-50">
               <Image
-                src={profileImageUrl || "/placeholder.svg"}
+                src={profileImageUrl || "/images/default-doctor.png"}
                 alt={doctor.fullName}
                 width={64}
                 height={64}
                 className="w-full h-full object-cover"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
-                  target.src = '/placeholder.svg?height=64&width=64';
+                  target.src = '/images/default-doctor.png';
                 }}
               />
             </div>

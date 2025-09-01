@@ -98,18 +98,18 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
 
   const ToastItem: React.FC<{ toast: Toast }> = ({ toast }) => (
     <div
-      className={`max-w-sm w-full rounded-lg border p-4 shadow-lg transition-all duration-300 ${getToastColors(toast.type)}`}
+      className={`max-w-md w-[92vw] sm:w-auto rounded-lg border p-4 shadow-lg transition-all duration-300 ${getToastColors(toast.type)}`}
     >
       <div className="flex items-start">
         <div className="flex-shrink-0 mr-3">
           {getToastIcon(toast.type)}
         </div>
         <div className="flex-1 min-w-0">
-          <Typography variant="body2" className="font-medium mb-1">
+          <Typography variant="body2" className="font-medium mb-1 break-words">
             {toast.title}
           </Typography>
           {toast.message && (
-            <Typography variant="caption" className="opacity-90">
+            <Typography variant="caption" className="opacity-90 whitespace-pre-line break-words">
               {toast.message}
             </Typography>
           )}

@@ -1,7 +1,7 @@
 import React from 'react';
 
 export type IconName =
-  | 'email' | 'eye' | 'eye-off' | 'check' | 'x' | 'alert' | 'arrow-left' | 'menu' | 'location' | 'chevron-down' | 'chevron-left' | 'chevron-right' | 'notification' | 'plus' | 'user' | 'document' | 'pill' | 'news' | 'logout' | 'pills' | 'family' | 'doctor' | 'health-card' | 'records' | 'robot' | 'appointment' | 'laboratory' | 'video' | 'hospital' | 'clock' | 'calendar' | 'qr-code' | 'lightbulb' | 'water' | 'apple' | 'brain' | 'sleep' | 'activity' | 'hygiene' | 'chair' | 'heart' | 'home' | 'bell' | 'bell-off' | 'pill-off' | 'capsule' | 'bottle-tonic' | 'needle' | 'food' | 'edit' | 'trash' | 'chevron-up' | 'search' | 'filter' | 'star' | 'close' | 'refresh' | 'file' | 'folder' | 'upload' | 'download' | 'share' | 'image' | 'audio' | 'loader' | 'check-circle' | 'credit-card' | 'smartphone' | 'wallet' | 'shield' | 'users' | 'info' | 'phone';
+  | 'email' | 'eye' | 'eye-off' | 'check' | 'x' | 'alert' | 'arrow-left' | 'menu' | 'location' | 'chevron-down' | 'chevron-left' | 'chevron-right' | 'notification' | 'plus' | 'user' | 'document' | 'pill' | 'news' | 'logout' | 'pills' | 'family' | 'doctor' | 'health-card' | 'records' | 'robot' | 'appointment' | 'laboratory' | 'video' | 'hospital' | 'clock' | 'calendar' | 'qr-code' | 'lightbulb' | 'water' | 'apple' | 'brain' | 'sleep' | 'activity' | 'hygiene' | 'chair' | 'heart' | 'home' | 'bell' | 'bell-off' | 'pill-off' | 'capsule' | 'bottle-tonic' | 'needle' | 'food' | 'edit' | 'trash' | 'chevron-up' | 'search' | 'filter' | 'star' | 'close' | 'refresh' | 'file' | 'folder' | 'upload' | 'download' | 'share' | 'image' | 'audio' | 'loader' | 'check-circle' | 'credit-card' | 'smartphone' | 'wallet' | 'shield' | 'users' | 'info' | 'phone' | 'grid';
 
 export interface IconProps {
   name: IconName;
@@ -432,6 +432,14 @@ const Icon: React.FC<IconProps> = ({
     phone: (
       <svg className={iconClasses} fill="none" stroke={color} viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+      </svg>
+    ),
+    grid: (
+      <svg className={iconClasses} fill="none" stroke={color} viewBox="0 0 24 24">
+        <rect x="3" y="3" width="8" height="8" rx="1" />
+        <rect x="13" y="3" width="8" height="8" rx="1" />
+        <rect x="3" y="13" width="8" height="8" rx="1" />
+        <rect x="13" y="13" width="8" height="8" rx="1" />
       </svg>
     ),
   };

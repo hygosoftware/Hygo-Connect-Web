@@ -287,53 +287,55 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
     ) as T;
   }
 
-  const handleAddMember = async () => {
-    if (newMemberName.trim()) {
-      try {
-        // Guard: ensure user is logged in
-        if (!userId) {
-          setError('Please login to add a family member.');
-          return;
-        }
-        const memberData = removeUndefined(convertUiToApiMember({
-          name: newMemberName.trim(),
-          email: newMemberEmail.trim() || undefined,
-          mobileNumber: newMemberMobile.trim() || undefined,
-        }));
-
-        console.log('Payload being sent to addFamilyMember:', memberData);
-        const addedMember = await familyMemberService.addFamilyMember(userId, memberData);
-
-        if (addedMember) {
-          const uiMember = convertApiToUiMember(addedMember);
-          uiMember.relation = newMemberRelation.trim(); // Set the relation from form
-          // Optimistically add to list and select
-          setFamilyMembers([...familyMembers, uiMember]);
-          if (!selectedMember) {
-            setSelectedMember(uiMember.id);
-          }
-          // Refresh list from server to ensure data is up-to-date
-          await loadFamilyMembers();
-          // Ensure the newly added member stays selected if available
-          if (uiMember.id) {
-            setSelectedMember(uiMember.id);
-          }
-          setNewMemberName('');
-          // removed unused age field
-          setNewMemberRelation('');
-          setNewMemberEmail('');
-          setNewMemberMobile('');
-          setShowAddMember(false);
-        } else {
-          setError('Failed to add family member');
-        }
-      } catch (error) {
-        setError('Failed to add family member');
+  const handleAddMember = async (): Promise<boolean> => {
+    if (!newMemberName.trim()) return false;
+    try {
+      // Guard: ensure user is logged in
+      if (!userId) {
+        setError('Please login to add a family member.');
+        return false;
       }
+      const memberData = removeUndefined(convertUiToApiMember({
+        name: newMemberName.trim(),
+        email: newMemberEmail.trim() || undefined,
+        mobileNumber: newMemberMobile.trim() || undefined,
+      }));
+
+      console.log('Payload being sent to addFamilyMember:', memberData);
+      const addedMember = await familyMemberService.addFamilyMember(userId, memberData);
+
+      if (addedMember) {
+        const uiMember = convertApiToUiMember(addedMember);
+        uiMember.relation = newMemberRelation.trim(); // Set the relation from form
+        // Optimistically add to list and select
+        setFamilyMembers([...familyMembers, uiMember]);
+        if (!selectedMember) {
+          setSelectedMember(uiMember.id);
+        }
+        // Refresh list from server to ensure data is up-to-date
+        await loadFamilyMembers();
+        // Ensure the newly added member stays selected if available
+        if (uiMember.id) {
+          setSelectedMember(uiMember.id);
+        }
+        setNewMemberName('');
+        // removed unused age field
+        setNewMemberRelation('');
+        setNewMemberEmail('');
+        setNewMemberMobile('');
+        setShowAddMember(false);
+        return true;
+      } else {
+        setError('Failed to add family member');
+        return false;
+      }
+    } catch (error) {
+      setError('Failed to add family member');
+      return false;
     }
   };
 
-  const handleDeleteMember = async (memberId: string) => {
+  const handleDeleteMember = async (memberId: string): Promise<boolean> => {
     try {
       const success = await familyMemberService.deleteFamilyMember(memberId);
 
@@ -343,20 +345,23 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         if (selectedMember === memberId) {
           setSelectedMember(nextList[0]?.id || '');
         }
+        return true;
       } else {
         setError('Failed to delete family member');
+        return false;
       }
     } catch (error) {
       setError('Failed to delete family member');
+      return false;
     }
   };
 
-  const handleEditMember = async (memberId: string, updatedData: Partial<FamilyMember>) => {
+  const handleEditMember = async (memberId: string, updatedData: Partial<FamilyMember>): Promise<boolean> => {
     try {
       // Guard: ensure user is logged in
       if (!userId) {
         setError('Please login to update a family member.');
-        return;
+        return false;
       }
       const apiUpdates = convertUiToApiMember(updatedData);
       const updatedMember = await familyMemberService.updateFamilyMember(memberId, apiUpdates);
@@ -372,11 +377,14 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         setFamilyMembers(familyMembers.map(member =>
           member.id === memberId ? uiMember : member
         ));
+        return true;
       } else {
         setError('Failed to update family member');
+        return false;
       }
     } catch (error) {
       setError('Failed to update family member');
+      return false;
     }
   };
 
@@ -460,9 +468,9 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         newMemberMobile={newMemberMobile}
         onGoBack={handleGoBack}
         onMemberSelect={(id) => { void handleMemberSelect(id); }}
-        onAddMember={() => { void handleAddMember(); }}
-        onDeleteMember={(id) => { void handleDeleteMember(id); }}
-        onEditMember={(id, data) => { void handleEditMember(id, data); }}
+        onAddMember={handleAddMember}
+        onDeleteMember={handleDeleteMember}
+        onEditMember={handleEditMember}
         onCancelAdd={handleCancelAdd}
         onMemberDetails={(id) => { void handleMemberDetails(id); }}
         onShowAddMember={() => setShowAddMember(true)}

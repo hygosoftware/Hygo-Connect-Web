@@ -50,9 +50,9 @@ interface FamilyMemberUIProps {
   // Handlers
   onGoBack: () => void;
   onMemberSelect: (memberId: string) => void;
-  onAddMember: () => void;
-  onDeleteMember: (memberId: string) => void;
-  onEditMember: (memberId: string, updatedData: Partial<FamilyMember>) => void;
+  onAddMember: () => Promise<boolean>;
+  onDeleteMember: (memberId: string) => Promise<boolean>;
+  onEditMember: (memberId: string, updatedData: Partial<FamilyMember>) => Promise<boolean>;
   onCancelAdd: () => void;
   onMemberDetails: (memberId: string) => void;
   onShowAddMember: () => void;
@@ -87,8 +87,8 @@ const Toast: React.FC<ToastProps & { onHide?: () => void }> = ({
   }[type];
 
   return (
-    <div className={`fixed bottom-24 left-4 right-4 ${bgColor} py-3 px-4 rounded-xl shadow-lg z-50 transition-all duration-300`}>
-      <p className="text-white font-medium text-center">{message}</p>
+    <div className={`fixed bottom-6 left-1/2 -translate-x-1/2 ${bgColor} py-3 px-4 rounded-xl shadow-lg z-50 transition-all duration-300 max-w-md w-[92vw] sm:w-auto`}>
+      <p className="text-white font-medium text-center break-words">{message}</p>
     </div>
   );
 };
@@ -283,32 +283,52 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
     onShowAddMember();
   };
 
-  const handleDeletePress = (memberId: string) => {
+  const handleDeletePress = async (memberId: string) => {
     if (window.confirm('Are you sure you want to delete this family member?')) {
-      onDeleteMember(memberId);
-      showToast('Family member deleted successfully!', 'success');
+      try {
+        const ok = await onDeleteMember(memberId);
+        if (ok) {
+          showToast('Family member deleted successfully!', 'success');
+        } else {
+          showToast('Failed to delete family member.', 'error');
+        }
+      } catch {
+        showToast('Failed to delete family member.', 'error');
+      }
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!newMemberName.trim()) {
       showToast('Full name is required.', 'error');
       return;
     }
 
-    if (editingMemberId) {
-      onEditMember(editingMemberId, {
-        name: newMemberName,
-        email: newMemberEmail,
-        mobileNumber: newMemberMobile,
-      });
-      showToast('Family member updated successfully!', 'success');
-    } else {
-      onAddMember();
-      showToast('Family member added successfully!', 'success');
+    try {
+      if (editingMemberId) {
+        const ok = await onEditMember(editingMemberId, {
+          name: newMemberName,
+          email: newMemberEmail,
+          mobileNumber: newMemberMobile,
+        });
+        if (ok) {
+          showToast('Family member updated successfully!', 'success');
+          setEditingMemberId(null);
+        } else {
+          showToast('Failed to update family member.', 'error');
+        }
+      } else {
+        const ok = await onAddMember();
+        if (ok) {
+          showToast('Family member added successfully!', 'success');
+          setEditingMemberId(null);
+        } else {
+          showToast('Failed to add family member.', 'error');
+        }
+      }
+    } catch {
+      showToast('Something went wrong. Please try again.', 'error');
     }
-
-    setEditingMemberId(null);
   };
 
   const handleCancel = () => {

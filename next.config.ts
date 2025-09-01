@@ -18,6 +18,7 @@ const nextConfig = {
       'newsinhealth.nih.gov',
       'res.cloudinary.com',
       'ui-avatars.com',
+      'img.freepik.com',
     ],
     remotePatterns: [
       {
@@ -49,6 +50,12 @@ const nextConfig = {
         hostname: 'ui-avatars.com',
         port: '',
         pathname: '/api/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'img.freepik.com',
+        port: '',
+        pathname: '/**',
       },
       {
         protocol: 'https',

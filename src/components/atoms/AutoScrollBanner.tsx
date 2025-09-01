@@ -72,44 +72,75 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
     const [imageError, setImageError] = useState(false);
     return (
       <div
-        key={item.id}
+        key={`${item.id}-${index}`}
         className={`absolute inset-0 transition-opacity duration-500 ${
           index === currentIndex ? 'opacity-100' : 'opacity-0'
         }`}
       >
-        <div className="relative w-full h-40 rounded-xl overflow-hidden">
-          {/* Show fallback background only if image fails */}
+        <div className="relative w-full h-40 md:h-64 lg:h-80 rounded-2xl overflow-hidden bg-gray-100">
+          {/* Fallback gradient if image fails */}
           {imageError && (
             <div className="absolute inset-0" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}} />
           )}
+
+          {/* Mobile background image (cover) */}
           <Image
             src={item.imageUri}
             alt={item.title}
             fill
-            sizes="(max-width: 768px) 100vw, 50vw"
-            className="object-cover"
+            sizes="(max-width: 768px) 100vw"
+            className="object-cover md:hidden"
             onError={() => setImageError(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-xl p-4 flex flex-col justify-between">
-            <div>
-              <Typography variant="h5" className="text-white font-bold mb-1">
-                {item.title}
-              </Typography>
-              <Typography variant="body2" className="text-white">
-                {item.description}
-              </Typography>
+
+          {/* Desktop blurred background (cover) */}
+          <Image
+            src={item.imageUri}
+            alt={`${item.title} background`}
+            fill
+            sizes="(min-width: 768px) 100vw"
+            className="hidden md:block object-cover opacity-40 blur-sm"
+            onError={() => setImageError(true)}
+          />
+
+          {/* Content layer */}
+          <div className="absolute inset-0 rounded-2xl p-4 md:p-6 flex flex-col justify-between md:grid md:grid-cols-2 md:gap-4">
+            {/* Left: Text */}
+            <div className="relative z-10 md:flex md:flex-col md:justify-center md:items-start bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-2xl md:bg-transparent">
+              <div>
+                <Typography variant="h5" className="text-white font-bold mb-1 text-lg md:text-2xl">
+                  {item.title}
+                </Typography>
+                <Typography variant="body2" className="text-white text-xs md:text-sm">
+                  {item.description}
+                </Typography>
+              </div>
+              <button
+                className="self-start bg-blue-800 hover:bg-blue-900 mt-3 py-2 px-4 rounded-full transition-colors duration-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  item.onPress();
+                }}
+              >
+                <Typography variant="body2" className="text-white font-medium">
+                  {item.actionText}
+                </Typography>
+              </button>
             </div>
-            <button
-              className="self-start bg-blue-800 hover:bg-blue-900 py-2 px-4 rounded-full transition-colors duration-200"
-              onClick={(e) => {
-                e.stopPropagation();
-                item.onPress();
-              }}
-            >
-              <Typography variant="body2" className="text-white font-medium">
-                {item.actionText}
-              </Typography>
-            </button>
+
+            {/* Right: Non-cropped image on desktop */}
+            <div className="hidden md:flex items-center justify-center">
+              <div className="relative w-full h-full">
+                <Image
+                  src={item.imageUri}
+                  alt={item.title}
+                  fill
+                  sizes="(min-width: 768px) 50vw"
+                  className="object-contain p-2 md:p-4"
+                  onError={() => setImageError(true)}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -150,7 +181,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
     <div className={`mb-4 ${className}`}>
       <div 
         ref={containerRef}
-        className="relative w-full h-40 rounded-xl overflow-hidden"
+        className="relative w-full h-40 md:h-64 lg:h-80 rounded-2xl overflow-hidden"
       >
         {data.map((item, index) => renderBannerItem(item, index))}
       </div>
