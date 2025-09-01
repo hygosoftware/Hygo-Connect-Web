@@ -137,6 +137,10 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
     const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg'];
     if (imageExtensions.some(ext => lowerFileType.endsWith(ext))) return true;
     
+    // Check for common image MIME types without prefix
+    const imageMimeTypes = ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'];
+    if (imageMimeTypes.some(type => lowerFileType.includes(type))) return true;
+    
     // Check for other previewable types
     return (
       lowerFileType.startsWith('video/') ||
@@ -178,14 +182,25 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       );
     }
 
-    // Handle image files
-    if (fileType.startsWith('image/') || 
-        fileType.endsWith('.png') || 
-        fileType.endsWith('.jpg') || 
-        fileType.endsWith('.jpeg') || 
-        fileType.endsWith('.gif') || 
-        fileType.endsWith('.webp') ||
-        fileType.endsWith('.svg')) {
+    // Handle image files - improved detection
+    const lowerFileType = fileType.toLowerCase();
+    const isImageFile = (
+      lowerFileType.startsWith('image/') || 
+      lowerFileType.endsWith('.png') || 
+      lowerFileType.endsWith('.jpg') || 
+      lowerFileType.endsWith('.jpeg') || 
+      lowerFileType.endsWith('.gif') || 
+      lowerFileType.endsWith('.webp') ||
+      lowerFileType.endsWith('.svg') ||
+      lowerFileType.includes('png') ||
+      lowerFileType.includes('jpg') ||
+      lowerFileType.includes('jpeg') ||
+      lowerFileType.includes('gif') ||
+      lowerFileType.includes('webp') ||
+      lowerFileType.includes('svg')
+    );
+    
+    if (isImageFile) {
       
       // Get the API base URL and userId
       const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
@@ -197,12 +212,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
         : `${API_BASE}/file/${userId}/${folderId}/${fileId}`;
       
       return (
-        <div className="flex items-center justify-center bg-gray-50 rounded-lg p-4">
-          <div className="relative w-full h-96 flex items-center justify-center">
+        <div className="flex items-center justify-center bg-gray-50 p-3 sm:p-4 min-h-[50vh] sm:min-h-[60vh]">
+          <div className="relative w-full h-full flex items-center justify-center">
             <img
               src={imageUrl}
               alt={fileName || 'Preview'}
               className="max-w-full max-h-full object-contain rounded-lg shadow-sm"
+              style={{ maxHeight: '70vh' }}
               onError={(e) => {
                 const img = e.currentTarget;
                 console.error('Error loading image:', imageUrl);
@@ -218,13 +234,13 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
               }}
             />
             <div className="hidden absolute inset-0 flex-col items-center justify-center text-center text-gray-500 bg-white p-4 rounded-lg">
-              <Icon name="image" size="large" className="text-gray-400 mb-2" />
-              <p className="text-lg font-medium">Image preview not available</p>
-              <p className="text-sm mt-1">The image could not be loaded.</p>
-              <div className="mt-4 space-x-2">
+              <Icon name="image" size="large" className="text-gray-400 mb-4" />
+              <p className="text-lg font-medium mb-2">Image preview not available</p>
+              <p className="text-sm mb-6">The image could not be loaded.</p>
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => window.open(imageUrl, '_blank')}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm"
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
                 >
                   Open in New Tab
                 </button>
@@ -237,19 +253,18 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                     link.click();
                     document.body.removeChild(link);
                   }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors text-sm ml-2"
+                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors text-sm"
                 >
                   Download
                 </button>
               </div>
-              <p className="text-xs mt-4 text-gray-400">URL: {imageUrl}</p>
             </div>
           </div>
         </div>
       );
     }
 
-    if (fileType.startsWith('video/')) {
+    if (fileType.toLowerCase().startsWith('video/')) {
       return (
         <div className="bg-gray-50 rounded-lg p-4">
           <video
@@ -271,7 +286,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       );
     }
 
-    if (fileType.startsWith('audio/')) {
+    if (fileType.toLowerCase().startsWith('audio/')) {
       return (
         <div className="bg-gray-50 rounded-lg p-8">
           <div className="text-center mb-4">
@@ -298,7 +313,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
       );
     }
 
-    if (fileType.includes('pdf')) {
+    if (fileType.toLowerCase().includes('pdf')) {
       // Construct the proper PDF URL
       const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '';
       const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
@@ -353,18 +368,18 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
 
     // Fallback for unsupported file types
     return (
-      <div className="bg-gray-50 rounded-lg p-12 text-center">
+      <div className="bg-gray-50 p-6 sm:p-12 text-center min-h-[50vh] flex flex-col items-center justify-center">
         <Icon name="file" size="large" color="#9CA3AF" className="mx-auto mb-4" />
         <Typography variant="h6" className="text-gray-700 mb-2">
           Preview not available
         </Typography>
-        <Typography variant="body2" color="secondary" className="mb-4">
+        <Typography variant="body2" color="secondary" className="mb-6">
           This file type cannot be previewed in the browser
         </Typography>
-        <div className="flex items-center justify-center space-x-3">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-sm">
           <button
             onClick={() => window.open(filePath, '_blank')}
-            className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+            className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 w-full sm:w-auto"
           >
             <Icon name="share" size="small" color="white" />
             <span>Open in New Tab</span>
@@ -378,7 +393,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
               link.click();
               document.body.removeChild(link);
             }}
-            className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+            className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 w-full sm:w-auto"
           >
             <Icon name="download" size="small" color="white" />
             <span>Download</span>
@@ -393,79 +408,133 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-stretch md:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Semi-transparent overlay */}
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onClose}></div>
-      {/* Modal content - no blur here */}
-      <div className="relative z-10 bg-white w-full shadow-2xl md:max-w-5xl h-full md:h-auto md:max-h-[95vh] overflow-hidden flex flex-col md:m-4 md:rounded-2xl">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose}></div>
+      {/* Modal content */}
+      <div className="relative z-10 bg-white w-full shadow-2xl sm:max-w-4xl lg:max-w-5xl h-full sm:h-auto sm:max-h-[90vh] overflow-hidden flex flex-col sm:m-4 sm:rounded-t-2xl md:rounded-2xl">
         {/* Header */}
-        <div className="sticky top-0 z-10 flex flex-col md:flex-row items-start md:items-center justify-between p-4 md:p-6 border-b border-gray-200 bg-white">
-          <div className="flex items-center space-x-3 mb-3 md:mb-0">
-            <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Icon name="file" size="medium" color="#0e3293" />
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-200">
+          {/* Mobile Header */}
+          <div className="sm:hidden">
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                  <Icon name="file" size="small" color="#0e3293" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <Typography variant="subtitle1" className="text-gray-900 font-semibold truncate text-sm">
+                    {fileName || fileDetails?.fileName || 'Loading...'}
+                  </Typography>
+                  <Typography variant="caption" color="secondary" className="text-xs">
+                    {fileDetails ? getFileTypeDisplay(fileDetails.fileType) : 'Loading...'}
+                  </Typography>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 ml-2"
+                aria-label="Close"
+              >
+                <Icon name="close" size="medium" color="#6b7280" />
+              </button>
             </div>
-            <div>
-              <Typography variant="h6" className="text-gray-900 font-semibold">
-                {fileName || fileDetails?.fileName || 'Loading...'}
-              </Typography>
-              <Typography variant="body2" color="secondary">
-                {fileDetails ? getFileTypeDisplay(fileDetails.fileType) : 'Loading...'}
-              </Typography>
+            {/* Mobile Tab Navigation */}
+            <div className="px-4 pb-3">
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setActiveTab('preview')}
+                  className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    activeTab === 'preview'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Preview
+                </button>
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`flex-1 px-4 py-2.5 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    activeTab === 'details'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Details
+                </button>
+              </div>
             </div>
           </div>
           
-          <div className="flex items-center justify-between w-full md:w-auto">
-            {/* Tab Navigation */}
-            <div className="flex bg-gray-100 rounded-lg p-1 flex-1 md:flex-none mr-2">
+          {/* Desktop Header */}
+          <div className="hidden sm:flex items-center justify-between p-4 md:p-6">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <Icon name="file" size="medium" color="#0e3293" />
+              </div>
+              <div>
+                <Typography variant="h6" className="text-gray-900 font-semibold">
+                  {fileName || fileDetails?.fileName || 'Loading...'}
+                </Typography>
+                <Typography variant="body2" color="secondary">
+                  {fileDetails ? getFileTypeDisplay(fileDetails.fileType) : 'Loading...'}
+                </Typography>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              {/* Desktop Tab Navigation */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setActiveTab('preview')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    activeTab === 'preview'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Preview
+                </button>
+                <button
+                  onClick={() => setActiveTab('details')}
+                  className={`px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
+                    activeTab === 'details'
+                      ? 'bg-white text-blue-600 shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Details
+                </button>
+              </div>
               <button
-                onClick={() => setActiveTab('preview')}
-                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                  activeTab === 'preview'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                onClick={onClose}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+                aria-label="Close"
               >
-                Preview
-              </button>
-              <button
-                onClick={() => setActiveTab('details')}
-                className={`flex-1 md:flex-none px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200 ${
-                  activeTab === 'details'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                Details
+                <Icon name="close" size="medium" color="#6b7280" />
               </button>
             </div>
-            <button
-              onClick={onClose}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
-              aria-label="Close"
-            >
-              <Icon name="close" size="medium" color="#6b7280" />
-            </button>
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-full py-12 md:py-24">
+            <div className="flex flex-col items-center justify-center h-full py-12 sm:py-24">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
               <Typography variant="body1" color="secondary">
                 Loading file...
               </Typography>
             </div>
           ) : error ? (
-            <div className="flex flex-col items-center justify-center h-full py-12 md:py-24">
+            <div className="flex flex-col items-center justify-center h-full py-12 sm:py-24 px-4">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
                 <Icon name="alert" size="large" color="#dc2626" />
               </div>
-              <Typography variant="h6" className="text-gray-900 mb-2">
+              <Typography variant="h6" className="text-gray-900 mb-2 text-center">
                 Error Loading File
               </Typography>
-              <Typography variant="body1" color="secondary" className="text-center mb-4 px-4">
+              <Typography variant="body1" color="secondary" className="text-center mb-4">
                 {error}
               </Typography>
               <button
@@ -476,24 +545,24 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
               </button>
             </div>
           ) : fileDetails ? (
-            <div className={`${activeTab === 'preview' ? 'p-0' : 'p-4 md:p-6'}`}>
+            <div className={`${activeTab === 'preview' ? '' : 'p-4 sm:p-6'}`}>
               {activeTab === 'preview' ? (
-                <div className="h-[calc(100vh-8rem)] md:h-auto">
+                <div className="min-h-[60vh] sm:min-h-[70vh]">
                   {canPreview(fileDetails.fileType) ? (
                     <div className="h-full">{renderPreview()}</div>
                   ) : (
-                    <div className="flex items-center justify-center h-full bg-gray-50 p-4 md:p-12 text-center">
+                    <div className="flex flex-col items-center justify-center h-full bg-gray-50 p-6 sm:p-12 text-center">
                       <Icon name="file" size="large" color="#9CA3AF" className="mx-auto mb-4" />
                       <Typography variant="h6" className="text-gray-700 mb-2">
                         Preview not supported
                       </Typography>
-                      <Typography variant="body2" color="secondary" className="mb-4">
+                      <Typography variant="body2" color="secondary" className="mb-6">
                         This file type cannot be previewed. You can download or open it in a new tab.
                       </Typography>
-                      <div className="flex items-center justify-center space-x-3">
+                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 w-full max-w-sm">
                         <button
                           onClick={() => window.open(fileDetails.filePath, '_blank')}
-                          className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
+                          className="flex items-center justify-center space-x-2 px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 w-full sm:w-auto"
                         >
                           <Icon name="share" size="small" color="white" />
                           <span>Open in New Tab</span>
@@ -507,7 +576,7 @@ const FilePreviewModal: React.FC<FilePreviewModalProps> = ({
                             link.click();
                             document.body.removeChild(link);
                           }}
-                          className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200"
+                          className="flex items-center justify-center space-x-2 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-200 w-full sm:w-auto"
                         >
                           <Icon name="download" size="small" color="white" />
                           <span>Download</span>

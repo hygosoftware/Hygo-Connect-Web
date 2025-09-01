@@ -151,7 +151,13 @@ const UploadModal: React.FC<UploadModalProps> = ({
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-      <div className={`bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col ${className}`}>
+      {/* Backdrop overlay */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm" 
+        onClick={handleClose}
+      />
+      {/* Modal content */}
+      <div className={`relative bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl ${className}`}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <Typography variant="h5" className="text-gray-900 font-semibold">
