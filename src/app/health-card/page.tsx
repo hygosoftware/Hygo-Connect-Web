@@ -54,13 +54,6 @@ const HealthCardPage: React.FC = () => {
   const [hasActiveSubscription, setHasActiveSubscription] = useState<boolean>(false);
   const [activeSubscription, setActiveSubscription] = useState<ApiUserSubscription | null>(null);
   const [usedServices, setUsedServices] = useState<UsedService[]>([]);
-  const [activeTab, setActiveTab] = useState<'overview' | 'benefits' | 'used'>('overview');
-
-  // Helper to remove the phrase "Health Card" from plan names for display
-  const cleanPlanName = (name?: string | null) => {
-    if (!name) return '';
-    return name.replace(/health\s*card/gi, '').trim().replace(/\s{2,}/g, ' ');
-  };
 
   useEffect(() => {
     void fetchSubscriptionPlans();
@@ -162,7 +155,7 @@ const HealthCardPage: React.FC = () => {
       if (activeSubscriptionData) {
         setUserProfile(prev => prev ? { 
           ...prev, 
-          plan: cleanPlanName(activeSubscriptionData.subscription.subscriptionName) || prev.plan,
+          plan: activeSubscriptionData.subscription.subscriptionName || prev.plan,
           subscriptionStatus: activeSubscriptionData.status,
           subscriptionEndDate: activeSubscriptionData.subscriptionEndDate,
           subscriptionStartDate: activeSubscriptionData.subscriptionStartDate
@@ -217,7 +210,7 @@ const HealthCardPage: React.FC = () => {
 
   if (showSubscriptions) {
     return (
-      <div className="min-h-screen bg-bg-white overflow-x-hidden">
+      <div className="min-h-screen bg-bg-white">
         <UniversalHeader
           title="Subscription Plans"
           subtitle="Choose your perfect health plan"
@@ -238,11 +231,11 @@ const HealthCardPage: React.FC = () => {
               {subscriptionPlans.map((plan, idx) => (
                 <div
                   key={`${plan._id}-${idx}`}
-                  className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 sm:hover:scale-105"
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-200 hover:scale-105"
                 >
                   <div className="text-center mb-6">
                     <Typography variant="h6" className="text-gray-900 font-bold mb-2">
-                      {cleanPlanName(plan.subscriptionName) || 'Subscription Plan'}
+                      {plan.subscriptionName || 'Subscription Plan'}
                     </Typography>
                     <div className="text-3xl font-bold text-[#0E3293] mb-2">
                       ₹{plan.price || 0}
@@ -285,260 +278,212 @@ const HealthCardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
+    <div className="min-h-screen bg-bg-white">
       {/* Header */}
       <UniversalHeader
-        title="My Health Card"
-        subtitle={cleanPlanName(activeSubscription?.subscription?.subscriptionName) || 'Your digital health companion'}
+        title="Health Card"
+        subtitle="Your digital health companion"
         icon="health-card"
         showBackButton={true}
         onBackPress={handleGoBack}
-        rightContent={
-          <Button
-            onClick={handleSubscribe}
-            className="px-4 py-2 bg-[#0E3293] hover:bg-[#0A2470] text-white font-semibold rounded-xl shadow-md text-sm"
-          >
-            Upgrade
-          </Button>
-        }
       />
 
-      {/* Main Content Container - Fixed for better web view */}
-      <div className="w-full max-w-lg mx-auto px-4 py-6 space-y-6">
-        {/* Virtual Health Card - Improved responsive design */}
-        <div className="w-full">
-          <div className="relative rounded-2xl bg-[#1E3A8A] text-white p-6 shadow-lg overflow-hidden">
-            {/* Top section with logo and status */}
-            <div className="flex justify-between items-start mb-6">
-              <div>
-                <div className="font-bold text-xl leading-tight">HYGO Health</div>
-                <div className="text-sm opacity-90">Digital Health Card</div>
-              </div>
-              <div className="bg-white/20 p-2 rounded-lg">
-                <Icon name="plus" className="w-5 h-5 text-white" />
-              </div>
-            </div>
-
-            {/* Card holder and plan info */}
-            <div className="flex justify-between items-end">
-              <div>
-                <div className="text-xs opacity-70 uppercase tracking-wide mb-1">CARD HOLDER</div>
-                <div className="font-bold text-lg">
-                  {userProfile?.name || 'Devyani'}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs opacity-70 uppercase tracking-wide mb-1">PLAN</div>
-                <div className="font-bold text-lg">
-                  {cleanPlanName(activeSubscription?.subscription?.subscriptionName) || 'Family Essential'}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom section with card ID and validity */}
-            <div className="flex justify-between items-end mt-6">
-              <div>
-                <div className="text-xs opacity-70 uppercase tracking-wide mb-1">CARD ID</div>
-                <div className="font-mono text-sm">
-                  {cardNumber || '25090100000000001'}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs opacity-70 uppercase tracking-wide mb-1">VALID UNTIL</div>
-                <div className="font-bold text-base">
-                  {userProfile?.subscriptionEndDate ? 
-                    new Date(userProfile.subscriptionEndDate).toLocaleDateString('en-US', { 
-                      month: 'short', 
-                      year: 'numeric' 
-                    }) : 'Sep 2026'
-                  }
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="px-4 md:px-6 py-8 space-y-8">
+        {/* Virtual Health Card */}
+        <div className="max-w-lg mx-auto">
+  <div className="relative rounded-xl bg-[#0E3293] text-white px-4 py-4 sm:px-6 sm:py-6 overflow-visible" style={{minHeight:'148px'}}>
+    {/* Card header and plan badge */}
+    <div className="flex flex-col gap-1 mb-3">
+      <div>
+        <div className="font-bold text-lg md:text-xl leading-tight text-left">HYGO Health</div>
+        <div className="text-xs md:text-sm opacity-80">Digital Health Card</div>
+      </div>
+      <div className="flex md:block justify-end">
+        <span className={`rounded-xl px-3 py-1 text-xs font-semibold uppercase tracking-wide shadow border border-white/10 whitespace-nowrap ${
+          userProfile?.subscriptionStatus === 'active' ? 'bg-green-800/60' :
+          userProfile?.subscriptionStatus === 'expired' ? 'bg-red-800/60' :
+          userProfile?.subscriptionStatus === 'cancelled' ? 'bg-gray-800/60' :
+          'bg-blue-800/60'
+        }`}>
+          {userProfile?.subscriptionStatus === 'active' ? 'ACTIVE' :
+           userProfile?.subscriptionStatus === 'expired' ? 'EXPIRED' :
+           userProfile?.subscriptionStatus === 'cancelled' ? 'CANCELLED' :
+           'NO PLAN'}
+        </span>
+      </div>
+    </div>
+    {/* Cardholder/plan row */}
+    <div className="flex flex-col gap-1 mt-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="uppercase text-xs opacity-70">Card Holder</div>
+        <div className="font-bold text-base md:text-lg">{userProfile?.name || 'Loading...'}</div>
+      </div>
+      <div className="md:text-right">
+        <div className="uppercase text-xs opacity-70">Plan</div>
+        <div className="font-bold text-base md:text-lg">{userProfile?.plan || 'No Plan'}</div>
+      </div>
+    </div>
+    {/* Card ID / Valid Until row */}
+    <div className="flex flex-col gap-1 mt-2 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <div className="uppercase text-xs opacity-70">Card ID</div>
+        <div className="font-mono text-base md:text-lg tracking-widest">{cardNumber || userProfile?.id || 'HYGO001'}</div>
+      </div>
+      <div className="md:text-right">
+        <div className="uppercase text-xs opacity-70">Valid Until</div>
+        <div className="font-bold text-base md:text-lg">
+          {userProfile?.subscriptionEndDate ? 
+            new Date(userProfile.subscriptionEndDate).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'short', 
+              day: 'numeric' 
+            }) : '—'
+          }
         </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-        {/* Tabs - Improved layout */}
-        <div className="w-full">
-          <div className="bg-white rounded-2xl p-1 shadow-sm border border-gray-200 flex">
-            <button
-              className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-                activeTab === 'overview' 
-                  ? 'bg-[#0E3293] text-white shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setActiveTab('overview')}
-            >
-              <Icon name="grid" className="w-4 h-4 inline mr-1 sm:mr-2" />
-              Overview
-            </button>
-            <button
-              className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-                activeTab === 'benefits' 
-                  ? 'bg-[#0E3293] text-white shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setActiveTab('benefits')}
-            >
-              <Icon name="check-circle" className="w-4 h-4 inline mr-1 sm:mr-2" />
-              Benefits
-            </button>
-            <button
-              className={`flex-1 py-3 px-2 sm:px-4 rounded-xl text-xs sm:text-sm font-medium transition-all ${
-                activeTab === 'used' 
-                  ? 'bg-[#0E3293] text-white shadow-sm' 
-                  : 'text-gray-600 hover:text-gray-800'
-              }`}
-              onClick={() => setActiveTab('used')}
-            >
-              <Icon name="clock" className="w-4 h-4 inline mr-1 sm:mr-2" />
-              Used Services
-            </button>
-          </div>
-        </div>
-
-        {/* Tab Content - Fixed service display and spacing */}
-        <div className="w-full">
-          {activeTab === 'overview' && (
-            <div className="grid grid-cols-2 gap-4">
-              {/* Family Members Card */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-center mb-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-3">
-                    <Icon name="users" className="text-[#0E3293] w-6 h-6" />
+        {/* Card Details (from active subscription) */}
+        <div className="max-w-3xl mx-auto">
+          <Typography variant="h5" className="text-gray-900 font-bold mb-6 text-center">
+            Subscription Details
+          </Typography>
+          <div className="bg-white rounded-2xl p-6 shadow border border-gray-100">
+            {loading ? (
+              <Typography variant="body2" className="text-gray-600 text-center">
+                Loading subscription details...
+              </Typography>
+            ) : !activeSubscription ? (
+              <div className="text-center space-y-4">
+                <Typography variant="body2" className="text-gray-600">
+                  No active subscription found.
+                </Typography>
+                <Button
+                  onClick={handleSubscribe}
+                  className="px-6 py-3 bg-[#0E3293] hover:bg-[#0A2470] text-white font-semibold rounded-xl shadow-md transition-all duration-200"
+                >
+                  Purchase Now
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <Typography variant="h6" className="text-gray-900 font-bold">
+                    {activeSubscription.subscription.subscriptionName}
+                  </Typography>
+                  <div className="text-right">
+                    <Typography variant="h6" className="text-[#0E3293] font-bold">
+                      ₹{activeSubscription.subscription.price}
+                    </Typography>
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                      activeSubscription.status === 'active' ? 'bg-green-100 text-green-800' :
+                      activeSubscription.status === 'expired' ? 'bg-red-100 text-red-800' :
+                      'bg-gray-100 text-gray-800'
+                    }`}>
+                      {activeSubscription.status.toUpperCase()}
+                    </span>
                   </div>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
-                  {activeSubscription?.familyMembers?.length ?? 0}
-                </div>
-                <div className="text-sm text-gray-500 leading-tight">
-                  Family Members<br />Covered
-                </div>
-              </div>
-
-              {/* Services Available Card */}
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <div className="flex items-center mb-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mr-3">
-                    <Icon name="star" className="text-[#0E3293] w-6 h-6" />
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Typography variant="body1" className="text-gray-900 font-semibold">
+                      Duration
+                    </Typography>
+                    <Typography variant="body2" className="text-gray-600">
+                      {activeSubscription.subscription.duration?.value} {activeSubscription.subscription.duration?.unit}{activeSubscription.subscription.duration?.value > 1 ? 's' : ''}
+                    </Typography>
+                  </div>
+                  <div>
+                    <Typography variant="body1" className="text-gray-900 font-semibold">
+                      Valid Until
+                    </Typography>
+                    <Typography variant="body2" className="text-gray-600">
+                      {new Date(activeSubscription.subscriptionEndDate).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </Typography>
                   </div>
                 </div>
-                <div className="text-3xl font-bold text-gray-900 mb-1">
-                  {activeSubscription?.subscription?.availableServices?.length ?? 7}
-                </div>
-                <div className="text-sm text-gray-500 leading-tight">
-                  Services<br />Available
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'benefits' && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              {loading ? (
-                <Typography variant="body2" className="text-gray-600 text-center">Loading...</Typography>
-              ) : !activeSubscription || !activeSubscription.subscription?.availableServices ? (
-                <div className="text-center py-8">
-                  <Icon name="info" className="w-12 h-12 text-gray-300 mb-3 mx-auto" />
-                  <Typography variant="body1" className="text-gray-600 mb-2 font-medium">
-                    No services available
-                  </Typography>
-                  <Typography variant="body2" className="text-gray-400 text-center">
-                    {hasActiveSubscription ? 'Your subscription services will appear here.' : 'Purchase a subscription to access health services.'}
-                  </Typography>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Typography variant="h6" className="text-gray-900 font-bold mb-4">
+                
+                <div className="pt-3 border-t border-gray-200">
+                  <Typography variant="body1" className="text-gray-900 font-semibold mb-3">
                     Available Services
                   </Typography>
-                  {(activeSubscription.availableServices || []).map((svc: any, idx: number) => {
-                    const planSvc = activeSubscription.subscription?.availableServices?.find((s: any) => s._id === svc.service);
-                    const usedCount = Array.isArray(svc?.used) ? svc.used.length : 0;
-                    const totalAllowed = typeof svc?.totalAllowed === 'number' ? svc.totalAllowed : 0;
-                    const isUnlimited = totalAllowed === -1;
-                    const percent = isUnlimited
-                      ? 100
-                      : totalAllowed > 0
-                        ? Math.min(100, Math.round((usedCount / totalAllowed) * 100))
-                        : 0;
-                    return (
-                      <div key={`${svc?._id || svc?.service || idx}`} className="flex items-center space-x-3 py-3 border-b border-gray-100 last:border-b-0">
-                        <div className="w-10 h-10 bg-green-50 rounded-full flex items-center justify-center flex-shrink-0">
-                          <Icon name="check" className="text-green-500 w-5 h-5" />
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center justify-between gap-2">
-                            <Typography variant="body1" className="text-gray-900 font-medium">
-                              {planSvc?.serviceName || `Service ${idx + 1}`}
+                  <div className="space-y-2">
+                    {activeSubscription.availableServices?.map((svc, aIdx) => {
+                      const usedCount = Array.isArray(svc.used) ? svc.used.length : 0;
+                      const totalAllowed = svc.totalAllowed;
+                      // Resolve name from plan's availableServices (which may be object list or string IDs)
+                      const planServices: any[] = (activeSubscription.subscription?.availableServices as any[]) || [];
+                      const svcId = (svc as any)?.service?._id || (svc as any)?.service;
+                      const matchedPlan = planServices.find((p: any) => {
+                        const planId = (typeof p === 'string') ? p : p?._id;
+                        return String(planId) === String(svcId);
+                      });
+                      const name = (matchedPlan && matchedPlan.serviceName) || (svc as any)?.serviceName || `Service ${aIdx + 1}`;
+                      const key = `${(svc as any)?._id || svcId}-${aIdx}`;
+                      return (
+                        <div key={key} className="flex items-center justify-between">
+                          <div className="flex items-center space-x-3">
+                            <Icon name="check" className="text-green-500 w-4 h-4" />
+                            <Typography variant="body2" className="text-gray-700">
+                              {name}
                             </Typography>
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                              isUnlimited ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {isUnlimited ? 'Unlimited' : `Used ${usedCount}/${totalAllowed}`}
-                            </span>
                           </div>
-                          {!isUnlimited && (
-                            <div className="mt-2">
-                              <div className="w-full bg-gray-200 h-1.5 rounded-full overflow-hidden">
-                                <div
-                                  className="h-1.5 bg-green-500 rounded-full"
-                                  style={{ width: `${percent}%` }}
-                                />
-                              </div>
-                              <Typography variant="body2" className="text-gray-500 mt-1">
-                                Remaining {Math.max(0, totalAllowed - usedCount)} out of {totalAllowed}
-                              </Typography>
-                            </div>
-                          )}
-                          {isUnlimited && (
-                            <Typography variant="body2" className="text-gray-500 mt-1">
-                              Included in your plan
-                            </Typography>
-                          )}
+                          <Typography variant="body2" className="text-gray-500">
+                            {usedCount}/{totalAllowed === -1 ? 'Unlimited' : totalAllowed} used
+                          </Typography>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
+        </div>
 
-          {activeTab === 'used' && (
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              {usedServices.length === 0 ? (
-                <div className="flex flex-col items-center py-8">
-                  <Icon name="info" className="w-12 h-12 text-gray-300 mb-3" />
-                  <Typography variant="body1" className="text-gray-600 mb-2 font-medium">
-                    No services used yet
-                  </Typography>
-                  <Typography variant="body2" className="text-gray-400 text-center">
-                    {hasActiveSubscription ? 'Your used services will appear here after you use them.' : 'Purchase a subscription to access health services.'}
-                  </Typography>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Typography variant="h6" className="text-gray-900 font-bold mb-4">
-                    Service Usage
-                  </Typography>
-                  {usedServices.map((service, uIdx) => (
-                    <div key={`${service.id || service.serviceId}-${uIdx}`} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 bg-[#0E3293] rounded-full flex items-center justify-center">
-                          <Icon name={service.type === 'Consultation' ? 'calendar' : 'heart'} className="w-5 h-5 text-white" />
-                        </div>
-                        <div>
-                          <Typography variant="body1" className="font-semibold text-gray-900">
-                            {service.name}
-                          </Typography>
-                          <Typography variant="body2" className="text-gray-500 text-sm">
-                            Used: {service.usedCount}/{service.totalAllowed === -1 ? 'Unlimited' : service.totalAllowed}
-                          </Typography>
-                        </div>
+        {/* Service Usage */}
+        <div className="max-w-4xl mx-auto">
+          <Typography variant="h5" className="text-gray-900 font-bold mb-6 text-center">
+            Service Usage
+          </Typography>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20">
+            {usedServices.length === 0 ? (
+              <div className="flex flex-col items-center py-8">
+                <Icon name="info" className="w-12 h-12 text-gray-300 mb-4" />
+                <Typography variant="body1" className="text-gray-600 mb-2">
+                  No services available
+                </Typography>
+                <Typography variant="body2" className="text-gray-400">
+                  {hasActiveSubscription ? 'Your subscription services will appear here.' : 'Purchase a subscription to access health services.'}
+                </Typography>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {usedServices.map((service, uIdx) => (
+                  <div key={`${service.id || service.serviceId}-${uIdx}`} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-10 h-10 bg-[#0E3293] rounded-full flex items-center justify-center">
+                        <Icon name={service.type === 'Consultation' ? 'appointment' : 'heart'} className="w-5 h-5 text-white" />
                       </div>
-                      <div className="text-right">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      <div>
+                        <Typography variant="body1" className="font-semibold text-gray-900">
+                          {service.name}
+                        </Typography>
+                        <Typography variant="body2" className="text-gray-600">
+                          Used: {service.usedCount}/{service.totalAllowed === -1 ? 'Unlimited' : service.totalAllowed} • Available since {new Date(service.date).toLocaleDateString()}
+                        </Typography>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex flex-col items-end space-y-1">
+                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                           service.totalAllowed === -1 ? 'bg-purple-100 text-purple-800' :
                           service.usedCount === 0 ? 'bg-green-100 text-green-800' :
                           service.usedCount < service.totalAllowed ? 'bg-blue-100 text-blue-800' :
@@ -546,45 +491,25 @@ const HealthCardPage: React.FC = () => {
                         }`}>
                           {service.totalAllowed === -1 ? 'Unlimited' :
                            service.usedCount === 0 ? 'Available' :
-                           service.usedCount < service.totalAllowed ? 'In Use' :
-                           'Used Up'}
+                           service.usedCount < service.totalAllowed ? 'Partially Used' :
+                           'Fully Used'}
                         </span>
+                        <Typography variant="body2" className="text-gray-500 text-xs">
+                          {service.totalAllowed === -1 ? 'Unlimited remaining' : `${service.totalAllowed - service.usedCount} remaining`}
+                        </Typography>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Additional Services Section - Only show if user has active subscription */}
-        {hasActiveSubscription && activeTab === 'overview' && (
-          <div className="w-full mt-6">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <Typography variant="h6" className="text-gray-900 font-bold mb-4">
-                Quick Actions
-              </Typography>
-              <div className="grid grid-cols-2 gap-3">
-                <button className="flex flex-col items-center p-4 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors">
-                  <Icon name="calendar" className="w-6 h-6 text-[#0E3293] mb-2" />
-                  <Typography variant="body2" className="text-gray-700 text-center font-medium">
-                    Book Appointment
-                  </Typography>
-                </button>
-                <button className="flex flex-col items-center p-4 bg-green-50 rounded-xl hover:bg-green-100 transition-colors">
-                  <Icon name="phone" className="w-6 h-6 text-green-600 mb-2" />
-                  <Typography variant="body2" className="text-gray-700 text-center font-medium">
-                    Emergency Call
-                  </Typography>
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Subscription Plans Preview removed for minimal UI */}
       </div>
     </div>
   );
 };
 
-export default HealthCardPage;
+export default HealthCardPage;  

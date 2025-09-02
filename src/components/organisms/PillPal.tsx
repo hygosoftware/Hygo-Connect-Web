@@ -315,13 +315,13 @@ const PillPal: React.FC<PillPalProps> = ({
                         onClick={() => onEditNotification(medication.id)}
                         className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
                       >
-                        <Icon name="edit" size="small" color="#6b7280" />
+                        <Icon name="edit" size="extrasmall" color="#6b7280" />
                       </button>
                       <button
                         onClick={() => onDeleteNotification(medication.id)}
                         className="p-2 rounded-lg hover:bg-red-50 transition-colors"
                       >
-                        <Icon name="trash" size="small" color="#ef4444" />
+                        <Icon name="trash" size="extrasmall" color="#ef4444" />
                       </button>
                     </div>
                   </div>
@@ -329,7 +329,7 @@ const PillPal: React.FC<PillPalProps> = ({
                   {/* Meal Timing */}
                   {medication.mealTiming && (
                     <div className="flex items-center mb-3">
-                      <Icon name="food" size="small" color="#10b981" className="mr-2" />
+                      <Icon name="food" size="extrasmall" color="#10b981" className="mr-2" />
                       <Typography variant="body2" color="secondary">
                         Take {medication.mealTiming} meals
                       </Typography>
@@ -339,7 +339,7 @@ const PillPal: React.FC<PillPalProps> = ({
                   {/* Dosage */}
                   <div className="mb-4">
                     <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#0E3293]/10 text-[#0E3293]">
-                      <Icon name="pill" size="small" color="#0E3293" className="mr-1" />
+                      <Icon name="pill" size="extrasmall" color="#0E3293" className="mr-1" />
                       {medication.dosage}
                     </span>
                   </div>
@@ -348,7 +348,7 @@ const PillPal: React.FC<PillPalProps> = ({
                   {nextTime && (
                     <div className="mb-4 p-3 bg-white rounded-lg border border-[#0e3293]/20">
                       <div className="flex items-center">
-                        <Icon name="clock" size="small" color="#0e3293" className="mr-2" />
+                        <Icon name="clock" size="extrasmall" color="#0e3293" className="mr-2" />
                         <Typography variant="body2" className="text-[#0e3293] font-medium">
                           Next dose: {formatTimeWithAMPM(nextTime)}
                         </Typography>
@@ -387,7 +387,7 @@ const PillPal: React.FC<PillPalProps> = ({
         onClick={onAddButtonPress}
         className="fixed bottom-20 right-6 lg:bottom-8 lg:right-8 w-14 h-14 lg:w-16 lg:h-16 bg-[#0E3293] hover:bg-[#0A2470] text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-200 flex items-center justify-center z-50"
       >
-        <Icon name="plus" size="small" color="white" />
+        <Icon name="plus" size="extrasmall" color="white" />
       </button>
 
       {/* Toast Notification */}
@@ -405,7 +405,7 @@ const PillPal: React.FC<PillPalProps> = ({
                 onClick={onHideToast}
                 className="ml-4 text-white hover:text-gray-200"
               >
-                <Icon name="x" size="small" color="white" />
+                <Icon name="x" size="extrasmall" color="white" />
               </button>
             </div>
           </div>
@@ -447,7 +447,7 @@ const PillPal: React.FC<PillPalProps> = ({
               onClick={onCloseNotificationModal}
               className="w-full mt-3 text-gray-500 hover:text-gray-700 text-sm"
             >
-              Close
+              <Icon name="x" size="extrasmall" color="white" />
             </button>
           </div>
         </div>

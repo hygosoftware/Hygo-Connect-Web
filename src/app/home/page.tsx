@@ -376,7 +376,7 @@ const HomePage: React.FC = () => {
                   <div className="relative mb-3">
                     <div className={`w-12 h-12 lg:w-14 lg:h-14 rounded-xl flex items-center justify-center transition-colors duration-200 ${item.title === 'Health Bot' ? 'bg-blue-100 group-hover:bg-blue-200' : 'bg-gray-50 group-hover:bg-white'
                       }`}>
-                      <Icon name={item.iconName} color="#1e40af" className="w-6 h-6 lg:w-7 lg:h-7" />
+                      <Icon name={item.iconName} color="#1e40af" className="w-8 h-8 lg:w-14 lg:h-14" />
                     </div>
                     {item.hasNotification && (
                       <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white">

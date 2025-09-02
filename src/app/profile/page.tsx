@@ -91,10 +91,10 @@ const isValidDOB = (value: string): boolean => {
 };
 
 const TABS = [
-  { id: 'overview', label: 'Overview', icon: <Activity className="w-4 h-4" /> },
-  { id: 'personal', label: 'Personal', icon: <User className="w-4 h-4" /> },
-  { id: 'medical', label: 'Medical', icon: <Stethoscope className="w-4 h-4" /> },
-  { id: 'contact', label: 'Contact', icon: <Phone className="w-4 h-4" /> },
+  { id: 'overview', label: 'Overview', icon: <Activity className="w-6 h-6" /> },
+  { id: 'personal', label: 'Personal', icon: <User className="w-6 h-6" /> },
+  { id: 'medical', label: 'Medical', icon: <Stethoscope className="w-6 h-6" /> },
+  { id: 'contact', label: 'Contact', icon: <Phone className="w-6 h-6" /> },
 ];
 
 const ProfileScreen: React.FC = () => {
@@ -315,22 +315,22 @@ const ProfileScreen: React.FC = () => {
               <StatCard
                 label="Age"
                 value={profileData.Age || 'N/A'}
-                icon={<Calendar className="w-5 h-5" />}
+                icon={<Calendar className="w-6 h-6" />}
               />
               <StatCard
                 label="Height"
                 value={profileData.Height ? `${profileData.Height} cm` : 'N/A'}
-                icon={<Ruler className="w-5 h-5" />}
+                icon={<Ruler className="w-6 h-6" />}
               />
               <StatCard
                 label="Weight"
                 value={profileData.Weight ? `${profileData.Weight} kg` : 'N/A'}
-                icon={<Weight className="w-5 h-5" />}
+                icon={<Weight className="w-6 h-6" />}
               />
               <StatCard
                 label="BMI"
                 value={calculateBMI()}
-                icon={<Heart className="w-5 h-5" />}
+                icon={<Heart className="w-6 h-6" />}
               />
             </div>
 
@@ -338,7 +338,7 @@ const ProfileScreen: React.FC = () => {
             <div className="grid md:grid-cols-2 gap-6">
               <HealthCard
                 title="Medical Information"
-                icon={<Stethoscope className="w-5 h-5" />}
+                icon={<Stethoscope className="w-6 h-6" />}
                 items={[
                   { label: 'Blood Group', value: profileData.BloodGroup || 'Not specified', status: profileData.BloodGroup ? 'success' : 'warning' },
                   { label: 'Chronic Diseases', value: profileData.ChronicDiseases?.length ? profileData.ChronicDiseases.join(', ') : 'None reported', status: profileData.ChronicDiseases?.length ? 'warning' : 'success' },
@@ -348,7 +348,7 @@ const ProfileScreen: React.FC = () => {
 
               <HealthCard
                 title="Contact Information"
-                icon={<Phone className="w-5 h-5" />}
+                icon={<Phone className="w-6 h-6" />}
                 items={[
                   { label: 'Mobile Number', value: profileData.MobileNumber || 'Not provided', status: profileData.MobileNumber ? 'success' : 'warning' },
                   { label: 'Alternative Number', value: profileData.AlternativeNumber || 'Not provided', status: profileData.AlternativeNumber ? 'success' : 'info' },
@@ -361,7 +361,7 @@ const ProfileScreen: React.FC = () => {
       case 'personal':
         return (
           <div className="space-y-6">
-            <SectionCard title="Basic Information" icon={<User className="w-5 h-5" />}>
+            <SectionCard title="Basic Information" icon={<User className="w-6 h-6" />}>
               <Input label="Full Name" value={profileData.FullName} onChange={v => handleInputChange('FullName', v)} disabled={!isEditing} />
               <SelectInput
                 label="Gender"
@@ -389,7 +389,7 @@ const ProfileScreen: React.FC = () => {
       case 'medical':
         return (
           <div className="space-y-6">
-            <SectionCard title="Physical Information" icon={<Ruler className="w-5 h-5" />}>
+            <SectionCard title="Physical Information" icon={<Ruler className="w-6 h-6" />}>
               <Input label="Height (cm)" value={profileData.Height} onChange={v => handleInputChange('Height', v)} disabled={!isEditing} type="number" />
               <Input label="Weight (kg)" value={profileData.Weight} onChange={v => handleInputChange('Weight', v)} disabled={!isEditing} type="number" />
               <Input label="BMI" value={calculateBMI()} onChange={() => { }} disabled={true} />
@@ -411,7 +411,7 @@ const ProfileScreen: React.FC = () => {
               />
             </SectionCard>
 
-            <SectionCard title="Medical History" icon={<Stethoscope className="w-5 h-5" />}>
+            <SectionCard title="Medical History" icon={<Stethoscope className="w-6 h-6" />}>
               <TagInput
                 label="Chronic Diseases"
                 value={profileData.ChronicDiseases}
@@ -432,7 +432,7 @@ const ProfileScreen: React.FC = () => {
       case 'contact':
         return (
           <div className="space-y-6">
-            <SectionCard title="Contact Details" icon={<Phone className="w-5 h-5" />}>
+            <SectionCard title="Contact Details" icon={<Phone className="w-6 h-6" />}>
               <div>
                 <Input
                   label="Mobile Number"
@@ -462,7 +462,7 @@ const ProfileScreen: React.FC = () => {
               <Input label="Email Address" value={profileData.Email} onChange={v => handleInputChange('Email', v)} disabled={!isEditing} type="email" />
             </SectionCard>
 
-            <SectionCard title="Location Information" icon={<Calendar className="w-5 h-5" />}>
+            <SectionCard title="Location Information" icon={<Calendar className="w-6 h-6" />}>
               <Input label="Country" value={profileData.Country} onChange={v => handleInputChange('Country', v)} disabled={!isEditing} />
               <Input label="State/Province" value={profileData.State} onChange={v => handleInputChange('State', v)} disabled={!isEditing} />
               <Input label="City" value={profileData.City} onChange={v => handleInputChange('City', v)} disabled={!isEditing} />
@@ -487,7 +487,6 @@ const ProfileScreen: React.FC = () => {
         icon="user"
         showBackButton={true}
       />
-
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Profile Header Card */}
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 border border-gray-100">
@@ -496,7 +495,7 @@ const ProfileScreen: React.FC = () => {
             <div className="relative w-32 h-32 mx-auto lg:mx-0">
               <div className="w-full h-full rounded-full p-1" style={{ backgroundColor: '#0e3293' }}>
                 <Image
-                  src={profileData.profilePhoto || '/placeholder.svg'}
+                  src={profileData.profilePhoto || '/images/default-doctor.png'}
                   alt="Profile Photo"
                   width={128}
                   height={128}
@@ -505,7 +504,7 @@ const ProfileScreen: React.FC = () => {
               </div>
               {isEditing && (
                 <button onClick={onChangeProfilePhotoClick} className="absolute bottom-2 right-2 text-white rounded-full p-3 shadow-lg hover:opacity-90 transition-all" style={{ backgroundColor: '#0e3293' }}>
-                  <Camera className="w-4 h-4" />
+                  <Camera className="w-6 h-6" />
                 </button>
               )}
               <input
@@ -522,11 +521,11 @@ const ProfileScreen: React.FC = () => {
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2 truncate">{profileData.FullName || 'Your Name'}</h1>
               <div className="space-y-2 mb-4">
                 <div className="text-gray-600 flex items-center justify-center lg:justify-start gap-2 min-w-0">
-                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <Mail className="w-6 h-6 flex-shrink-0" />
                   <span className="truncate">{profileData.Email || 'your@email.com'}</span>
                 </div>
                 <div className="text-gray-600 flex items-center justify-center lg:justify-start gap-2 min-w-0">
-                  <Phone className="w-4 h-4 flex-shrink-0" />
+                  <Phone className="w-6 h-6 flex-shrink-0" />
                   <span className="truncate">{profileData.MobileNumber || 'Mobile Number'}</span>
                 </div>
               </div>
@@ -551,13 +550,13 @@ const ProfileScreen: React.FC = () => {
           {/* Alerts */}
           {error && (
             <div className="mt-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <AlertCircle className="w-5 h-5" />
+              <AlertCircle className="w-6 h-6" />
               {error}
             </div>
           )}
           {success && (
             <div className="mt-6 bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2">
-              <CheckCircle2 className="w-5 h-5" />
+              <CheckCircle2 className="w-6 h-6" />
               {success}
             </div>
           )}
@@ -618,7 +617,7 @@ const ProfileScreen: React.FC = () => {
           className="fixed bottom-24 md:bottom-6 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 z-50 flex items-center justify-center"
           style={{ backgroundColor: '#0e3293' }}
         >
-          <Edit3 className="w-5 h-5" />
+          <Edit3 className="w-6 h-6" />
         </button>
       )}
     </div>
@@ -779,7 +778,7 @@ const TagInput: React.FC<{
               className="text-white px-4 py-3 rounded-xl hover:opacity-90 transition-all"
               style={{ backgroundColor: '#0e3293' }}
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-6 h-6" />
             </button>
           </div>
         )}

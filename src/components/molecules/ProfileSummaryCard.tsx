@@ -1,7 +1,7 @@
 'use client'
 import React from 'react';
 import Image from 'next/image';
-import { User, Mail, Phone, MapPin, Calendar, Heart, Edit3, Eye } from 'lucide-react';
+import Icon from '../atoms/Icon';
 
 interface ProfileSummaryCardProps {
   profileData: {
@@ -36,7 +36,7 @@ const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
           <div className="relative w-12 h-12">
             <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-purple-500 p-0.5">
               <Image
-                src={profileData.profilePhoto || '/placeholder.svg'}
+                src={profileData.profilePhoto || '/images/default-doctor.png'}
                 alt="Profile"
                 width={48}
                 height={48}
@@ -66,7 +66,7 @@ const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
               onClick={onEdit}
               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             >
-              <Edit3 className="w-4 h-4" />
+              <Icon name="edit" className="w-4 h-4" />
             </button>
           )}
         </div>
@@ -82,7 +82,7 @@ const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
           <div className="relative w-16 h-16">
             <div className="w-full h-full rounded-full bg-gradient-to-br from-blue-400 to-purple-500 p-1">
               <Image
-                src={profileData.profilePhoto || '/placeholder.svg'}
+                src={profileData.profilePhoto || '/images/default-doctor.png'}
                 alt="Profile"
                 width={64}
                 height={64}
@@ -106,7 +106,7 @@ const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
               onClick={onView}
               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             >
-              <Eye className="w-5 h-5" />
+              <Icon name="eye" className="w-5 h-5" />
             </button>
           )}
           {showEditButton && onEdit && (
@@ -114,7 +114,7 @@ const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
               onClick={onEdit}
               className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
             >
-              <Edit3 className="w-5 h-5" />
+              <Icon name="edit" className="w-5 h-5" />
             </button>
           )}
         </div>
@@ -142,19 +142,19 @@ const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
       {/* Quick Info */}
       <div className="grid grid-cols-2 gap-4">
         <div className="flex items-center gap-2 text-sm">
-          <Phone className="w-4 h-4 text-gray-400" />
+          <Icon name="phone" className="w-4 h-4 text-gray-400" />
           <span className="text-gray-600">
             {profileData.MobileNumber || 'Add phone'}
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <Calendar className="w-4 h-4 text-gray-400" />
+          <Icon name="calendar" className="w-4 h-4 text-gray-400" />
           <span className="text-gray-600">
             {profileData.Age ? `${profileData.Age} years` : 'Add age'}
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <MapPin className="w-4 h-4 text-gray-400" />
+          <Icon name="location" className="w-4 h-4 text-gray-400" />
           <span className="text-gray-600">
             {profileData.City && profileData.Country 
               ? `${profileData.City}, ${profileData.Country}` 
@@ -162,7 +162,7 @@ const ProfileSummaryCard: React.FC<ProfileSummaryCardProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2 text-sm">
-          <Heart className="w-4 h-4 text-gray-400" />
+          <Icon name="heart" className="w-4 h-4 text-gray-400" />
           <span className="text-gray-600">
             {profileData.BloodGroup || 'Add blood group'}
           </span>

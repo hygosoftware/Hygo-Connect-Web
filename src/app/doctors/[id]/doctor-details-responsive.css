@@ -2,6 +2,7 @@
 @media (max-width: 640px) {
   .doctor-details-mobile {
     padding: 0.5rem !important;
+    padding-bottom: 160px !important; /* Add extra bottom padding for navigation + button */
     background: #f7faff !important;
   }
   .doctor-details-mobile .doctor-card {
@@ -32,14 +33,16 @@
   }
   .doctor-details-mobile .sticky-book-btn {
     position: sticky;
-    bottom: 0;
+    bottom: 80px; /* Add space for bottom navigation */
     left: 0;
     width: 100%;
     z-index: 50;
     background: #fff;
     box-shadow: 0 -2px 8px 0 rgba(34,60,80,0.08);
     padding: 1rem 0.75rem;
-    border-radius: 0 0 1.2rem 1.2rem;
+    border-radius: 1.2rem;
+    margin: 0 0.5rem;
+    width: calc(100% - 1rem);
   }
   .doctor-details-mobile .section {
     padding: 1rem !important;
@@ -100,5 +103,30 @@
   .doctor-details-mobile .section {
     padding: 1rem !important;
     margin-bottom: 1rem !important;
+  }
+}
+
+/* Additional responsive breakpoints for better mobile support */
+@media (max-width: 480px) {
+  .doctor-details-mobile .sticky-book-btn {
+    bottom: 70px !important; /* Adjust for smaller screens */
+    padding: 0.75rem !important;
+  }
+}
+
+@media (max-width: 360px) {
+  .doctor-details-mobile {
+    padding-bottom: 140px !important; /* Less padding for very small screens */
+  }
+  .doctor-details-mobile .sticky-book-btn {
+    bottom: 60px !important; /* Further adjust for very small screens */
+  }
+}
+
+/* Ensure button is always visible and accessible */
+@media (max-height: 600px) {
+  .doctor-details-mobile .sticky-book-btn {
+    position: fixed !important;
+    bottom: 80px !important;
   }
 }

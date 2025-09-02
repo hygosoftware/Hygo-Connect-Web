@@ -716,6 +716,39 @@ export const pillReminderService = {
       return [];
     }
   },
+ 
+  // Fetch a single pill reminder by userId and pillId
+  fetchPill: async (userId: string, pillId: string): Promise<PillReminder> => {
+    try {
+      const response = await apiClient.get(`${API_BASE_URL}/Pillreminder/${userId}/${pillId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error("Fetch Pill Error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Update a pill reminder by userId and pillId
+  updatePill: async (userId: string, pillId: string, pillData: any): Promise<PillReminder> => {
+    try {
+      const response = await apiClient.put(`${API_BASE_URL}/Pillreminder/${userId}/${pillId}`, pillData);
+      return response.data;
+    } catch (error: any) {
+      console.error("Update Pill Error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  // Delete a pill reminder by userId and pillId
+  deletePill: async (userId: string, pillId: string): Promise<any> => {
+    try {
+      const response = await apiClient.delete(`${API_BASE_URL}/Pillreminder/${pillId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error("Delete Pill Error:", error.response?.data || error.message);
+      throw error;
+    }
+  },
 
   createPillReminder: async (
     userIdOrPillReminder: string | Omit<PillReminder, '_id' | 'createdAt' | 'updatedAt'>,
@@ -1798,7 +1831,7 @@ export const pillReminderHelpers = {
       const dateString = currentDate.toISOString().split('T')[0];
 
       notifications.push({
-        id: `${apiReminder._id}_${dateString}`, // Unique ID for each day
+        id: `${apiReminder._id}`, // Use pure pill reminder ID; date is available separately
         medicineName: primaryMedicine.medicineName,
         medicineType: primaryMedicine.medicineType.toLowerCase() as 'tablet' | 'capsule' | 'syrup' | 'injection',
         dosage: dosageInfo,

@@ -86,6 +86,26 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
         router.push('/profile');
       }
     },
+    {
+      title: 'Privacy Policy',
+      icon: 'document',
+      path: '/privacy-policy',
+      isActive: pathname === '/privacy-policy',
+      onPress: () => {
+        closeSidebarIfDesktopOrTablet();
+        router.push('/privacy-policy');
+      }
+    },
+    {
+      title: 'Terms & Conditions',
+      icon: 'document',
+      path: '/terms',
+      isActive: pathname === '/terms',
+      onPress: () => {
+        closeSidebarIfDesktopOrTablet();
+        router.push('/terms');
+      }
+    },
   ];
 
   const [isSidebarExpanded, setIsSidebarExpanded] = React.useState(true);
