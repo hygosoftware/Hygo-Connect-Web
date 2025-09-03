@@ -291,7 +291,7 @@ const HealthCardPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f7fafd] to-[#eaf1fa] flex flex-col items-center">
+    <>
       <UniversalHeader
         title="Health Card"
         subtitle="Your digital health companion"
@@ -299,9 +299,9 @@ const HealthCardPage: React.FC = () => {
         showBackButton={true}
         onBackPress={handleGoBack}
       />
-      <div className="w-full md:bg-white/80 md:rounded-3xl md:shadow-lg md:p-10 md:space-y-10 px-2 py-4 space-y-6 max-w-md md:max-w-3xl mx-auto">
-        {/* Enhanced Virtual Health Card for Mobile */}
-        <div className="rounded-3xl bg-[#0E3293] text-white px-4 py-7 shadow-xl relative flex flex-col gap-4 min-h-[180px] border-2 border-[#183f8c]">
+      <div className="w-full px-2 py-4 space-y-6 max-w-4xl mx-auto">
+        {/* Health Card */}
+        <div className="w-full max-w-md mx-auto rounded-3xl bg-[#0E3293] text-white px-4 py-7 shadow-xl relative flex flex-col gap-4 min-h-[180px] border-2 border-[#183f8c] md:max-w-md">
           <div className="flex items-center justify-between mb-2">
             <div>
               <div className="font-bold text-lg md:text-xl leading-tight">HYGO</div>
@@ -535,7 +535,7 @@ const HealthCardPage: React.FC = () => {
 
         {/* Subscription Plans Preview removed for minimal UI */}
       </div>
-    </div>
+    </>
   );
 };
 

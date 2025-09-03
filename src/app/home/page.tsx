@@ -197,7 +197,7 @@ const HomePage: React.FC = () => {
       id: '4',
       title: 'Medicine Delivery',
       description: 'Get medicines delivered at your doorstep',
-      imageUri: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+      imageUri: 'https://www.freepik.com/free-photo/first-aid-box-healthcare-treatment-graphic_17076552.htm#fromView=search&page=1&position=19&uuid=674ba0dd-570a-4928-9fd6-b3babab35989&query=health+promotion+image+for+web+app',
       actionText: 'Order Now',
       onPress: () => handleFeaturePress('Medicine Delivery'),
     },

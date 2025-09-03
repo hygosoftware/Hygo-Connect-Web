@@ -2,15 +2,16 @@
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
+import { profileService } from '../../services/apiServices';
 import Icon from './Icon';
 
 interface UserProfile {
-  profilePhoto?: string;
-  FullName?: string;
-  Email?: string;
-  Gender?: string;
-  DateOfBirth?: string;
-  MobileNumber?: string;
+  profilePhoto?: string | null;
+  FullName: string;
+  Email: string;
+  Gender: string;
+  DateOfBirth: string;
+  MobileNumber: string;
 }
 
 interface UserNameWithPhoto {
@@ -51,23 +52,70 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
   // Sidebar expansion state: use controlled prop for desktop
   const isSidebarExpanded = isSidebarExpandedProp;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile>({
+    FullName: 'User',
+    Email: 'user@example.com',
+    Gender: 'Not specified',
+    DateOfBirth: 'Not specified',
+    MobileNumber: 'Not specified',
+  });
+  const { user, isAuthenticated } = useAuth();
 
-  // User helpers
-  const getUserDisplayName = () => {
-    if (userName && typeof userName === 'object' && userName.FullName && userName.FullName.trim().length > 0) {
-      return userName.FullName;
-    }
-    if (typeof userName === 'string' && userName.trim().length > 0) {
-      return userName;
-    }
-    return 'User';
-  };
-  const getUserEmail = () => {
-    if (userName && typeof userName === 'object' && userName.Email && userName.Email.trim().length > 0) {
-      return userName.Email;
-    }
-    return 'user@example.com';
-  };
+  // Fetch user profile data
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (user?._id) {
+        const userId = user._id;
+        try {
+          const profile = await profileService.getProfileByUserId(userId);
+          if (profile) {
+            setUserProfile({
+              profilePhoto: profile.profilePhoto,
+              FullName: profile.FullName || user.FullName || user.fullName || 'User',
+              Email: profile.Email || user.Email || user.email || 'user@example.com',
+              Gender: profile.Gender || 'Not specified',
+              DateOfBirth: profile.DateOfBirth || 'Not specified',
+              MobileNumber: (() => {
+                if (Array.isArray(profile.MobileNumber) && profile.MobileNumber.length > 0) {
+                  return profile.MobileNumber[0]?.number || 'Not specified';
+                }
+                return typeof profile.MobileNumber === 'string' ? profile.MobileNumber : 'Not specified';
+              })()
+            });
+          }
+        } catch (error) {
+          console.error('Error fetching user profile, using fallback data:', error);
+          // Fallback to user data from auth if available
+          if (user) {
+            setUserProfile({
+              FullName: user.FullName || user.fullName || 'User',
+              Email: user.Email || user.email || 'user@example.com',
+              profilePhoto: '',
+              Gender: 'Not specified',
+              DateOfBirth: 'Not specified',
+              MobileNumber: 'Not specified'
+            });
+          }
+        }
+      } else if (!user) {
+        // Demo data when no user is logged in
+        setUserProfile({
+          FullName: 'Demo User',
+          Email: 'demo@example.com',
+          profilePhoto: '',
+          Gender: 'Not specified',
+          DateOfBirth: 'Not specified',
+          MobileNumber: 'Not specified'
+        });
+      }
+    };
+
+    fetchUserProfile();
+  }, [user?._id, user?.FullName, user?.fullName, user?.Email, user?.email]);
+
+  // User helpers - simplified since we have getDisplayName
+  const getUserDisplayName = () => getDisplayName();
+  const getUserEmail = () => userProfile.Email;
   const getUserInitials = () => {
     const displayName = getUserDisplayName();
     if (displayName === 'User') return 'U';
@@ -291,57 +339,14 @@ const ResponsiveNavigation: React.FC<ResponsiveNavigationProps> = ({
     ) : null
   );
 
-  const { user, isAuthenticated } = useAuth();
-  const [userId, setUserId] = useState<string | null>('demo-user-123');
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      // Use real user data from authentication if available
-      if (visible && user) {
-        setProfile({
-          FullName: user.FullName || user.fullName || 'User',
-          Email: user.Email || user.email || 'user@example.com',
-          profilePhoto: '', // Empty for demo - will show initials
-          Gender: 'Not specified',
-          DateOfBirth: 'Not specified',
-          MobileNumber: 'Not specified'
-        });
-        setUserId(user._id || 'demo-user-123');
-      } else if (visible) {
-        // Fallback to demo data if no user is authenticated
-        setProfile({
-          FullName: 'John Doe',
-          Email: 'john.doe@example.com',
-          profilePhoto: '', // Empty for demo - will show initials
-          Gender: 'Male',
-          DateOfBirth: '1990-01-01',
-          MobileNumber: '+1234567890'
-        });
-      }
-    };
-
-    void fetchUserProfile();
-  }, [visible, user]);
-
+  const userId = user?._id || 'demo-user-123';
 
   // Get display name with priority order
-  const getDisplayName = () => {
-    if (profile && profile.FullName && profile.FullName.trim().length > 0) {
-      return profile.FullName;
-    }
-    if (userName && typeof userName === "object" && userName.FullName && userName.FullName.trim().length > 0) {
-      return userName.FullName;
-    }
-    if (userName && typeof userName === "string" && userName.trim().length > 0) {
-      return userName;
-    }
-    return "User";
-  };
+  const getDisplayName = () => userProfile.FullName;
 
   // Get profile photo with priority order
   const getProfilePhoto = () => {
-    return profile?.profilePhoto ||
+    return userProfile?.profilePhoto ||
       (userName && typeof userName === "object" ? userName.profilePhoto : null);
   };
 

@@ -2415,6 +2415,19 @@ export const userSubscriptionService = {
       return null;
     }
   },
+
+  checkSpecializedAvailability: async (userId: string, doctorId: string): Promise<{ data: { hasAccess: boolean; message?: string } } | null> => {
+    try {
+      const response = await apiClient.get(`/UserSubscription/check-specialized-availability/${userId}`);
+      // Ensure we return the data in the expected format
+      console.log("response.data 222222", response.data)
+
+      return { data: response.data };
+    } catch (error: any) {
+      console.error('Error checking specialized availability:', error?.response?.data || error?.message || error);
+      return null;
+    }
+  },
   // Prefer this new endpoint which explicitly reports availability
   checkAvailability: async (
     userId: string
