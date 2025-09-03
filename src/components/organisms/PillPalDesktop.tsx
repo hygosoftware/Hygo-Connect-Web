@@ -222,6 +222,8 @@ const PillPalDesktop: React.FC<PillPalDesktopProps> = ({
             medications={notifications}
             onMedicationClick={(med) => onEditNotification(med.id)}
             onMarkTaken={onMarkTaken}
+            onEditMedication={onEditNotification}
+            onDeleteMedication={onDeleteNotification}
             className="w-80"
           />
         </div>

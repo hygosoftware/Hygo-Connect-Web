@@ -19,6 +19,8 @@ interface MedicationSidebarProps {
   medications: MedicationNotification[];
   onMedicationClick?: (medication: MedicationNotification) => void;
   onMarkTaken?: (id: string) => void;
+  onEditMedication?: (id: string) => void;
+  onDeleteMedication?: (id: string) => void;
   className?: string;
 }
 
@@ -26,6 +28,8 @@ const MedicationSidebar: React.FC<MedicationSidebarProps> = ({
   medications,
   onMedicationClick,
   onMarkTaken,
+  onEditMedication,
+  onDeleteMedication,
   className = '',
 }) => {
   const today = new Date();
@@ -90,7 +94,7 @@ const MedicationSidebar: React.FC<MedicationSidebarProps> = ({
     return (
       <div
         key={medication.id}
-        className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+        className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors group"
         onClick={() => onMedicationClick?.(medication)}
       >
         {/* Medicine Icon */}
@@ -150,18 +154,41 @@ const MedicationSidebar: React.FC<MedicationSidebarProps> = ({
           </div>
         </div>
 
-        {/* Action Button */}
-        {isToday && (
+        {/* Action Buttons */}
+        <div className="flex items-center space-x-1 ml-2 opacity-100 group-hover:opacity-100">
+          {isToday && (
+            <button
+              onClick={e => {
+                e.stopPropagation();
+                onMarkTaken?.(medication.id);
+              }}
+              className="p-2 text-[#0e3293] hover:bg-[#0e3293]/10 rounded-lg transition-colors"
+              title="Mark as taken"
+            >
+              <Icon name="check" size="small" />
+            </button>
+          )}
           <button
-            onClick={(e) => {
+            onClick={e => {
               e.stopPropagation();
-              onMarkTaken?.(medication.id);
+              onEditMedication?.(medication.id);
             }}
-            className="p-2 text-[#0e3293] hover:bg-[#0e3293]/10 rounded-lg transition-colors"
+            className="p-2 text-blue-500 hover:bg-blue-100 rounded-lg transition-colors"
+            title="Edit"
           >
-            <Icon name="check" size="small" />
+            <Icon name="edit" size="small" />
           </button>
-        )}
+          <button
+            onClick={e => {
+              e.stopPropagation();
+              onDeleteMedication?.(medication.id);
+            }}
+            className="p-2 text-red-500 hover:bg-red-100 rounded-lg transition-colors"
+            title="Delete"
+          >
+            <Icon name="trash" size="small" />
+          </button>
+        </div>
       </div>
     );
   };

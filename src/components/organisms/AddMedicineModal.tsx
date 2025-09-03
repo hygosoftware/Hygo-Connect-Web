@@ -33,6 +33,9 @@ interface AddMedicineModalProps {
   onClose?: () => void;
   onAddMedicines?: AddMedicinesHandler;
   loading?: boolean;
+  initialMedicines?: Medicine[]; // for edit mode
+  isEditing?: boolean;
+  onEditMedicines?: AddMedicinesHandler; // for edit mode
 }
 
 const defaultOnAdd: AddMedicinesHandler = () => {};
@@ -69,17 +72,31 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
   isOpen = true,
   onClose = () => {},
   onAddMedicines = defaultOnAdd,
-  loading = false
+  loading = false,
+  initialMedicines,
+  isEditing = false,
+  onEditMedicines
 }) => {
-  const [medicines, setMedicines] = useState<MedicineItem[]>([{
-    id: '1',
-    name: '',
-    type: 'Tablet',
-    dose: { value: '1', unit: 'tablet' },
-    timings: {},
-    timingType: 'before',
-    duration: { value: '7', unit: 'days', startDate: new Date().toISOString().split('T')[0], endDate: calculateEndDate(new Date().toISOString().split('T')[0], '7', 'days') }
-  }]);
+  const [medicines, setMedicines] = useState<MedicineItem[]>(
+    initialMedicines && initialMedicines.length > 0
+      ? initialMedicines
+      : [{
+          id: '1',
+          name: '',
+          type: 'Tablet',
+          dose: { value: '1', unit: 'tablet' },
+          timings: {},
+          timingType: 'before',
+          duration: { value: '7', unit: 'days', startDate: new Date().toISOString().split('T')[0], endDate: calculateEndDate(new Date().toISOString().split('T')[0], '7', 'days') }
+        }]
+  );
+
+  // Reset medicines if initialMedicines changes (for edit mode)
+  React.useEffect(() => {
+    if (initialMedicines && initialMedicines.length > 0) {
+      setMedicines(initialMedicines);
+    }
+  }, [initialMedicines]);
   const [errors, setErrors] = useState<string[]>([]);
   const [prescriptionFile, setPrescriptionFile] = useState<File | null>(null);
   const [activeTab, setActiveTab] = useState(0);
@@ -543,19 +560,25 @@ const AddMedicineModal: React.FC<AddMedicineModalProps> = ({
               Cancel
             </button>
             <button
-              onClick={() => onAddMedicines(medicines, prescriptionFile)}
+              onClick={() => {
+                if (isEditing && onEditMedicines) {
+                  onEditMedicines(medicines, prescriptionFile);
+                } else {
+                  onAddMedicines(medicines, prescriptionFile);
+                }
+              }}
               disabled={loading}
               className="flex-1 sm:flex-none px-4 sm:px-6 py-2 bg-gradient-to-r from-[#0e3293] to-[#1a4bb8] text-white rounded-lg sm:rounded-xl hover:from-[#0c2a7a] hover:to-[#0e3293] transition-all duration-200 disabled:opacity-50 font-medium shadow-lg flex items-center justify-center group text-sm"
             >
               {loading ? (
                 <>
                   <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white mr-2" />
-                  Adding...
+                  {isEditing ? 'Saving...' : 'Adding...'}
                 </>
               ) : (
                 <>
                   <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-2 group-hover:scale-110 transition-transform" />
-                  Add Medicine{medicines.length > 1 ? 's' : ''}
+                  {isEditing ? 'Save Changes' : `Add Medicine${medicines.length > 1 ? 's' : ''}`}
                 </>
               )}
             </button>

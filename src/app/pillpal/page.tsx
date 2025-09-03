@@ -41,6 +41,10 @@ interface ToastState {
   visible: boolean;
 }
 const PillPalPage: React.FC = () => {
+  // ...existing state
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingPillId, setEditingPillId] = useState<string | null>(null);
+  const [editingMedicine, setEditingMedicine] = useState<Medicine[] | null>(null);
   const router = useRouter();
   const [notifications, setNotifications] = useState<MedicationNotification[]>([]);
   const [pillReminders, setPillReminders] = useState<PillReminder[]>([]);
@@ -173,10 +177,46 @@ const PillPalPage: React.FC = () => {
     showToast('Notification marked as read', 'success');
   };
 
+  function pillReminderToMedicine(pill: PillReminder): Medicine {
+    const med = pill.medicines[0];
+    return {
+      id: pill._id,
+      name: med.medicineName,
+      type: med.medicineType,
+      dose: {
+        value: pill.dosage ? pill.dosage.toString() : "1",
+        unit: "tablet", // fallback, or map from data if available
+      },
+      timings: Object.fromEntries(
+        (pill.Time || []).map((time, idx) => [
+          `slot${idx}`,
+          { intake: pill.dosage ? pill.dosage.toString() : "1", time }
+        ])
+      ),
+      timingType:
+        pill.Meal === "Before Food" ? "before" :
+        pill.Meal === "After Food" ? "after" :
+        pill.Meal === "With Bedtime" ? "bedtime" : "custom",
+      duration: {
+        value: pill.duration.value?.toString() || "7",
+        unit: pill.duration.unit,
+        startDate: pill.startDate,
+        endDate: pill.endDate,
+      }
+    };
+  }
+
   const handleEditNotification = (id: string) => {
-    const medication = notifications.find(n => n.id === id);
-    showToast(`Edit ${medication?.medicineName || 'medication'}`, 'info');
-    // In a real app, navigate to edit screen
+    // Find the corresponding pill reminder (assuming id is pillId)
+    const pill = pillReminders.find(r => r._id === id);
+    if (pill) {
+      setIsEditing(true);
+      setEditingPillId(id);
+      setEditingMedicine([pillReminderToMedicine(pill)]);
+      setShowAddMedicineModal(true);
+    } else {
+      showToast('Could not find medicine to edit', 'error');
+    }
   };
 
   const handleDeleteNotification = async (id: string) => {
@@ -334,8 +374,40 @@ const PillPalPage: React.FC = () => {
       {/* Add Medicine Modal */}
       <AddMedicineModal
         isOpen={showAddMedicineModal}
-        onClose={() => setShowAddMedicineModal(false)}
+        onClose={() => {
+          setShowAddMedicineModal(false);
+          setIsEditing(false);
+          setEditingPillId(null);
+          setEditingMedicine(null);
+        }}
         onAddMedicines={(medicines, file) => { void handleAddMedicines(medicines, file); }}
+        initialMedicines={editingMedicine || undefined}
+        isEditing={isEditing}
+        onEditMedicines={async (medicines, file) => {
+          if (!editingPillId) return;
+          setAddingMedicines(true);
+          try {
+            const tokens = TokenManager.getTokens();
+            const userId = tokens?.userId;
+            if (!userId) {
+              showToast('Please login to edit medicines.', 'error');
+              return;
+            }
+            // Only support editing one medicine at a time
+            const pillData = medicines[0];
+            await pillReminderService.updatePill(userId, editingPillId, pillData);
+            showToast('Medicine updated successfully', 'success');
+            setShowAddMedicineModal(false);
+            setIsEditing(false);
+            setEditingPillId(null);
+            setEditingMedicine(null);
+            await loadPillReminders();
+          } catch (error: any) {
+            showToast('Failed to update medicine', 'error');
+          } finally {
+            setAddingMedicines(false);
+          }
+        }}
         loading={addingMedicines}
       />
 
@@ -378,4 +450,3 @@ const PillPalPage: React.FC = () => {
 };
 
 export default PillPalPage;
-
