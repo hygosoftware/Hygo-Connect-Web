@@ -5,19 +5,23 @@ import { Typography, Button } from '../atoms';
 
 interface ResendSectionProps {
   onResend: () => void;
+  countdownSeconds?: number;
   initialTimer?: number;
   disabled?: boolean;
   className?: string;
+  isResending?: boolean;
 }
 
 const ResendSection: React.FC<ResendSectionProps> = ({
   onResend,
-  initialTimer = 60,
+  countdownSeconds = 30,
+  initialTimer = countdownSeconds,
   disabled = false,
   className = '',
+  isResending = false,
 }) => {
   const [timer, setTimer] = useState(initialTimer);
-  const [resendDisabled, setResendDisabled] = useState(true);
+  const [resendDisabled, setResendDisabled] = useState(initialTimer > 0);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -42,47 +46,45 @@ const ResendSection: React.FC<ResendSectionProps> = ({
   }, [timer, resendDisabled]);
 
   const handleResend = () => {
-    if (!resendDisabled && !disabled) {
-      setTimer(initialTimer);
-      setResendDisabled(true);
+    if ((!resendDisabled && !disabled) || isResending) {
+      if (!isResending) {
+        setTimer(initialTimer);
+        setResendDisabled(true);
+      }
       onResend();
     }
   };
 
-  // Reset timer when initialTimer changes (useful for external resets)
+  // Reset timer when initialTimer changes
   useEffect(() => {
     setTimer(initialTimer);
     setResendDisabled(initialTimer > 0);
   }, [initialTimer]);
 
   return (
-    <div className={`flex justify-center items-center space-x-1 ${className}`}>
-      <Typography variant="body1" color="text-secondary">
+    <div className={`flex items-center justify-center gap-2 ${className}`}>
+      <Typography variant="body2" color="text-secondary">
         Didn't receive the code?
       </Typography>
       
       {resendDisabled || disabled ? (
         <Typography 
-          variant="body1" 
+          variant="body2" 
           color="text-secondary"
           className="opacity-60"
         >
           Resend in {timer}s
         </Typography>
       ) : (
-        <button
+        <Button
+          variant="primary"
           onClick={handleResend}
-          disabled={disabled}
-          className="text-blue-800 font-medium hover:text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-1 transition-colors duration-200"
+          disabled={(resendDisabled || disabled) && !isResending}
+          loading={isResending}
+          className={`text-primary-600 hover:text-primary-700 p-0 h-auto min-h-0 ${isResending ? 'opacity-70' : ''}`}
         >
-          <Typography 
-            variant="body1" 
-            color="primary"
-            className="font-medium"
-          >
-            Resend OTP
-          </Typography>
-        </button>
+          {isResending ? 'Sending...' : 'Resend Code'}
+        </Button>
       )}
     </div>
   );

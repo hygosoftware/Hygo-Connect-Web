@@ -650,24 +650,13 @@ const BookingReview: React.FC = () => {
           </div>
 
           {/* Action Button (single) */}
-          {hasFreeAppointment() ? (
-            <Button
-              onClick={() => { void handleConfirmWithSubscription(); }}
-              disabled={isProcessing}
-              loading={isProcessing}
-              className="w-full bg-green-600 hover:bg-green-600/90 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
-            >
-              Confirm Booking (Free with Subscription)
-            </Button>
-          ) : (
-            <Button
-              onClick={handleProceedToPayment}
-              disabled={isProcessing}
-              className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
-            >
-              Proceed to Payment
-            </Button>
-          )}
+          <Button
+  onClick={handleProceedToPayment}
+  disabled={isProcessing}
+  className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
+>
+  Proceed to Payment
+</Button>
         </div>
       </div>
     </div>

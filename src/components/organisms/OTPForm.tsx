@@ -10,6 +10,8 @@ interface OTPFormProps {
   onResend?: () => void;
   onBack?: () => void;
   className?: string;
+  isLoading?: boolean;
+  isResending?: boolean;
 }
 
 interface ToastState {
@@ -24,10 +26,12 @@ const OTPForm: React.FC<OTPFormProps> = ({
   onResend,
   onBack,
   className = '',
+  isLoading = false,
+  isResending = false,
 }) => {
   const router = useRouter();
   const [otp, setOtp] = useState<string[]>(Array(6).fill(''));
-  const [loading, setLoading] = useState(false);
+  const [internalLoading, setInternalLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [toast, setToast] = useState<ToastState>({
     visible: false,
@@ -84,8 +88,7 @@ const OTPForm: React.FC<OTPFormProps> = ({
       return;
     }
 
-    setLoading(true);
-
+    setInternalLoading(true);
     try {
       // Call the actual AuthService verifyOTP method
       const response = await AuthService.verifyOTP(email, otpValue);
@@ -115,7 +118,7 @@ const OTPForm: React.FC<OTPFormProps> = ({
       const errorMessage = error.response?.data?.message || error.message || 'Failed to verify OTP. Please try again.';
       showToast(errorMessage, 'error');
     } finally {
-      setLoading(false);
+      setInternalLoading(false);
     }
   };
 
@@ -127,7 +130,7 @@ const OTPForm: React.FC<OTPFormProps> = ({
     }
 
     try {
-      setLoading(true);
+      setInternalLoading(true);
 
       // Call the actual AuthService login method to resend OTP
       const response = await AuthService.login({ Email: email });
@@ -152,7 +155,7 @@ const OTPForm: React.FC<OTPFormProps> = ({
       const errorMessage = error.response?.data?.message || error.message || 'Failed to resend OTP. Please try again.';
       showToast(errorMessage, 'error');
     } finally {
-      setLoading(false);
+      setInternalLoading(false);
     }
   };
 
@@ -182,33 +185,21 @@ const OTPForm: React.FC<OTPFormProps> = ({
     <div className={`min-h-screen bg-white ${className}`}>
       {/* Back Button */}
       <div className="absolute top-6 left-4 z-10">
-        <BackButton onClick={handleBack} disabled={loading} />
+        {onBack && <BackButton onClick={onBack} className="mb-6" />}
       </div>
 
       <div className="flex flex-col justify-center min-h-screen px-6 py-12 mobile-container">
         <div className="w-full animate-fade-in-up">
           {/* Header Section */}
           <div className="text-center mb-8">
-            <Typography 
-              variant="h3" 
-              color="primary" 
-              className="mb-2 font-bold"
+            <Typography
+              variant="h4"
+              className="text-2xl font-bold text-gray-900 mb-2"
             >
-              Verify your email
+              Enter Verification Code
             </Typography>
-            <Typography 
-              variant="body1" 
-              color="text-secondary" 
-              className="mb-1"
-            >
-              We've sent a 6-digit verification code to
-            </Typography>
-            <Typography 
-              variant="body1" 
-              color="text-primary" 
-              className="font-medium"
-            >
-              {email}
+            <Typography className="text-gray-600 mb-8">
+              We've sent a verification code to {email || 'your email'}
             </Typography>
           </div>
 
@@ -218,27 +209,28 @@ const OTPForm: React.FC<OTPFormProps> = ({
               value={otp}
               onChange={handleOtpChange}
               length={6}
-              disabled={loading}
+              disabled={isLoading || internalLoading}
             />
           </div>
 
           {/* Verify Button */}
           <Button
             onClick={handleVerifyOtp}
-            disabled={loading}
-            loading={loading}
+            disabled={otp.some((digit) => !digit) || isLoading}
+            loading={isLoading || internalLoading}
             variant="primary"
             size="medium"
             className="w-full shadow-sm btn-primary focus-ring mb-6"
           >
-            {loading ? 'Verifying...' : 'VERIFY'}
+            {(isLoading || internalLoading) ? 'Verifying...' : 'VERIFY'}
           </Button>
 
           {/* Resend Section */}
           <ResendSection
             onResend={handleResendOtp}
-            disabled={loading}
-            initialTimer={60}
+            countdownSeconds={30}
+            className="mt-6"
+            isResending={isResending}
           />
         </div>
       </div>

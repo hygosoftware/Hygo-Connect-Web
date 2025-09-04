@@ -257,12 +257,37 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
     void loadFamilyMembers();
   }, [loadFamilyMembers]);
 
+  // Check if mobile view
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    // Set initial value
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   // Handlers
   const handleGoBack = () => {
     router.back();
   };
 
   const handleMemberSelect = async (memberId: string) => {
+    if (isMobile) {
+      // On mobile, navigate to detail page
+      router.push(`/family/${memberId}`);
+      return;
+    }
+    
+    // On desktop, show details in the same page
     setSelectedMember(memberId);
     setSelectedMemberDetails(null);
     try {

@@ -120,6 +120,7 @@ const BookingPayment: React.FC = () => {
       }
       
       // Only check specialized availability if user has an active subscription
+      console.log('[BookingPayment] Calling userSubscriptionService.checkSpecializedAvailability', { userId, doctorId });
       const response = await userSubscriptionService.checkSpecializedAvailability(userId, doctorId);
       
       // Transform the response to match the expected format
@@ -189,55 +190,137 @@ const BookingPayment: React.FC = () => {
     }
   };
 
-  // Preload subscription coverage and compute effective total
+  // Check subscription availability immediately when component loads
   useEffect(() => {
-    const init = async () => {
+    const checkSubscriptionAvailability = async () => {
       try {
-        const { userId } = TokenManager.getTokens();
-        if (!userId) {
+        const { userId, accessToken } = TokenManager.getTokens();
+        const doctorId = state.selectedDoctor?._id || (state.selectedDoctor as any)?.id;
+        
+        if (!userId || !doctorId) {
+          setHasActiveSubscription(false);
+          setSubscriptionDetails(null);
+          setQuotaExhausted(false);
+          setSubscriptionUsed(false);
           setEffectiveTotal(baseTotalAmount);
           setSubscriptionChecked(true);
           return;
         }
 
-        // Check for specialized doctor first
-        if (isDoctorSpecialized(state.selectedDoctor)) {
-          await handleSpecializedBooking();
+        if (!accessToken) {
+          setHasActiveSubscription(false);
+          setSubscriptionDetails(null);
+          setQuotaExhausted(false);
+          setSubscriptionUsed(false);
+          setEffectiveTotal(baseTotalAmount);
+          setSubscriptionChecked(true);
           return;
         }
 
-        // Regular subscription check for non-specialized doctors
-        const sub = await userSubscriptionService.getActiveSubscription(userId);
-        const active = !!sub && (
-          (sub as any).status?.toString().toLowerCase() === 'active' ||
-          (sub as any).isActive === true ||
-          (sub as any).remainingBookings > 0 ||
-          (sub as any).remainingFreeAppointments > 0
-        );
-
-        setHasActiveSubscription(active);
-        setSubscriptionDetails(sub);
-        
-        if (active) {
-          setSubscriptionUsed(true);
-          setEffectiveTotal(0);
-        } else {
-          setSubscriptionUsed(false);
-          setEffectiveTotal(baseTotalAmount);
+        try {
+          let response: any;
+          
+          // Check if doctor is specialized and use appropriate endpoint
+          if (isDoctorSpecialized(state.selectedDoctor)) {
+            response = await userSubscriptionService.checkSpecializedAvailability(userId, doctorId);
+          } else {
+            response = await userSubscriptionService.checkAvailability(userId);
+          }
+          
+          if (response) {
+            if (isDoctorSpecialized(state.selectedDoctor)) {
+              // Handle specialized consultation response - has 'data' property
+              const responseData = (response as any).data;
+              const isAvailable = responseData?.isAvailable || false;
+              const quotaExhausted = responseData?.quotaExhausted || false;
+              
+              setHasActiveSubscription(isAvailable);
+              setSubscriptionDetails(responseData);
+              setQuotaExhausted(quotaExhausted);
+              
+              if (isAvailable && !quotaExhausted) {
+                setSubscriptionUsed(true);
+                setEffectiveTotal(0);
+              } else if (quotaExhausted) {
+                console.log('⚠️ Specialized consultation quota exhausted');
+                setSubscriptionUsed(false);
+                setEffectiveTotal(baseTotalAmount);
+              } else {
+                setSubscriptionUsed(false);
+                setEffectiveTotal(baseTotalAmount);
+              }
+            } else {
+              // Handle general consultation response - direct properties
+              const hasSubscription = (response as any).hasActiveSubscription || false;
+              setHasActiveSubscription(hasSubscription);
+              setSubscriptionDetails((response as any).subscriptionDetails || response);
+              setQuotaExhausted((response as any).quotaExhausted || false);
+              
+              if (hasSubscription && !(response as any).quotaExhausted) {
+                setSubscriptionUsed(true);
+                setEffectiveTotal(0);
+              } else if (hasSubscription && (response as any).quotaExhausted) {
+                console.log('⚠️ General doctor subscription quota exhausted');
+                setSubscriptionUsed(false);
+                setEffectiveTotal(baseTotalAmount);
+              } else {
+                setSubscriptionUsed(false);
+                setEffectiveTotal(baseTotalAmount);
+              }
+            }
+          } else {
+            console.log('⚠️ Invalid subscription response');
+            setHasActiveSubscription(false);
+            setSubscriptionDetails(null);
+            setQuotaExhausted(false);
+            setSubscriptionUsed(false);
+            setEffectiveTotal(baseTotalAmount);
+          }
+        } catch (err: any) {
+          console.log('⚠️ Subscription API failed with status:', err.response?.status);
+          console.log('⚠️ Subscription API error response:', err.response?.data);
+          console.log('⚠️ Full error:', err.message);
+          
+          // Only show alert for non-auth errors (auth errors are handled by interceptor)
+          if (err.response?.status !== 401 && err.response?.status !== 403) {
+            setHasActiveSubscription(false);
+            setSubscriptionDetails(null);
+            setQuotaExhausted(false);
+            setSubscriptionUsed(false);
+            setEffectiveTotal(baseTotalAmount);
+            showToast({
+              type: 'error',
+              title: 'Subscription Check Failed',
+              message: `Unable to check subscription: ${err.response?.data?.message || err.message}`
+            });
+          } else {
+            // Auth error - reset to default state
+            setHasActiveSubscription(false);
+            setSubscriptionDetails(null);
+            setQuotaExhausted(false);
+            setSubscriptionUsed(false);
+            setEffectiveTotal(baseTotalAmount);
+          }
         }
-      } catch (error) {
+      } catch (err: any) {
+        console.log('⚠️ Subscription check failed:', err.message);
         setHasActiveSubscription(false);
         setSubscriptionDetails(null);
-        setSubscriptionUsed(false);
         setQuotaExhausted(false);
+        setSubscriptionUsed(false);
         setEffectiveTotal(baseTotalAmount);
+        showToast({
+          type: 'error',
+          title: 'Error',
+          message: 'Unable to check subscription. Please try again.'
+        });
       } finally {
         setSubscriptionChecked(true);
       }
     };
     
-    void init();
-  }, [baseTotalAmount, state.selectedDoctor]);
+    checkSubscriptionAvailability();
+  }, [state.selectedDoctor, baseTotalAmount, showToast]);
 
   const handlePaymentMethodSelect = (method: 'card' | 'cash') => {
     setSelectedMethod(method);
@@ -490,26 +573,52 @@ const BookingPayment: React.FC = () => {
       setLoading(true);
       setPaymentStatus('processing');
 
+      // --- SUBSCRIPTION LOGIC START ---
+      // Reset subscription state on every attempt
+      setHasActiveSubscription(false);
+      setSubscriptionUsed(false);
+      setQuotaExhausted(false);
+      setSubscriptionDetails(null);
+
       const { userId } = TokenManager.getTokens();
       if (!userId) {
         throw new Error('User not authenticated. Please log in to book an appointment.');
       }
 
-      // Check if doctor is specialized
+      // 1. Check if doctor is specialized
       if (isDoctorSpecialized(state.selectedDoctor)) {
-        // First check if user has an active subscription
-        const subscription = await userSubscriptionService.getActiveSubscription(userId);
+        // 2. Check if user has an active subscription
+        let subscription: any = null;
+        try {
+          subscription = await userSubscriptionService.getActiveSubscription(userId);
+        } catch (err) {
+          // Reset subscription state on API failure
+          setHasActiveSubscription(false);
+          setSubscriptionUsed(false);
+          setQuotaExhausted(false);
+          setSubscriptionDetails(null);
+        }
         const hasActiveSubscription = subscription && (
           (subscription as any).status?.toString().toLowerCase() === 'active' ||
           (subscription as any).isActive === true ||
           (subscription as any).remainingBookings > 0 ||
           (subscription as any).remainingFreeAppointments > 0
         );
+        setHasActiveSubscription(!!hasActiveSubscription);
 
         if (hasActiveSubscription) {
-          // Check specialized availability if user has an active subscription
-          const availability = await checkSpecializedAvailability(state.selectedDoctor?._id || '');
-          
+          // 3. Check specialized availability for this doctor
+          let availability: any = null;
+          try {
+            availability = await checkSpecializedAvailability(state.selectedDoctor?._id || '');
+          } catch (err) {
+            // API failure, treat as no subscription
+            setHasActiveSubscription(false);
+            setSubscriptionUsed(false);
+            setQuotaExhausted(false);
+            setSubscriptionDetails(null);
+          }
+
           if (availability && !availability.isAvailable) {
             if (availability.quotaExhausted) {
               // Show quota exhausted alert and let user decide whether to continue
@@ -519,15 +628,15 @@ const BookingPayment: React.FC = () => {
                 `You can still book by paying ₹${state.selectedDoctor?.consultationFee || 0}.\n\n` +
                 `Would you like to continue?`
               );
-              
               if (!shouldContinue) {
                 setLoading(false);
                 return;
               }
-              
               // Set quota exhausted flag to ensure payment is processed
               setQuotaExhausted(true);
               setSubscriptionUsed(false);
+              setHasActiveSubscription(true);
+              setSubscriptionDetails(subscription);
             } else {
               // No availability for other reasons (not just quota)
               setLoading(false);
@@ -536,9 +645,13 @@ const BookingPayment: React.FC = () => {
                 title: 'Not Available',
                 message: availability.message || 'This doctor is not available for subscription booking at this time.'
               });
+              setHasActiveSubscription(false);
+              setSubscriptionUsed(false);
+              setQuotaExhausted(false);
+              setSubscriptionDetails(null);
               return;
             }
-          } else if (availability?.isAvailable) {
+          } else if (availability?.isAvailable && !availability.quotaExhausted) {
             // Set subscription details for the booking
             setSubscriptionDetails({
               cardId: availability.cardId,
@@ -549,10 +662,24 @@ const BookingPayment: React.FC = () => {
             setSubscriptionUsed(true);
             setSpecializedAvailability(availability);
             setQuotaExhausted(false);
+            setHasActiveSubscription(true);
+          } else {
+            // No subscription available, proceed with normal payment
+            setHasActiveSubscription(false);
+            setSubscriptionUsed(false);
+            setQuotaExhausted(false);
+            setSubscriptionDetails(null);
           }
+        } else {
+          // No active subscription, proceed with normal payment
+          setHasActiveSubscription(false);
+          setSubscriptionUsed(false);
+          setQuotaExhausted(false);
+          setSubscriptionDetails(null);
         }
-        // If no active subscription, proceed with normal payment flow
       }
+      // --- SUBSCRIPTION LOGIC END ---
+
 
       const resolvedClinicId = String(state.selectedClinic?._id || '');
       if (!resolvedClinicId) {
@@ -877,7 +1004,8 @@ const BookingPayment: React.FC = () => {
           </div>
         </div>
 
-        {/* Subscription Status Banner */}
+        {/* --- SUBSCRIPTION STATUS BANNERS --- */}
+        {/* Green: Covered by Subscription */}
         {hasActiveSubscription && !quotaExhausted && subscriptionUsed && (
           <div className="mb-6">
             <div className="bg-green-50 border border-green-200 rounded-xl p-4">
@@ -902,7 +1030,7 @@ const BookingPayment: React.FC = () => {
             </div>
           </div>
         )}
-
+        {/* Orange: Quota Exhausted */}
         {quotaExhausted && (
           <div className="mb-6">
             <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
@@ -923,6 +1051,8 @@ const BookingPayment: React.FC = () => {
             </div>
           </div>
         )}
+        {/* --- END SUBSCRIPTION STATUS BANNERS --- */}
+
 
         {/* Payment Summary */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
@@ -986,14 +1116,15 @@ const BookingPayment: React.FC = () => {
           </div>
         </div>
 
-        {/* Payment Methods - Only show if amount > 0 */}
+        {/* --- PAYMENT METHODS --- */}
+        {/* Only show payment method selection if not covered by subscription (i.e., amount > 0 or quota exhausted) */}
         {effectiveTotal > 0 && (
           <>
+            {/* Payment method selection is hidden if covered by subscription (FREE) */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
               <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
                 Select Payment Method
               </Typography>
-
               <div className="space-y-3">
                 <PaymentMethodCard
                   method="card"
@@ -1009,72 +1140,94 @@ const BookingPayment: React.FC = () => {
                 />
               </div>
             </div>
-
-            {/* Payment Details Form */}
-            {selectedMethod && (
+            {/* Payment Details Form for Razorpay */}
+            {selectedMethod === 'card' && (
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
                 <Typography variant="h6" className="text-gray-900 font-semibold mb-4">
                   Payment Details
                 </Typography>
-
-                {selectedMethod === 'card' && (
-                  <div className="space-y-4">
-                    <div className="bg-white border border-blue-200 rounded-lg p-4 mb-4">
-                      <div className="flex items-center mb-2">
-                        <Icon name="shield" size="small" color="#0e3293" className="mr-2" />
-                        <Typography variant="body2" className="text-blue-800 font-medium">
-                          Powered by Razorpay
-                        </Typography>
-                      </div>
-                      <Typography variant="caption" className="text-blue-700">
-                        Secure payment gateway supporting all major cards, UPI, net banking, and wallets.
-                        Your payment details are encrypted and never stored.
+                <div className="space-y-4">
+                  <div className="bg-white border border-blue-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center mb-2">
+                      <Icon name="shield" size="small" color="#0e3293" className="mr-2" />
+                      <Typography variant="body2" className="text-blue-800 font-medium">
+                        Powered by Razorpay
                       </Typography>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                        <Icon name="credit-card" size="small" color="#6b7280" className="mr-2" />
-                        <Typography variant="caption" className="text-gray-600">Cards</Typography>
-                      </div>
-                      <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                        <Icon name="smartphone" size="small" color="#6b7280" className="mr-2" />
-                        <Typography variant="caption" className="text-gray-600">UPI</Typography>
-                      </div>
-                      <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                        <Icon name="wallet" size="small" color="#6b7280" className="mr-2" />
-                        <Typography variant="caption" className="text-gray-600">Wallets</Typography>
-                      </div>
-                      <div className="flex items-center p-3 bg-gray-50 rounded-lg">
-                        <Icon name="hospital" size="small" color="#6b7280" className="mr-2" />
-                        <Typography variant="caption" className="text-gray-600">Net Banking</Typography>
-                      </div>
+                    <Typography variant="caption" className="text-blue-700">
+                      Secure payment gateway supporting all major cards, UPI, net banking, and wallets.
+                      Your payment details are encrypted and never stored.
+                    </Typography>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                      <Icon name="credit-card" size="small" color="#6b7280" className="mr-2" />
+                      <Typography variant="caption" className="text-gray-600">Cards</Typography>
+                    </div>
+                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                      <Icon name="smartphone" size="small" color="#6b7280" className="mr-2" />
+                      <Typography variant="caption" className="text-gray-600">UPI</Typography>
+                    </div>
+                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                      <Icon name="wallet" size="small" color="#6b7280" className="mr-2" />
+                      <Typography variant="caption" className="text-gray-600">Wallets</Typography>
+                    </div>
+                    <div className="flex items-center p-3 bg-gray-50 rounded-lg">
+                      <Icon name="hospital" size="small" color="#6b7280" className="mr-2" />
+                      <Typography variant="caption" className="text-gray-600">Net Banking</Typography>
                     </div>
                   </div>
-                )}
+                </div>
               </div>
             )}
           </>
         )}
+        {/* --- END PAYMENT METHODS --- */}
 
-        {/* Pay Button */}
+        {/* --- PAY BUTTON --- */}
+        {/* If covered by subscription (FREE), hide payment method selection and show special button label */}
         {effectiveTotal === 0 && !quotaExhausted ? (
-          <Button
-            onClick={async () => await handlePayment()}
-            disabled={state.loading}
-            className="w-full bg-[#0e3293] hover:bg-[#0e3293]/90 disabled:bg-gray-400 text-white py-4 px-6 rounded-xl font-medium text-lg transition-colors"
-          >
-            {state.loading ? (
-              <div className="flex items-center justify-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                Processing...
+          <>
+            {/* Green banner and special button for FREE booking */}
+            <div className="mb-6">
+              <div className="bg-green-100 border border-green-300 rounded-xl p-4 flex items-center">
+                <Icon name="star" size="large" color="#059669" className="mr-4" />
+                <div>
+                  <Typography variant="h6" className="text-green-900 font-bold mb-1">
+                    Book for FREE with Subscription
+                  </Typography>
+                  <Typography variant="body2" className="text-green-800">
+                    Your active subscription will cover this appointment.
+                    {subscriptionDetails?.remainingFreeAppointments !== undefined && (
+                      <span className="block mt-1">
+                        <b>{subscriptionDetails.remainingFreeAppointments}</b> free appointment(s) left in your plan.
+                      </span>
+                    )}
+                  </Typography>
+                </div>
               </div>
-            ) : (
-              'Book Appointment - Free'
-            )}
-          </Button>
+            </div>
+            <Button
+              onClick={async () => await handlePayment()}
+              disabled={state.loading}
+              className="w-full bg-green-700 hover:bg-green-800 disabled:bg-gray-400 text-white py-4 px-6 rounded-xl font-bold text-lg transition-colors shadow-lg border-2 border-green-800"
+            >
+              {state.loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Processing...
+                </div>
+              ) : (
+                <span className="flex items-center justify-center">
+                  <Icon name="check-circle" size="medium" color="white" className="mr-2" />
+                  ✓ Book FREE with Subscription
+                </span>
+              )}
+            </Button>
+          </>
         ) : (
           <>
+            {/* Show normal pay buttons if not covered by subscription */}
             {selectedMethod === 'cash' && (
               <Button
                 onClick={() => setShowCashConfirm(true)}
@@ -1109,6 +1262,8 @@ const BookingPayment: React.FC = () => {
             )}
           </>
         )}
+        {/* --- END PAY BUTTON --- */}
+
 
         {/* Cash confirmation popup */}
         {showCashConfirm && (

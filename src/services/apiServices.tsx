@@ -2418,7 +2418,7 @@ export const userSubscriptionService = {
 
   checkSpecializedAvailability: async (userId: string, doctorId: string): Promise<{ data: { hasAccess: boolean; message?: string } } | null> => {
     try {
-      const response = await apiClient.get(`/UserSubscription/check-specialized-availability/${userId}`);
+      const response = await apiClient.get(`/UserSubscription/check-specialized-availability/${userId}/${doctorId}`);
       // Ensure we return the data in the expected format
       console.log("response.data 222222", response.data)
 
