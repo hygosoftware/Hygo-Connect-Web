@@ -137,7 +137,8 @@ const BookingPayment: React.FC = () => {
       };
       
     } catch (error) {
-      return null;
+
+       return null;
     }
   };
 
