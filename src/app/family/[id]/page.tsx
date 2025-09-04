@@ -122,7 +122,7 @@ const FamilyMemberDetailPage: React.FC = () => {
       } else {
         setError('Family member not found');
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to load family member details');
     } finally {
       setLoading(false);
@@ -136,12 +136,12 @@ const FamilyMemberDetailPage: React.FC = () => {
     }
   }, [authLoading, loadMemberData]);
 
-  const relationOptions = [
+  const _relationOptions = [
     'Father', 'Mother', 'Son', 'Daughter', 'Brother', 'Sister',
     'Grandfather', 'Grandmother', 'Uncle', 'Aunt', 'Cousin', 'Spouse', 'Other'
   ];
 
-  const bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+  const _bloodGroupOptions = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 
   // Show loading state
   if (loading) {

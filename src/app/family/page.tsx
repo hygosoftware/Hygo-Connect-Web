@@ -354,7 +354,7 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         setError('Failed to add family member');
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to add family member');
       return false;
     }
@@ -375,7 +375,7 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         setError('Failed to delete family member');
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to delete family member');
       return false;
     }
@@ -407,7 +407,7 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         setError('Failed to update family member');
         return false;
       }
-    } catch (error) {
+    } catch (_error) {
       setError('Failed to update family member');
       return false;
     }

@@ -34,8 +34,8 @@ const AppointmentsPage: React.FC = () => {
     loadAppointments();
   }, [loadAppointments]);
 
-  const now = new Date();
   const splitAppointments = useMemo(() => {
+    const now = new Date();
     const upcoming: Appointment[] = [];
     const past: Appointment[] = [];
 
@@ -59,7 +59,7 @@ const AppointmentsPage: React.FC = () => {
     past.sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime());
 
     return { upcoming, past };
-  }, [appointments, now]);
+  }, [appointments]);
 
   // Group upcoming by date for headers (Today, Tomorrow, or formatted date)
   const groupedUpcoming = useMemo(() => {

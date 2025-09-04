@@ -529,7 +529,6 @@ export const doctorService = {
       // Return empty array on error
       console.log('🔄 [DoctorService] Returning empty array due to error');
       return [];
-      return [];
     }
   },
 
@@ -1927,7 +1926,7 @@ export const pillReminderHelpers = {
       const ampm = hour >= 12 ? 'PM' : 'AM';
       const displayHour = hour % 12 || 12;
       return `${displayHour}:${minutes || '00'} ${ampm}`;
-    } catch (error) {
+    } catch (_error) {
       return time; // Return original if parsing fails
     }
   },
@@ -1950,7 +1949,7 @@ export const pillReminderHelpers = {
       }
 
       return `${hour24.toString().padStart(2, '0')}:${minutes || '00'}`;
-    } catch (error) {
+    } catch (_error) {
       return time; // Return original if parsing fails
     }
   },
@@ -2321,7 +2320,9 @@ export const appointmentService = {
         const dateObj = new Date(date);
         console.error('Date sent to backend:', date);
         console.error('Expected day of week:', dateObj.toLocaleDateString('en-US', { weekday: 'long' }));
-      } catch {}
+      } catch (error) {
+        console.error('Error processing date:', error);
+      }
       return [];
     }
   },

@@ -18,6 +18,8 @@ export default [
       "**/build/**",
       "**/dist/**",
       "**/coverage/**",
+      "**/public/sw.js",
+      "**/public/workbox-*.js",
     ],
   },
   // Base: turn off core no-unused-vars globally; we'll enable per-filetype as needed

@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { UniversalHeader, Typography, Icon, IconName } from "../../../components/atoms";
 import { useAuth } from "../../../hooks/useAuth";
-import { appointmentService } from "../../../services/apiServices";
+// import { appointmentService } from "../../../services/apiServices";
 import axios from "axios";
-import { useToast } from "../../../contexts/ToastContext";
+// import { useToast } from "../../../contexts/ToastContext";
 
 // Enhanced TypeScript interfaces matching React Native version
 interface Doctor {
@@ -85,7 +85,7 @@ interface Appointment {
 const AppointmentDetailPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
-  const { user } = useAuth();
+  const { user: _user } = useAuth();
   const appointmentId = String(params?.id || "");
 
   const [isLoading, setIsLoading] = useState(true);
@@ -223,7 +223,7 @@ const AppointmentDetailPage: React.FC = () => {
     }
   };
 
-  const handleShare = () => {
+  const _handleShare = () => {
     if (!appointment) return;
     
     const doctorName = appointment.doctor.fullName;
@@ -252,7 +252,7 @@ const AppointmentDetailPage: React.FC = () => {
       console.log(`${title}: ${message}`);
       // For now, we'll use a simple alert as fallback
       // You can replace this with your preferred notification system
-    } catch (error) {
+    } catch (_error) {
       console.log(`${title}: ${message}`);
     }
   };
@@ -330,7 +330,7 @@ const AppointmentDetailPage: React.FC = () => {
     }
   };
 
-  const rescheduleAppointment = () => {
+  const _rescheduleAppointment = async () => {
     if (!appointment?._id) return;
     // Navigate to booking page with query to prefill context
     router.push(`/booking?appointmentId=${appointment._id}`);

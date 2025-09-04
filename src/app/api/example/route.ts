@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-export async function GET(request: Request) {
+export async function GET(_request: Request) {
   // This is a server-side only function
   const data = {
     message: 'This data is server-side rendered!',

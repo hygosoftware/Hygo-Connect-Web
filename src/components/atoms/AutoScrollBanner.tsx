@@ -24,6 +24,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
   className = '',
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -68,8 +69,13 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
     }, autoScrollInterval);
   };
 
+  const handleImageError = (itemId: string) => {
+    setImageErrors(prev => ({ ...prev, [itemId]: true }));
+  };
+
   const renderBannerItem = (item: BannerItem, index: number) => {
-    const [imageError, setImageError] = useState(false);
+    const imageError = imageErrors[item.id] || false;
+    
     return (
       <div
         key={`${item.id}-${index}`}
@@ -90,7 +96,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
             fill
             sizes="(max-width: 768px) 100vw"
             className="object-cover md:hidden"
-            onError={() => setImageError(true)}
+            onError={() => handleImageError(item.id)}
           />
 
           {/* Desktop blurred background (cover) */}
@@ -100,7 +106,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
             fill
             sizes="(min-width: 768px) 100vw"
             className="hidden md:block object-cover opacity-40 blur-sm"
-            onError={() => setImageError(true)}
+            onError={() => handleImageError(item.id)}
           />
 
           {/* Content layer */}
@@ -137,7 +143,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
                   fill
                   sizes="(min-width: 768px) 50vw"
                   className="object-contain p-2 md:p-4"
-                  onError={() => setImageError(true)}
+                  onError={() => handleImageError(item.id)}
                 />
               </div>
             </div>
