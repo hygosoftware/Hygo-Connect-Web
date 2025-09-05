@@ -3,10 +3,13 @@ import { folderService } from '../services/apiServices';
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || '';
 
-// Get auth token from localStorage
+// Get auth token from Safari-compatible storage
 const getAuthToken = (): string | null => {
   if (typeof window !== 'undefined') {
-    return localStorage.getItem('accessToken');
+    // Import TokenManager dynamically to avoid circular dependencies
+    const { TokenManager } = require('../services/auth');
+    const { accessToken } = TokenManager.getTokens();
+    return accessToken;
   }
   return null;
 };

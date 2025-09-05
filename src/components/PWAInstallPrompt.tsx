@@ -7,6 +7,48 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+// Safari-compatible storage for PWA install prompt
+class SafariSessionStorage {
+  private static getStorage(): Storage | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const storage = window.sessionStorage;
+      storage.setItem('__test__', 'test');
+      storage.removeItem('__test__');
+      return storage;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  private static memoryStorage: { [key: string]: string } = {};
+
+  static setItem(key: string, value: string): void {
+    const storage = this.getStorage();
+    if (storage) {
+      try {
+        storage.setItem(key, value);
+        return;
+      } catch (e) {
+        console.warn('SessionStorage failed, using memory fallback');
+      }
+    }
+    this.memoryStorage[key] = value;
+  }
+
+  static getItem(key: string): string | null {
+    const storage = this.getStorage();
+    if (storage) {
+      try {
+        return storage.getItem(key);
+      } catch (e) {
+        console.warn('SessionStorage read failed, using memory fallback');
+      }
+    }
+    return this.memoryStorage[key] || null;
+  }
+}
+
 const SESSION_STORAGE_KEY = 'pwa_install_prompt_dismissed_session';
 
 export default function PWAInstallPrompt() {
@@ -16,7 +58,7 @@ export default function PWAInstallPrompt() {
   useEffect(() => {
     // Check if user has dismissed the prompt in this session
     const checkSessionDismissal = () => {
-      return sessionStorage.getItem(SESSION_STORAGE_KEY) === 'true';
+      return SafariSessionStorage.getItem(SESSION_STORAGE_KEY) === 'true';
     };
 
     const handler = (e: Event) => {
@@ -56,7 +98,7 @@ export default function PWAInstallPrompt() {
       
       // If user dismissed, remember their choice for this session
       if (outcome === 'dismissed') {
-        sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+        SafariSessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
       }
       
       // Optionally, send analytics event with outcome of user choice
@@ -72,7 +114,7 @@ export default function PWAInstallPrompt() {
 
   const handleDismiss = () => {
     // Remember that user dismissed the prompt for this session
-    sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+    SafariSessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
     setIsVisible(false);
   };
 

@@ -4,6 +4,7 @@ import { AppLayout } from "@/components/layouts";
 import PWASetup from "@/components/PWASetup";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { ToastProvider } from "@/contexts/ToastContext";
+// import SafariCompatibilityProvider from "../components/SafariCompatibilityProvider";
 import "./globals.css";
 
 const geistSans = Geist({
