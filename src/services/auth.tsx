@@ -145,6 +145,9 @@ export const AuthService = {
           data.message.refreshToken,
           data.message.user
         );
+      } else if (!data.success) {
+        // Handle case where API returns success: false but no error
+        throw new Error(data.message?.message || 'OTP verification failed. Please try again.');
       }
       return data;
     } catch (error: unknown) {
@@ -154,11 +157,17 @@ export const AuthService = {
           const errorMessage =
             error.response.data?.message || 'Invalid OTP or session expired. Please try again.';
           throw new Error(errorMessage);
+        } else if (error.response?.status === 500) {
+          throw new Error('Server error. Please try again later.');
+        } else if (error.code === 'ECONNABORTED') {
+          throw new Error('Request timed out. Please check your connection and try again.');
+        } else if (!error.response) {
+          throw new Error('Network error. Please check your internet connection.');
         }
-        throw error;
-      } else {
-        throw error;
+        throw new Error('An unexpected error occurred. Please try again.');
       }
+      // For non-Axios errors, rethrow as is
+      throw error;
     }
   },
 
@@ -197,5 +206,5 @@ export const AuthService = {
   logout: async () => {
     TokenManager.clearTokens();
     return { success: true, message: 'Logged out successfully' };
-  },
+  }
 };

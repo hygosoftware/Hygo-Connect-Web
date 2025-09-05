@@ -42,7 +42,7 @@ const BookingContent: React.FC = () => {
 
   const handleGoBack = () => {
     if (state.currentStep === 'selection' || state.currentStep === 'doctor') {
-      router.push('/home');
+      router.push('/');
     } else {
       goBack();
     }

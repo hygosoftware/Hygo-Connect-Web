@@ -9,7 +9,7 @@ import { UniversalHeader, Typography, Icon } from '../../../components/atoms';
 const DoctorDetailsPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
-  const doctorId = params.id as string;
+  const doctorId = params?.id ? String(params.id) : undefined;
 
   // State
   const [doctor, setDoctor] = useState<Doctor | null>(null);
@@ -19,6 +19,11 @@ const DoctorDetailsPage: React.FC = () => {
 
   // Load doctor details
   const loadDoctorDetails = useCallback(async () => {
+    if (!doctorId) {
+      setError('Invalid doctor ID');
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       setError(null);

@@ -1,8 +1,9 @@
-import type { Metadata } from "next";
+import { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AppLayout } from "../components/layouts";
+import { AppLayout } from "@/components/layouts";
 import PWASetup from "@/components/PWASetup";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import { ToastProvider } from "@/contexts/ToastContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -53,10 +54,14 @@ export default function RootLayout({
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#000000" />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <PWASetup />
-        <AppLayout>{children}</AppLayout>
-        <PWAInstallPrompt />
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
+        <ToastProvider>
+          <PWASetup />
+          <AppLayout>
+            {children}
+          </AppLayout>
+          <PWAInstallPrompt />
+        </ToastProvider>
       </body>
     </html>
   );

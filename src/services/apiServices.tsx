@@ -2485,6 +2485,64 @@ export const userSubscriptionService = {
   },
 }
 
+// Reschedule appointment API function
+export const rescheduleAppointment = async (appointmentId: string, rescheduleData: {
+  newClinic: string;
+  newTimeSlot: { from: string; to: string };
+  newDate?: string;
+  rescheduleReason?: string;
+  userId?: string;
+}) => {
+  try {
+    console.log('Rescheduling appointment:', appointmentId, 'with data:', rescheduleData);
+    
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(token && { 'Authorization': `Bearer ${token}` })
+    };
+    
+    const response = await axios.put(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}/appointment/reschedule/${appointmentId}`,
+      rescheduleData,
+      { headers }
+    );
+    
+    console.log('Reschedule successful:', response.data);
+    return response.data;
+    
+  } catch (error: any) {
+    console.error("Reschedule error:", {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data,
+      config: {
+        url: error.config?.url,
+        method: error.config?.method,
+        data: error.config?.data
+      }
+    });
+    
+    // Handle specific error cases
+    if (error.response?.status === 400 && error.response?.data?.message) {
+      if (error.response.data.message.includes('Maximum reschedule limit')) {
+        throw new Error('Maximum reschedule limit reached. Please cancel and book a new appointment.');
+      }
+      throw new Error(error.response.data.message);
+    } else if (error.response?.status === 401) {
+      throw new Error('Your session has expired. Please log in again.');
+    } else if (error.response?.status === 404) {
+      throw new Error('Appointment not found. It may have been cancelled or does not exist.');
+    } else if (error.response?.status === 409) {
+      throw new Error('The selected time slot is no longer available. Please choose another time.');
+    } else if (!error.response) {
+      throw new Error('Network error. Please check your internet connection and try again.');
+    }
+    
+    throw new Error('Failed to reschedule appointment. Please try again later.');
+  }
+};
+
 export const subscriptionservices = {
 
   getallsubscription: async (): Promise<any> => {

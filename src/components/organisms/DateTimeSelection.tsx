@@ -111,8 +111,8 @@ const DateTimeSelection: React.FC = () => {
     if (!date || !state.selectedDoctor) return [];
 
     // Strict: require explicitly selected clinic with valid _id
-    const clinicId = String(state.selectedClinic?._id || '');
-    if (!clinicId) {
+    const clinicId = state.selectedClinic?._id;
+    if (!clinicId || clinicId === 'undefined') {
       showToast({ type: 'error', title: 'Please select a clinic first' });
       setStep('clinic');
       return [];
@@ -168,8 +168,8 @@ const DateTimeSelection: React.FC = () => {
       if (!state.selectedDoctor) { setAvailableDates([]); return; }
       const doctorId = String(state.selectedDoctor._id);
       // Strict: require explicitly selected clinic ID
-      const clinicId = String(state.selectedClinic?._id || '');
-      if (!clinicId) {
+      const clinicId = state.selectedClinic?._id;
+      if (!clinicId || clinicId === 'undefined') {
         setAvailableDates([]);
         setAvailableDateKeys(new Set());
         showToast({ type: 'error', title: 'Please select a clinic to view availability' });
@@ -299,7 +299,11 @@ const DateTimeSelection: React.FC = () => {
       const from = raw?.from || slot.time;
       const to = raw?.to || slot.time; // fallback
       const doctorId = String(state.selectedDoctor._id);
-      const clinicId = String(state.selectedClinic._id);
+      const clinicId = state.selectedClinic?._id;
+      if (!clinicId || clinicId === 'undefined') {
+        showToast({ type: 'error', title: 'Invalid clinic selection' });
+        return;
+      }
       const d = state.selectedDate;
       const yyyy = d.getFullYear();
       const mm = (d.getMonth() + 1).toString().padStart(2, '0');

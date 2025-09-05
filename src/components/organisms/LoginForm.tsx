@@ -134,15 +134,6 @@ const LoginForm: React.FC<LoginFormProps> = ({
             >
               Wellness Simplified
             </Typography>
-            
-            
-            <Typography 
-              variant="body1" 
-              color="text-secondary" 
-              className="ml-1"
-            >
-              Please enter your email address to receive a verification code
-            </Typography>
           </div>
 
           {/* Email Input Section */}

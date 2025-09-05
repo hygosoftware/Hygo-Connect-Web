@@ -197,7 +197,7 @@ const HomePage: React.FC = () => {
       id: '4',
       title: 'Medicine Delivery',
       description: 'Get medicines delivered at your doorstep',
-      imageUri: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1f?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
+      imageUri: 'https://images.unsplash.com/photo-1471864190281-a93a3070b6de?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80',
       actionText: 'Order Now',
       onPress: () => handleFeaturePress('Medicine Delivery'),
     },
@@ -300,7 +300,7 @@ const HomePage: React.FC = () => {
   
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-blue-50">
       {/* Header - positioned within the layout system */}
       <div className="sticky top-0 z-30 bg-white">
         <UniversalHeader

@@ -219,7 +219,7 @@ const AppointmentDetailPage: React.FC = () => {
 
   const handleReschedule = () => {
     if (appointment) {
-      router.push(`/booking?appointmentId=${appointment._id}`);
+      router.push(`/appointments/${appointment._id}/reschedule`);
     }
   };
 
