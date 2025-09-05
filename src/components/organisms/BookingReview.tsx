@@ -102,7 +102,7 @@ const BookingReview: React.FC = () => {
 
     const result = evaluate(raw);
     if (process && (process as any).env && (process as any).env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
+       
       console.debug('[BookingReview] subscription check', { raw, result });
     }
     return result;

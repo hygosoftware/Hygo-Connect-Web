@@ -7,14 +7,27 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
+const SESSION_STORAGE_KEY = 'pwa_install_prompt_dismissed_session';
+
 export default function PWAInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
+    // Check if user has dismissed the prompt in this session
+    const checkSessionDismissal = () => {
+      return sessionStorage.getItem(SESSION_STORAGE_KEY) === 'true';
+    };
+
     const handler = (e: Event) => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
+      
+      // Check if user has dismissed the prompt in this session
+      if (checkSessionDismissal()) {
+        return;
+      }
+
       // Stash the event so it can be triggered later
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       // Update UI to notify the user they can add to home screen
@@ -41,6 +54,11 @@ export default function PWAInstallPrompt() {
       // Log the user's choice
       console.log(`User response to the install prompt: ${outcome}`);
       
+      // If user dismissed, remember their choice for this session
+      if (outcome === 'dismissed') {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+      }
+      
       // Optionally, send analytics event with outcome of user choice
       // analytics.track('pwa_install_prompt', { outcome });
     } catch (error) {
@@ -50,6 +68,12 @@ export default function PWAInstallPrompt() {
       setDeferredPrompt(null);
       setIsVisible(false);
     }
+  };
+
+  const handleDismiss = () => {
+    // Remember that user dismissed the prompt for this session
+    sessionStorage.setItem(SESSION_STORAGE_KEY, 'true');
+    setIsVisible(false);
   };
 
   // Don't show the install prompt if the app is already installed
@@ -69,7 +93,7 @@ export default function PWAInstallPrompt() {
         <div className="flex justify-end space-x-2">
           <button
             type="button"
-            onClick={() => setIsVisible(false)}
+            onClick={handleDismiss}
             className="px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded transition-colors"
           >
             Not Now

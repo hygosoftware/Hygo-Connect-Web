@@ -2486,27 +2486,60 @@ export const userSubscriptionService = {
 }
 
 // Reschedule appointment API function
-export const rescheduleAppointment = async (appointmentId: string, rescheduleData: {
+export interface RescheduleData {
   newClinic: string;
   newTimeSlot: { from: string; to: string };
   newDate?: string;
   rescheduleReason?: string;
   userId?: string;
-}) => {
+}
+
+export const rescheduleAppointment = async (appointmentId: string, rescheduleData: RescheduleData) => {
   try {
     console.log('Rescheduling appointment:', appointmentId, 'with data:', rescheduleData);
     
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    const headers = {
-      'Content-Type': 'application/json',
-      ...(token && { 'Authorization': `Bearer ${token}` })
-    };
+    // Validate required fields
+    if (!rescheduleData.newTimeSlot) {
+      throw new Error('Time slot is required for rescheduling');
+    }
     
-    const response = await axios.put(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}/appointment/reschedule/${appointmentId}`,
-      rescheduleData,
-      { headers }
-    );
+    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+    if (!token) {
+      throw new Error('Authentication token not found. Please log in again.');
+    }
+    
+const headers = {
+'Content-Type': 'application/json',
+'Authorization': `Bearer ${token}`
+};
+    
+// Prepare the complete payload with all required fields
+const payload: Record<string, any> = {
+  newClinic: rescheduleData.newClinic,
+  newTimeSlot: {
+    from: rescheduleData.newTimeSlot.from,
+    to: rescheduleData.newTimeSlot.to
+  },
+  newDate: rescheduleData.newDate,
+  rescheduleReason: rescheduleData.rescheduleReason || 'User requested reschedule',
+};
+
+if (!payload.newClinic) {
+  throw new Error('No clinic ID provided for rescheduling');
+}
+
+// Include userId if provided
+if (rescheduleData.userId) {
+  payload.userId = rescheduleData.userId;
+}
+
+console.log('Sending reschedule payload:', JSON.stringify(payload, null, 2));
+    
+const response = await axios.put(
+`${process.env.NEXT_PUBLIC_API_BASE_URL}/appointment/reschedule/${appointmentId}`,
+payload,
+{ headers }
+);
     
     console.log('Reschedule successful:', response.data);
     return response.data;

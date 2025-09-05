@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Icon, Button, Input } from '../atoms';
 
 interface FamilyMember {
@@ -246,10 +247,23 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
   onNewMemberEmailChange,
   onNewMemberMobileChange,
 }) => {
+  const router = useRouter();
   const [searchText, setSearchText] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
   const [toast, setToast] = useState<ToastProps>({ visible: false, message: '', type: 'info' });
   const [editingMemberId, setEditingMemberId] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect screen size
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
 
   // Filter members based on search
@@ -271,7 +285,13 @@ const FamilyMemberUI: React.FC<FamilyMemberUIProps> = ({
 
   // Handle member actions
   const handleMemberPress = (member: FamilyMember) => {
-    onMemberDetails(member.id);
+    if (isMobile) {
+      // On mobile, navigate to detail page
+      router.push(`/family/${member.id}`);
+    } else {
+      // On desktop/tablet, show details in right panel
+      onMemberDetails(member.id);
+    }
   };
 
   const handleEditPress = (member: FamilyMember) => {

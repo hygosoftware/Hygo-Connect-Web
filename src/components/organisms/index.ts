@@ -5,6 +5,7 @@ export { default as PillPal } from './PillPal';
 export { default as PillPalDesktop } from './PillPalDesktop';
 export { default as DoctorsListUI } from './DoctorsListUI';
 export { default as FamilyMemberUI } from './FamilyMemberUI';
+export { default as ResponsiveFamilyUI } from './ResponsiveFamilyUI';
 export { default as FileScreen } from './FileScreen';
 export { default as FileScreenDesktop } from './FileScreenDesktop';
 

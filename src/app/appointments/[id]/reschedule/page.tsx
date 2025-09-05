@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { UniversalHeader, Typography } from "../../../../components/atoms";
 import { useAuth } from "../../../../hooks/useAuth";
+import { useToast } from "../../../../contexts/ToastContext";
 import { rescheduleAppointment } from "../../../../services/apiServices";
 import axios from "axios";
 import RescheduleCalendar from "../../../../components/organisms/RescheduleCalendar";
@@ -89,6 +90,7 @@ const ReschedulePage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const { user: _user } = useAuth();
+  const { showToast } = useToast();
   const appointmentId = String(params?.id || "");
 
   const [isLoading, setIsLoading] = useState(true);
@@ -144,6 +146,11 @@ const ReschedulePage: React.FC = () => {
   const handleReschedule = async (selectedDate: Date, selectedSlot: any, selectedClinic: any) => {
     if (!appointment) {
       console.error('No appointment data available');
+      showToast({
+        type: 'error',
+        title: 'Error',
+        message: 'No appointment data available. Please try again.'
+      });
       return;
     }
 
@@ -176,13 +183,29 @@ const ReschedulePage: React.FC = () => {
       console.log('Comparison Results:', { isSameDate, isSameTime, isSameClinic });
 
       if (isSameDate && isSameTime && isSameClinic) {
-        alert('Please select a different date, time, or clinic to reschedule');
+        showToast({
+          type: 'info',
+          title: 'No Changes Detected',
+          message: 'Please select a different date, time, or clinic to reschedule',
+          duration: 5000
+        });
         return;
       }
 
       // Get user ID for subscription management
-      const userId = typeof window !== 'undefined' ? localStorage.getItem('_id') : null;
+      const userId = _user?._id;
       console.log('Current User ID:', userId);
+
+      // Guard: Ensure selectedClinic and selectedClinic._id are present
+      if (!selectedClinic || !selectedClinic._id) {
+        showToast({
+          type: 'error',
+          title: 'Clinic Selection Required',
+          message: 'Please select a clinic to reschedule',
+          duration: 5000
+        });
+        return;
+      }
       
       const rescheduleData = {
         newClinic: selectedClinic._id,
@@ -207,8 +230,18 @@ const ReschedulePage: React.FC = () => {
         successMessage += ` Reschedule count: ${rescheduleCount}/${maxReschedules}`;
       }
       
-      alert(successMessage);
-      router.push(`/appointments/${appointmentId}`);
+      showToast({
+        type: 'success',
+        title: 'Success',
+        message: successMessage,
+        duration: 5000
+      });
+      
+      // Navigate back after a short delay to let the user see the success message
+      setTimeout(() => {
+        router.push(`/appointments/${appointmentId}`);
+      }, 1000);
+      
     } catch (error: any) {
       console.error('Reschedule error:', error);
       
@@ -220,7 +253,12 @@ const ReschedulePage: React.FC = () => {
         errorMessage = error.response.data.message;
       }
       
-      alert(errorMessage);
+      showToast({
+        type: 'error',
+        title: 'Reschedule Failed',
+        message: errorMessage,
+        duration: 7000
+      });
     } finally {
       setRescheduling(false);
     }

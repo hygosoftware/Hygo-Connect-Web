@@ -369,22 +369,25 @@ const RescheduleCalendar: React.FC<RescheduleCalendarProps> = ({
 
 
   const handleConfirmReschedule = () => {
-    // Use the clinic from props if available, otherwise use the selected one
-    const clinicToUse = appointment.clinic || selectedClinic || 
-                       (availableClinics.length > 0 ? availableClinics[0] : null);
-    
-    if (!selectedDate || !selectedSlot || !clinicToUse) {
+    if (!selectedDate || !selectedSlot) {
       showToast({
-        type: 'warning',
-        title: 'Incomplete Selection',
-        message: 'Please select a date, time slot, and clinic',
-        duration: 5000
+        type: 'error',
+        title: 'Selection Required',
+        message: 'Please select a date and time slot'
       });
-      console.error('Cannot proceed with reschedule. Missing:', {
-        selectedDate: !!selectedDate,
-        selectedSlot: !!selectedSlot,
-        selectedClinic: !!clinicToUse,
-        availableClinics: availableClinics.length
+      return;
+    }
+
+    // Use the selected clinic, fall back to appointment clinic, or first available clinic
+    const clinicToUse = selectedClinic || 
+                       (typeof appointment.clinic === 'object' ? appointment.clinic : null) ||
+                       (availableClinics.length > 0 ? availableClinics[0] : null);
+
+    if (!clinicToUse) {
+      showToast({
+        type: 'error',
+        title: 'Clinic Information Missing',
+        message: 'No clinic information available for rescheduling'
       });
       return;
     }
@@ -394,6 +397,8 @@ const RescheduleCalendar: React.FC<RescheduleCalendarProps> = ({
       slot: selectedSlot,
       clinic: clinicToUse
     });
+    
+    // Pass the full clinic object to the onReschedule callback
     onReschedule(selectedDate, selectedSlot, clinicToUse);
   };
 

@@ -342,7 +342,7 @@ const HealthCardUpgradeContent: React.FC = () => {
                 Select Payment Method
               </Typography>
               <div className="space-y-3">
-                {[/* eslint-disable @typescript-eslint/no-explicit-any */
+                {[ 
                   { method: 'card' as const, icon: 'credit-card' as IconName, title: 'Credit/Debit Card', description: 'Pay securely with your card' },
                   { method: 'upi' as const, icon: 'smartphone' as IconName, title: 'UPI Payment', description: 'Pay using UPI apps like GPay, PhonePe' },
                   { method: 'wallet' as const, icon: 'wallet' as IconName, title: 'Digital Wallet', description: 'Pay using digital wallets' }

@@ -1,6 +1,6 @@
-import { AppPageConfig } from 'next';
+import { PageConfig } from 'next';
 
 declare module '../../app/appointments/[id]/page' {
-  const config: AppPageConfig;
+  const config: PageConfig;
   export default config;
 }

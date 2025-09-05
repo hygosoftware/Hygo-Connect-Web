@@ -2,9 +2,10 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { FamilyMemberUI } from '../../components/organisms';
+import { ResponsiveFamilyUI } from '../../components/organisms';
 import { TokenManager } from '../../services/auth';
 import { familyMemberService, FamilyMember as ApiFamilyMember, CreateFamilyMemberRequest } from '../../services/apiServices';
+
 // UI Types (for compatibility with existing components)
 interface FamilyMember {
   id: string;
@@ -188,7 +189,7 @@ const FamilyPage: React.FC = () => {
 
   // State
   const [selectedMember, setSelectedMember] = useState('');
-const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember | null>(null);
+  const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember | null>(null);
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberName, setNewMemberName] = useState('');
   const [newMemberRelation, setNewMemberRelation] = useState('');
@@ -199,6 +200,24 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
   const [error, setError] = useState<string | null>(null);
 
   const { userId } = TokenManager.getTokens();
+
+  // Check if mobile view
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    
+    // Set initial value
+    handleResize();
+    
+    // Add event listener
+    window.addEventListener('resize', handleResize);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Load family members on component mount
   const loadFamilyMembers = useCallback(async () => {
@@ -221,16 +240,25 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
       setFamilyMembers(uiMembers);
       if (uiMembers.length > 0) {
         const firstWithId = uiMembers.find(m => m.id && m.id !== 'unknown');
-        if (firstWithId?.id) setSelectedMember(firstWithId.id);
-        else setSelectedMember(uiMembers[0].id);
+        if (firstWithId?.id) {
+          setSelectedMember(firstWithId.id);
+          // On desktop, load details immediately
+          if (!isMobile) {
+            await loadMemberDetails(firstWithId.id);
+          }
+        } else {
+          setSelectedMember(uiMembers[0].id);
+          // On desktop, load details immediately
+          if (!isMobile) {
+            await loadMemberDetails(uiMembers[0].id);
+          }
+        }
       }
-
-     
 
     } catch (error: any) {
       let errorMessage = 'Failed to load family members';
       // Narrow error type safely
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+       
       if ((error as any) && typeof error === 'object') {
         const maybeAxios = error as { response?: { status?: number }; code?: string; message?: string };
         if (maybeAxios.response?.status === 500) {
@@ -251,29 +279,25 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
     } finally {
       setLoading(false);
     }
-  }, [userId]);
+  }, [userId, isMobile]);
+
+  // Load member details helper function
+  const loadMemberDetails = async (memberId: string) => {
+    try {
+      if (!userId) return;
+      
+      const apiDetail = await familyMemberService.getFamilyMemberDetails(userId, memberId);
+      if (apiDetail) {
+        setSelectedMemberDetails(convertApiToUiMember(apiDetail));
+      }
+    } catch (error) {
+      console.error('Failed to load member details:', error);
+    }
+  };
 
   useEffect(() => {
     void loadFamilyMembers();
   }, [loadFamilyMembers]);
-
-  // Check if mobile view
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-    
-    // Set initial value
-    handleResize();
-    
-    // Add event listener
-    window.addEventListener('resize', handleResize);
-    
-    // Clean up
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
 
   // Handlers
   const handleGoBack = () => {
@@ -290,19 +314,7 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
     // On desktop, show details in the same page
     setSelectedMember(memberId);
     setSelectedMemberDetails(null);
-    try {
-      // Guard: ensure user is logged in
-      if (!userId) {
-        setError('Please login to view member details.');
-        return;
-      }
-      const apiDetail = await familyMemberService.getFamilyMemberDetails(userId, memberId);
-      if (apiDetail) {
-        setSelectedMemberDetails(convertApiToUiMember(apiDetail));
-      }
-    } finally {
-      // no-op
-    }
+    await loadMemberDetails(memberId);
   };
 
   // Utility to remove undefined fields from an object (preserve type)
@@ -332,19 +344,31 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
       if (addedMember) {
         const uiMember = convertApiToUiMember(addedMember);
         uiMember.relation = newMemberRelation.trim(); // Set the relation from form
+        
         // Optimistically add to list and select
-        setFamilyMembers([...familyMembers, uiMember]);
-        if (!selectedMember) {
+        const updatedMembers = [...familyMembers, uiMember];
+        setFamilyMembers(updatedMembers);
+        
+        if (!selectedMember || !isMobile) {
           setSelectedMember(uiMember.id);
+          // On desktop, load details immediately
+          if (!isMobile) {
+            await loadMemberDetails(uiMember.id);
+          }
         }
+        
         // Refresh list from server to ensure data is up-to-date
         await loadFamilyMembers();
+        
         // Ensure the newly added member stays selected if available
         if (uiMember.id) {
           setSelectedMember(uiMember.id);
+          if (!isMobile) {
+            await loadMemberDetails(uiMember.id);
+          }
         }
+        
         setNewMemberName('');
-        // removed unused age field
         setNewMemberRelation('');
         setNewMemberEmail('');
         setNewMemberMobile('');
@@ -367,8 +391,16 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
       if (success) {
         const nextList = familyMembers.filter(member => member.id !== memberId);
         setFamilyMembers(nextList);
+        
         if (selectedMember === memberId) {
-          setSelectedMember(nextList[0]?.id || '');
+          const newSelectedId = nextList[0]?.id || '';
+          setSelectedMember(newSelectedId);
+          setSelectedMemberDetails(null);
+          
+          // On desktop, load details for the new selection
+          if (!isMobile && newSelectedId) {
+            await loadMemberDetails(newSelectedId);
+          }
         }
         return true;
       } else {
@@ -402,6 +434,12 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         setFamilyMembers(familyMembers.map(member =>
           member.id === memberId ? uiMember : member
         ));
+        
+        // Update selected member details if it's the currently selected member
+        if (selectedMember === memberId) {
+          setSelectedMemberDetails(uiMember);
+        }
+        
         return true;
       } else {
         setError('Failed to update family member');
@@ -424,19 +462,7 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
   const handleMemberDetails = async (memberId: string) => {
     setSelectedMember(memberId);
     setSelectedMemberDetails(null);
-    try {
-      // Guard: ensure user is logged in
-      if (!userId) {
-        setError('Please login to view member details.');
-        return;
-      }
-      const apiDetail = await familyMemberService.getFamilyMemberDetails(userId, memberId);
-      if (apiDetail) {
-        setSelectedMemberDetails(convertApiToUiMember(apiDetail));
-      }
-    } finally {
-      // no-op
-    }
+    await loadMemberDetails(memberId);
   };
 
   // Show fetched details if available, else fallback to local
@@ -483,7 +509,7 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         </div>
       )}
 
-      <FamilyMemberUI
+      <ResponsiveFamilyUI
         familyMembers={familyMembers}
         selectedMember={selectedMember}
         selectedMemberData={selectedMemberData}
@@ -492,12 +518,12 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
         newMemberEmail={newMemberEmail}
         newMemberMobile={newMemberMobile}
         onGoBack={handleGoBack}
-        onMemberSelect={(id) => { void handleMemberSelect(id); }}
+        onMemberSelect={(id: string) => { void handleMemberSelect(id); }}
         onAddMember={handleAddMember}
         onDeleteMember={handleDeleteMember}
         onEditMember={handleEditMember}
         onCancelAdd={handleCancelAdd}
-        onMemberDetails={(id) => { void handleMemberDetails(id); }}
+        onMemberDetails={(id: string) => { void handleMemberDetails(id); }}
         onShowAddMember={() => setShowAddMember(true)}
         onNewMemberNameChange={setNewMemberName}
         onNewMemberEmailChange={setNewMemberEmail}
@@ -508,4 +534,3 @@ const [selectedMemberDetails, setSelectedMemberDetails] = useState<FamilyMember 
 };
 
 export default FamilyPage;
-

@@ -16,11 +16,10 @@ export interface Tokens {
 
 export interface AuthResponse {
   success: boolean;
-  message: {
-    accessToken: string;
-    refreshToken: string;
-    user: User;
-  };
+  message?: string; // For error messages
+  accessToken?: string;
+  refreshToken?: string;
+  user?: User;
 }
 
 // --- API Client ---
@@ -136,37 +135,22 @@ export const AuthService = {
       const data = response.data;
       if (
         data.success &&
-        data.message?.accessToken &&
-        data.message?.refreshToken &&
-        data.message?.user
+        data.accessToken &&
+        data.refreshToken &&
+        data.user
       ) {
         TokenManager.setTokens(
-          data.message.accessToken,
-          data.message.refreshToken,
-          data.message.user
+          data.accessToken,
+          data.refreshToken,
+          data.user
         );
       } else if (!data.success) {
         // Handle case where API returns success: false but no error
-        throw new Error(data.message?.message || 'OTP verification failed. Please try again.');
+        throw new Error('OTP verification failed. Please try again.');
       }
       return data;
     } catch (error: unknown) {
-      if (axios.isAxiosError(error)) {
-        console.error('OTP verification failed:', error.response?.data || error.message);
-        if (error.response?.status === 400) {
-          const errorMessage =
-            error.response.data?.message || 'Invalid OTP or session expired. Please try again.';
-          throw new Error(errorMessage);
-        } else if (error.response?.status === 500) {
-          throw new Error('Server error. Please try again later.');
-        } else if (error.code === 'ECONNABORTED') {
-          throw new Error('Request timed out. Please check your connection and try again.');
-        } else if (!error.response) {
-          throw new Error('Network error. Please check your internet connection.');
-        }
-        throw new Error('An unexpected error occurred. Please try again.');
-      }
-      // For non-Axios errors, rethrow as is
+      console.error('OTP verification failed:', error);
       throw error;
     }
   },

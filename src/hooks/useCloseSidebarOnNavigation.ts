@@ -21,6 +21,6 @@ export function useCloseSidebarOnNavigation({
         originalOnPress();
       };
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [isSidebarExpanded, setIsSidebarExpanded, navigationItems]);
 }

@@ -27,9 +27,9 @@ const EmailInput: React.FC<EmailInputProps> = ({
     if (!email.trim()) {
       return 'Email is required';
     }
-    if (!isValidEmail(email)) {
-      return 'Please enter a valid email address';
-    }
+    // if (!isValidEmail(email)) {
+    //   return 'Please enter a valid email address';
+    // }
     return undefined;
   };
 
