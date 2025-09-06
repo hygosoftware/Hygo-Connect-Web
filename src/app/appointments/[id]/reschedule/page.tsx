@@ -6,6 +6,7 @@ import { UniversalHeader, Typography } from "../../../../components/atoms";
 import { useAuth } from "../../../../hooks/useAuth";
 import { useToast } from "../../../../contexts/ToastContext";
 import { rescheduleAppointment } from "../../../../services/apiServices";
+import { TokenManager } from "../../../../services/auth";
 import axios from "axios";
 import RescheduleCalendar from "../../../../components/organisms/RescheduleCalendar";
 
@@ -107,8 +108,8 @@ const ReschedulePage: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        // Get accessToken from localStorage (web environment)
-        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        // Get accessToken from TokenManager (Safari-compatible)
+        const { accessToken } = TokenManager.getTokens();
         const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 
         const response = await axios.get(`${API_BASE_URL}/Appointment/${appointmentId}`, { headers });

@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Typography, Icon } from "../../../components/atoms";
 import { useAuth } from "../../../hooks/useAuth";
+import { TokenManager } from "../../../services/auth";
 import axios from "axios";
 
 interface Appointment {
@@ -37,7 +38,7 @@ const QRCodePage: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        const { accessToken } = TokenManager.getTokens();
         const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 
         const response = await axios.get(`${API_BASE_URL}/Appointment/${appointmentId}`, { headers });

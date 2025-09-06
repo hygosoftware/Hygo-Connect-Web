@@ -1062,13 +1062,15 @@ export const folderService = {
 
   // Get file details by user ID, folder ID and file ID
   getFileDetails: async (folderId: string, fileId: string): Promise<FileDetails | null> => {
-    // Get the current user ID from localStorage
-    const userId = typeof window !== 'undefined' ? localStorage.getItem('userId') : null;
+    // Get the current user ID using TokenManager
+    const tokens = TokenManager.getTokens();
     
-    if (!userId) {
+    if (!tokens.userId) {
       console.error('❌ User ID not found. User must be logged in to access file details.');
       return null;
     }
+    
+    const userId = tokens.userId;
 
     console.log('🌐 API Call: Fetching file details for user:', userId, 'folder:', folderId, 'file:', fileId);
     console.log('🔗 API URL:', `${API_BASE_URL}/file/${userId}/${folderId}/${fileId}`);
@@ -2503,14 +2505,14 @@ export const rescheduleAppointment = async (appointmentId: string, rescheduleDat
       throw new Error('Time slot is required for rescheduling');
     }
     
-    const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-    if (!token) {
+    const { accessToken } = TokenManager.getTokens();
+    if (!accessToken) {
       throw new Error('Authentication token not found. Please log in again.');
     }
     
 const headers = {
 'Content-Type': 'application/json',
-'Authorization': `Bearer ${token}`
+'Authorization': `Bearer ${accessToken}`
 };
     
 // Prepare the complete payload with all required fields

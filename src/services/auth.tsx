@@ -48,7 +48,7 @@ const apiClient = axios.create({
 // --- Safari-Compatible Storage Manager ---
 const isBrowser = typeof window !== 'undefined';
 
-// Safari-compatible storage with fallback mechanisms
+// Safari-compatible storage with mandatory sessionStorage
 class SafariCompatibleStorage {
   private storageAvailable(type: 'localStorage' | 'sessionStorage'): boolean {
     if (!isBrowser) return false;
@@ -63,71 +63,50 @@ class SafariCompatibleStorage {
     }
   }
 
-  private getStorage(): Storage | null {
-    // Try localStorage first
-    if (this.storageAvailable('localStorage')) {
-      return localStorage;
-    }
-    // Fallback to sessionStorage for Safari private browsing
+  private getStorage(): Storage {
+    // MANDATORY sessionStorage - no fallback to localStorage
     if (this.storageAvailable('sessionStorage')) {
-      console.warn('localStorage unavailable, using sessionStorage as fallback');
       return sessionStorage;
     }
-    // No storage available
-    console.warn('No web storage available');
-    return null;
+    // If sessionStorage is not available, throw error instead of fallback
+    console.error('❌ sessionStorage is not available - this is required for authentication');
+    throw new Error('sessionStorage is required but not available. Please enable sessionStorage in your browser.');
   }
 
   setItem(key: string, value: string): boolean {
     try {
       const storage = this.getStorage();
-      if (storage) {
-        storage.setItem(key, value);
-        return true;
-      }
-      // Fallback to memory storage for this session
-      this.memoryStorage[key] = value;
+      storage.setItem(key, value);
+      console.log(`✅ Successfully stored ${key} in sessionStorage`);
       return true;
     } catch (error) {
-      console.error(`Failed to store ${key}:`, error);
-      // Fallback to memory storage
-      this.memoryStorage[key] = value;
-      return false;
+      console.error(`❌ Failed to store ${key} in sessionStorage:`, error);
+      throw error; // Don't fallback, throw error to indicate failure
     }
   }
 
   getItem(key: string): string | null {
     try {
       const storage = this.getStorage();
-      if (storage) {
-        return storage.getItem(key);
-      }
-      // Fallback to memory storage
-      return this.memoryStorage[key] || null;
+      const value = storage.getItem(key);
+      console.log(`🔍 Retrieved ${key} from sessionStorage:`, !!value);
+      return value;
     } catch (error) {
-      console.error(`Failed to retrieve ${key}:`, error);
-      // Fallback to memory storage
-      return this.memoryStorage[key] || null;
+      console.error(`❌ Failed to retrieve ${key} from sessionStorage:`, error);
+      throw error; // Don't fallback, throw error to indicate failure
     }
   }
 
   removeItem(key: string): void {
     try {
       const storage = this.getStorage();
-      if (storage) {
-        storage.removeItem(key);
-      }
-      // Also remove from memory storage
-      delete this.memoryStorage[key];
+      storage.removeItem(key);
+      console.log(`🗑️ Removed ${key} from sessionStorage`);
     } catch (error) {
-      console.error(`Failed to remove ${key}:`, error);
-      // Remove from memory storage anyway
-      delete this.memoryStorage[key];
+      console.error(`❌ Failed to remove ${key} from sessionStorage:`, error);
+      throw error; // Don't fallback, throw error to indicate failure
     }
   }
-
-  // Memory fallback for when no storage is available
-  private memoryStorage: { [key: string]: string } = {};
 }
 
 const safariStorage = new SafariCompatibleStorage();
@@ -135,13 +114,47 @@ const safariStorage = new SafariCompatibleStorage();
 export const TokenManager = {
   setTokens: (accessToken: string, refreshToken: string, user: User) => {
     try {
-      if (!isBrowser) return;
+      if (!isBrowser) {
+        console.warn('🚫 Not in browser environment, cannot store tokens');
+        return;
+      }
       
-      // Store tokens with Safari-compatible storage
-      safariStorage.setItem('hygo_access_token', accessToken);
-      safariStorage.setItem('hygo_refresh_token', refreshToken);
-      safariStorage.setItem('hygo_user_id', user._id);
-      safariStorage.setItem('hygo_user_info', JSON.stringify(user));
+      console.log('💾 Attempting to store tokens...', {
+        accessTokenLength: accessToken?.length || 0,
+        refreshTokenLength: refreshToken?.length || 0,
+        userId: user?._id,
+        userEmail: user?.Email
+      });
+      
+      // Store tokens in session storage with simple key names
+      const accessSuccess = safariStorage.setItem('accessToken', accessToken);
+      const refreshSuccess = safariStorage.setItem('refreshToken', refreshToken);
+      const userIdSuccess = safariStorage.setItem('userId', user._id);
+      const userInfoSuccess = safariStorage.setItem('userInfo', JSON.stringify(user));
+      
+      console.log('📝 Storage results:', {
+        accessToken: accessSuccess,
+        refreshToken: refreshSuccess,
+        userId: userIdSuccess,
+        userInfo: userInfoSuccess
+      });
+      
+      // Immediately verify storage worked
+      const verification = {
+        accessToken: safariStorage.getItem('accessToken'),
+        refreshToken: safariStorage.getItem('refreshToken'),
+        userId: safariStorage.getItem('userId'),
+        userInfo: safariStorage.getItem('userInfo')
+      };
+      
+      console.log('🔍 Immediate verification after storage:', {
+        accessTokenStored: !!verification.accessToken,
+        refreshTokenStored: !!verification.refreshToken,
+        userIdStored: !!verification.userId,
+        userInfoStored: !!verification.userInfo,
+        accessTokenMatches: verification.accessToken === accessToken,
+        userIdMatches: verification.userId === user._id
+      });
       
       // Also try to set a cookie as additional fallback for Safari
       if (isBrowser && document.cookie !== undefined) {
@@ -150,20 +163,23 @@ export const TokenManager = {
           const expires = new Date();
           expires.setDate(expires.getDate() + 7); // 7 days expiry
           document.cookie = `hygo_session=active; expires=${expires.toUTCString()}; path=/; SameSite=Strict`;
+          console.log('🍪 Session cookie set successfully');
         } catch (cookieError) {
-          console.warn('Cookie fallback failed:', cookieError);
+          console.warn('🍪 Cookie fallback failed:', cookieError);
         }
       }
       
-      console.log('✅ Tokens stored successfully with Safari compatibility');
+      console.log('✅ Tokens stored successfully in sessionStorage (MANDATORY)');
+      console.log('📊 Storage type: sessionStorage (no fallback)');
     } catch (error) {
-      console.error('Failed to store tokens:', error);
+      console.error('💥 Failed to store tokens:', error);
     }
   },
 
   getTokens: () => {
     try {
       if (!isBrowser) {
+        console.log('🚫 getTokens: Not in browser environment');
         return {
           accessToken: null,
           refreshToken: null,
@@ -172,28 +188,48 @@ export const TokenManager = {
         };
       }
       
-      const accessToken = safariStorage.getItem('hygo_access_token');
-      const refreshToken = safariStorage.getItem('hygo_refresh_token');
-      const userId = safariStorage.getItem('hygo_user_id');
-      const userInfoStr = safariStorage.getItem('hygo_user_info');
+      console.log('🔍 Getting tokens from storage...');
+      const accessToken = safariStorage.getItem('accessToken');
+      const refreshToken = safariStorage.getItem('refreshToken');
+      const userId = safariStorage.getItem('userId');
+      const userInfoStr = safariStorage.getItem('userInfo');
+      
+      console.log('📋 Retrieved from storage:', {
+        hasAccessToken: !!accessToken,
+        hasRefreshToken: !!refreshToken,
+        hasUserId: !!userId,
+        hasUserInfo: !!userInfoStr,
+        accessTokenLength: accessToken?.length || 0,
+        userIdValue: userId
+      });
       
       let userInfo = null;
       if (userInfoStr) {
         try {
           userInfo = JSON.parse(userInfoStr);
+          console.log('✅ User info parsed successfully');
         } catch (parseError) {
-          console.error('Failed to parse user info:', parseError);
+          console.error('❌ Failed to parse user info:', parseError);
         }
       }
       
-      return {
+      const result = {
         accessToken,
         refreshToken,
         userId,
         userInfo,
       };
+      
+      console.log('📤 Returning tokens:', {
+        hasAccessToken: !!result.accessToken,
+        hasRefreshToken: !!result.refreshToken,
+        hasUserId: !!result.userId,
+        hasUserInfo: !!result.userInfo
+      });
+      
+      return result;
     } catch (error) {
-      console.error('Failed to retrieve tokens:', error);
+      console.error('💥 Failed to retrieve tokens:', error);
       return {
         accessToken: null,
         refreshToken: null,
@@ -208,10 +244,10 @@ export const TokenManager = {
       if (!isBrowser) return;
       
       // Clear from Safari-compatible storage
-      safariStorage.removeItem('hygo_access_token');
-      safariStorage.removeItem('hygo_refresh_token');
-      safariStorage.removeItem('hygo_user_id');
-      safariStorage.removeItem('hygo_user_info');
+      safariStorage.removeItem('accessToken');
+      safariStorage.removeItem('refreshToken');
+      safariStorage.removeItem('userId');
+      safariStorage.removeItem('userInfo');
       
       // Also clear session cookie
       if (isBrowser && document.cookie !== undefined) {
@@ -238,7 +274,7 @@ export const TokenManager = {
     if (!isBrowser) return { healthy: false, reason: 'Not in browser' };
     
     try {
-      const testKey = 'hygo_storage_test';
+      const testKey = 'storage_test';
       const testValue = 'test';
       
       safariStorage.setItem(testKey, testValue);
@@ -276,30 +312,75 @@ export const AuthService = {
   // Verify OTP
   verifyOTP: async (Email: string, OTP: string) => {
     try {
+      console.log('🔐 Starting OTP verification for:', Email);
       const response = await apiClient.post<AuthResponse>('/verify-otp', {
         Email,
         OTP,
       });
+      
       // Store tokens if verification successful
-      const data = response.data;
+      const responseData = response.data;
+      console.log('📋 OTP API Response:', {
+        status: response.status,
+        responseDataKeys: Object.keys(responseData),
+        hasAccessToken: !!responseData.accessToken,
+        hasRefreshToken: !!responseData.refreshToken,
+        hasUser: !!responseData.user,
+        fullResponse: responseData
+      });
+      
+      // Debug: Log the actual structure to understand the response
+      console.log('🔍 Full response structure:', JSON.stringify(responseData, null, 2));
+      
+      // Check if we have the required data (tokens are nested under message property)
+      const messageData = responseData.message as any; // Type assertion since the interface is incorrect
       if (
-        data.success &&
-        data.accessToken &&
-        data.refreshToken &&
-        data.user
+        response.status === 200 &&
+        messageData?.accessToken &&
+        messageData?.refreshToken &&
+        messageData?.user
       ) {
+        console.log('✅ All required data present, storing tokens...');
         TokenManager.setTokens(
-          data.accessToken,
-          data.refreshToken,
-          data.user
+          messageData.accessToken,
+          messageData.refreshToken,
+          messageData.user
         );
-      } else if (!data.success) {
-        // Handle case where API returns success: false but no error
-        throw new Error('OTP verification failed. Please try again.');
+        
+        // Verify tokens were stored
+        const storedTokens = TokenManager.getTokens();
+        console.log('🔍 Verification - tokens after storage:', {
+          hasAccessToken: !!storedTokens.accessToken,
+          hasRefreshToken: !!storedTokens.refreshToken,
+          hasUserId: !!storedTokens.userId,
+          accessTokenLength: storedTokens.accessToken?.length || 0
+        });
+        
+        // Check storage health
+        const storageHealth = TokenManager.checkStorageHealth();
+        console.log('🏥 Storage health check:', storageHealth);
+        
+      } else {
+        console.error('❌ OTP verification incomplete - missing required data:', {
+          status: response.status,
+          hasAccessToken: !!messageData?.accessToken,
+          hasRefreshToken: !!messageData?.refreshToken,
+          hasUser: !!messageData?.user,
+          responseStructure: Object.keys(responseData),
+          messageStructure: messageData ? Object.keys(messageData) : 'message is not an object'
+        });
+        throw new Error('OTP verification failed - incomplete response data.');
       }
-      return data;
+      
+      // Return success response for compatibility
+      return {
+        success: true,
+        accessToken: messageData.accessToken,
+        refreshToken: messageData.refreshToken,
+        user: messageData.user
+      };
     } catch (error: unknown) {
-      console.error('OTP verification failed:', error);
+      console.error('💥 OTP verification failed:', error);
       throw error;
     }
   },

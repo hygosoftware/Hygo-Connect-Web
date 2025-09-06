@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import { UniversalHeader, Typography, Icon, IconName } from "../../../components/atoms";
 import { useAuth } from "../../../hooks/useAuth";
 // import { appointmentService } from "../../../services/apiServices";
+import { TokenManager } from "../../../services/auth";
 import axios from "axios";
 // import { useToast } from "../../../contexts/ToastContext";
 
@@ -103,8 +104,8 @@ const AppointmentDetailPage: React.FC = () => {
         setIsLoading(true);
         setError(null);
 
-        // Get accessToken from localStorage (web environment)
-        const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+        // Get accessToken from TokenManager (Safari-compatible)
+        const { accessToken } = TokenManager.getTokens();
         const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
 
         const response = await axios.get(`${API_BASE_URL}/Appointment/${appointmentId}`, { headers });
@@ -262,8 +263,8 @@ const AppointmentDetailPage: React.FC = () => {
     try {
       console.log('Cancelling appointment:', appointmentId);
       
-      // Get access token
-      const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+      // Get access token from TokenManager
+      const { accessToken } = TokenManager.getTokens();
       const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
       
       // Use the correct endpoint as per API documentation
@@ -304,7 +305,7 @@ const AppointmentDetailPage: React.FC = () => {
         try {
           setIsLoading(true);
           setError(null);
-          const accessToken = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
+          const { accessToken } = TokenManager.getTokens();
           const headers = accessToken ? { Authorization: `Bearer ${accessToken}` } : {};
           const response = await axios.get(`${API_BASE_URL}/Appointment/${appointmentId}`, { headers });
           setAppointment(response.data.appointment);
