@@ -305,7 +305,7 @@ const HomePage: React.FC = () => {
       <div className="sticky top-0 z-30 bg-white">
         <UniversalHeader
           title={`Hi, ${user?.FullName?.split(' ')[0] || user?.fullName?.split(' ')[0] || 'User'}!`}
-          subtitle="Good Morning"
+          subtitle={new Date().getHours() < 12 ? 'Good Morning' : new Date().getHours() < 18 ? 'Good Afternoon' : 'Good Evening'}
           variant="home"
           showBackButton={false}
           rightContent={
@@ -319,12 +319,15 @@ const HomePage: React.FC = () => {
               </button>
 
               {/* Notifications */}
-              <button className="relative w-10 h-10 bg-white/15 rounded-lg flex items-center justify-center hover:bg-white/25 transition-colors duration-200">
+              {/* <button 
+                onClick={() => router.push('/notifications')}
+                className="relative w-10 h-10 bg-white/15 rounded-lg flex items-center justify-center hover:bg-white/25 transition-colors duration-200"
+              >
                 <Icon name="bell" size="small" color="white" />
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
                   <Typography variant="caption" className="text-white text-xs font-bold">3</Typography>
                 </span>
-              </button>
+              </button> */}
 
               {/* Book Appointment */}
               <button

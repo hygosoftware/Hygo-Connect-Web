@@ -43,8 +43,7 @@ const Header: React.FC<HeaderProps> = ({
   };
 
   const handleNotificationPress = () => {
-    console.log('Notification clicked');
-    // Navigate to notifications page
+    router.push('/notifications');
   };
 
   const handleLocationPress = () => {
@@ -102,7 +101,7 @@ const Header: React.FC<HeaderProps> = ({
           </button>
 
           {/* Notification */}
-          <button
+          {/* <button
             className="relative w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center hover:bg-white/30 transition-colors duration-200"
             onClick={handleNotificationPress}
           >
@@ -114,7 +113,7 @@ const Header: React.FC<HeaderProps> = ({
                 </Typography>
               </div>
             )}
-          </button>
+          </button> */}
 
           {/* Book Appointment Button */}
           <button
