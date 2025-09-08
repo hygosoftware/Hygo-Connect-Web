@@ -118,16 +118,34 @@ const RecordsPage: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
-        const apiResponse = await folderService.getFoldersByUserId(userId);
+        
+        // Fetch both folders and family members in parallel
+        const [apiResponse, familyMembers] = await Promise.all([
+          folderService.getFoldersByUserId(userId),
+          familyMemberService.getFamilyMembers(userId).catch(() => []) // Fetch family members
+        ]);
+
+        // Create a map of family member IDs to their names
+        const memberIdToName = new Map<string, string>();
+        familyMembers.forEach(member => {
+          const id = member._id || member.id;
+          if (id) {
+            memberIdToName.set(id, member.FullName || 'Unnamed Member');
+          }
+        });
 
         // Transform API response to match RecordFolder interface
-        const transformedFolders: RecordFolder[] = apiResponse.map((folder: Folder, index: number) => {
-
+        const transformedFolders: RecordFolder[] = apiResponse.map((folder: Folder) => {
           // Extract access information from the actual structure (string or object)
           const accessUsers = folder.folderAccess?.map(access =>
             typeof access === 'string' ? access : access.DelegateFolderAuthID
           ) || [];
-          // Some APIs may include an embedded files array; it's not part of Folder type, so read safely
+
+          // Map IDs to names for display
+          const sharedWithNames = accessUsers.map(id => 
+            memberIdToName.get(id) || id // Fallback to ID if name not found
+          );
+
           const files = (folder as unknown as { files?: Array<{ uploadedAt: string }> }).files;
           const fileCount = files ? files.length : 0;
 
@@ -144,18 +162,17 @@ const RecordsPage: React.FC = () => {
             lastUpdated = new Date(folder.createdAt).toISOString().split('T')[0];
           }
 
-          const transformed = {
+          return {
             id: folder._id,
             name: folder.folderName || 'Untitled Folder',
             usersWithAccess: accessUsers.length,
             sharedWith: accessUsers,
-            sharedWithNames: accessUsers, // For now, using IDs as names
+            sharedWithNames: sharedWithNames,
             lastUpdated: lastUpdated,
             fileCount: fileCount
           };
-
-          return transformed;
         });
+        
         setFolders(transformedFolders);
       } catch (err) {
         setError('Failed to load folders. Please try again.');

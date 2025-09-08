@@ -204,13 +204,15 @@ const OTPForm: React.FC<OTPFormProps> = ({
           </div>
 
           {/* OTP Input Section */}
-          <div className="mb-8">
-            <OTPInputGroup
-              value={otp}
-              onChange={handleOtpChange}
-              length={6}
-              disabled={isLoading || internalLoading}
-            />
+          <div className="w-full mb-8 px-2 sm:px-4">
+            <div className="max-w-md mx-auto">
+              <OTPInputGroup
+                value={otp}
+                onChange={handleOtpChange}
+                length={6}
+                disabled={isLoading || internalLoading}
+              />
+            </div>
           </div>
 
           {/* Verify Button */}

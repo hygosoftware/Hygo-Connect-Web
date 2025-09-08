@@ -123,26 +123,24 @@ const OTPInputGroup: React.FC<OTPInputGroupProps> = ({
   };
 
   return (
-    <div className={`flex justify-between space-x-2 ${className}`}>
-      {Array(length)
-        .fill(0)
-        .map((_, index) => (
-          <div key={index} className="flex-1 max-w-[48px]">
+    <div className={`w-full px-2 sm:px-4 ${className}`}>
+      <div className="flex justify-between gap-1 sm:gap-2 max-w-xs mx-auto">
+        {Array.from({ length }).map((_, index) => (
+          <div key={index} className="flex-1">
             <OTPInput
-              ref={(ref) => {
-                inputRefs.current[index] = ref;
-              }}
               value={value[index] || ''}
               onChange={(text) => handleOtpChange(text, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
+              onPaste={handlePaste}
+              ref={(el) => (inputRefs.current[index] = el)}
               index={index}
               autoFocus={index === 0}
               disabled={disabled}
-
-              onPaste={index === 0 ? handlePaste : undefined}
+              className="w-full max-w-[40px] sm:max-w-[50px] focus:ring-2 focus:ring-blue-500"
             />
           </div>
         ))}
+      </div>
     </div>
   );
 };

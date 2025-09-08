@@ -30,6 +30,8 @@ const BookingContent: React.FC = () => {
 
   // Handle pre-selected doctor from URL parameters
   useEffect(() => {
+    if (!searchParams) return; // Handle case where searchParams is null
+    
     const doctorId = searchParams.get('doctorId');
     if (doctorId && !state.selectedDoctor) {
       void import('../../services/apiServices').then(({ doctorService }) => {
