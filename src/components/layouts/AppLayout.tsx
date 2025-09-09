@@ -3,7 +3,7 @@
 import React from 'react';
 import { useCloseSidebarOnNavigation } from '../../hooks/useCloseSidebarOnNavigation';
 import { useRouter, usePathname } from 'next/navigation';
-import { ResponsiveNavigation, BottomNavigation } from '../atoms';
+import { ResponsiveNavigation, BottomNavigation, UniversalHeader } from '../atoms';
 import { HeaderProvider } from '../atoms/HeaderWrapper';
 import { useAuth } from '../../hooks/useAuth';
 
@@ -118,25 +118,43 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
   return (
     <HeaderProvider onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-      <div className="min-h-screen bg-white">
-        {/* Sidebar - positioned behind header */}
-        <ResponsiveNavigation
-          visible={true}
-          navigation={navigationItems.map(({ title, icon, isActive, onPress }) => ({ title, icon, isActive, onPress }))}
-          userName={(user && (user.FullName || (user as any).fullName)) || null}
-          isSidebarExpanded={isSidebarExpanded}
-          onSidebarToggle={setIsSidebarExpanded}
-          onClose={() => setIsMobileMenuOpen(false)}
-          isMobileMenuOpen={isMobileMenuOpen}
-        />
+      <div className="min-h-screen bg-white flex flex-col">
+        {/* Fixed Header */}
+        {shouldShowNavigation() && (
+          <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm">
+            <UniversalHeader 
+              variant="default"
+              showMenuButton={true}
+            />
+          </div>
+        )}
         
-        {/* Main content area with responsive margins */}
-        <div className={`transition-all duration-300 ${isSidebarExpanded ? 'md:ml-72' : 'md:ml-16'} pb-20 md:pb-0`}>
-          {children}
+        <div className="flex flex-1">
+          {/* Sidebar */}
+          <ResponsiveNavigation
+            visible={true}
+            navigation={navigationItems.map(({ title, icon, isActive, onPress }) => ({ title, icon, isActive, onPress }))}
+            userName={(user && (user.FullName || (user as any).fullName)) || null}
+            isSidebarExpanded={isSidebarExpanded}
+            onSidebarToggle={setIsSidebarExpanded}
+            isMobileMenuOpen={isMobileMenuOpen}
+            onClose={() => setIsMobileMenuOpen(false)}
+          />
+          
+          {/* Main Content */}
+          <main className={`flex-1 flex flex-col ${shouldShowNavigation() ? 'pt-16' : ''} min-h-screen`}>
+            <div className="flex-1">
+              {children}
+            </div>
+            
+            {/* Bottom Navigation */}
+            {shouldShowNavigation() && !shouldHideBottomNav() && (
+              <div className="fixed bottom-0 left-0 right-0 z-40">
+                <BottomNavigation userId={user?._id || ''} />
+              </div>
+            )}
+          </main>
         </div>
-
-        {/* Bottom Navigation - Mobile Only */}
-        {!shouldHideBottomNav() && <BottomNavigation userId={user?._id || 'demo-user'} />}
       </div>
     </HeaderProvider>
   );
