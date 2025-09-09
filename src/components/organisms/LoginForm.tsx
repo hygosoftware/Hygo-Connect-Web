@@ -3,7 +3,7 @@ import { useRouter } from 'next/navigation';
 import { Button, Typography } from '../atoms';
 import { EmailInput, OfflineBanner, ToastNotification } from '../molecules';
 import { AuthService } from '../../services/auth';
-import logo from '../../assets/logo.png';
+import logo from '../../assets/hygologo.png';
 
 interface LoginFormProps {
   onSubmit?: (email: string) => void;
