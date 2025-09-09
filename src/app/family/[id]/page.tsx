@@ -85,10 +85,12 @@ const convertApiToUiMember = (apiResponse: ApiMemberResponse): FamilyMember => {
 const FamilyMemberDetailPage: React.FC = () => {
   const router = useRouter();
   const params = useParams();
-  const memberId = params.id as string;
   const { user, loading: authLoading } = useAuth();
   const userId = user?._id ?? '';
-
+  
+  const memberId = params?.id as string;
+  
+  // State hooks
   const [memberData, setMemberData] = useState<FamilyMember | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -96,8 +98,20 @@ const FamilyMemberDetailPage: React.FC = () => {
   const [editData, setEditData] = useState<FamilyMember | null>(null);
   const [newAllergy, setNewAllergy] = useState('');
   const [newMedication, setNewMedication] = useState('');
+  
+  // Redirect if no member ID is provided
+  useEffect(() => {
+    if (!memberId) {
+      router.push('/family');
+    }
+  }, [memberId, router]);
+  
+  if (!memberId) {
+    return null; // Show nothing while redirecting
+  }
 
-  const loadMemberData = useCallback(async () => {
+
+  const loadMemberData = useCallback(async (userId: string, memberId: string) => {
     try {
       setLoading(true);
       setError(null);
@@ -127,14 +141,14 @@ const FamilyMemberDetailPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [userId, memberId]);
+  }, []);
 
   // Load member data when auth is ready and memberId changes
   useEffect(() => {
-    if (!authLoading) {
-      void loadMemberData();
+    if (!authLoading && userId && memberId) {
+      void loadMemberData(userId, memberId);
     }
-  }, [authLoading, loadMemberData]);
+  }, [authLoading, userId, memberId, loadMemberData]);
 
   const _relationOptions = [
     'Father', 'Mother', 'Son', 'Daughter', 'Brother', 'Sister',
@@ -181,7 +195,7 @@ const FamilyMemberDetailPage: React.FC = () => {
             <Button
               variant="primary"
               size="medium"
-              onClick={() => void loadMemberData()}
+              onClick={() => userId && memberId && void loadMemberData(userId, memberId)}
               className="mr-2"
             >
               Try Again

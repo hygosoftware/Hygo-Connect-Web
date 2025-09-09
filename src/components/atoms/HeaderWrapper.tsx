@@ -57,6 +57,9 @@ export const HeaderProvider: React.FC<HeaderProviderProps> = ({
   };
 
   const shouldShowBackButton = () => {
+    // If pathname is null, don't show back button
+    if (!pathname) return false;
+    
     // Don't show back button on main navigation pages
     if (mainNavigationPages.includes(pathname)) {
       return false;
@@ -73,6 +76,9 @@ export const HeaderProvider: React.FC<HeaderProviderProps> = ({
   };
 
   const getPageTitle = () => {
+    // Return default title if pathname is null
+    if (!pathname) return '';
+    
     // Check for exact match first
     if (pageTitles[pathname]) {
       return pageTitles[pathname];

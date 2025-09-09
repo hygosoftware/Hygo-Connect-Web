@@ -8,7 +8,7 @@ import { getAllFileFromFolder, deleteFileFromFolder, FileItem as FileItemType, F
 
 export default function FileScreen() {
   const router = useRouter()
-  const params = useSearchParams()
+  const params = useSearchParams() || new URLSearchParams()
   const folderId = params.get("folderId") || ""
   const userId = params.get("userId") || ""
   const folderName = params.get("folderName") || ""

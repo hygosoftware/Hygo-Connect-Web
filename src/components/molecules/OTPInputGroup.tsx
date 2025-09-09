@@ -132,7 +132,7 @@ const OTPInputGroup: React.FC<OTPInputGroupProps> = ({
               onChange={(text) => handleOtpChange(text, index)}
               onKeyDown={(e) => handleKeyDown(e, index)}
               onPaste={handlePaste}
-              ref={(el) => (inputRefs.current[index] = el)}
+              ref={(el) => { inputRefs.current[index] = el; }}
               index={index}
               autoFocus={index === 0}
               disabled={disabled}

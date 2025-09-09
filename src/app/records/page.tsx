@@ -27,7 +27,12 @@ const RecordsPage: React.FC = () => {
   const [newFolderName, setNewFolderName] = useState('');
   const [createFor, setCreateFor] = useState<'self' | 'family'>('self');
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  type Perms = { Insert: boolean; View: boolean; Update: boolean; Delete: boolean };
+  type Perms = {
+    Insert: boolean;
+    View: boolean;
+    Update: boolean;
+    Delete: boolean;
+  };
   type DelegateRow = { id: string; memberId: string; perms: Perms };
   const [delegateRows, setDelegateRows] = useState<DelegateRow[]>([]);
   // Edit Folder modal state

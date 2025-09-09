@@ -8,9 +8,9 @@ import { getAllFileFromFolder, deleteFileFromFolder } from "../../lib/api"
 import type { FileItem as ApiFileItem, FolderInfo } from "../../lib/api"
 
 export default function FileScreenContent() {
-  const params = useSearchParams()
-  const folderId = params.get("folderId") || ""
-  const userId = params.get("userId") || ""
+  const searchParams = useSearchParams()
+  const folderId = searchParams?.get("folderId") || ""
+  const userId = searchParams?.get("userId") || ""
 
   const [files, setFiles] = useState<ApiFileItem[]>([])
   const [folderInfo, setFolderInfo] = useState<FolderInfo | null>(null)

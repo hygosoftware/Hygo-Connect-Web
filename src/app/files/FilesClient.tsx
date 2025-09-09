@@ -11,8 +11,8 @@ const FilesClient: React.FC = () => {
   const searchParams = useSearchParams();
 
   // Check if we have required parameters
-  const folderId = searchParams.get('folderId');
-  const userId = searchParams.get('userId');
+  const folderId = searchParams?.get('folderId') || '';
+  const userId = searchParams?.get('userId') || '';
 
   useEffect(() => {
     setIsClient(true);
@@ -27,6 +27,17 @@ const FilesClient: React.FC = () => {
   }, []);
 
   // Show error if required parameters are missing
+  if (!isClient) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!folderId || !userId) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

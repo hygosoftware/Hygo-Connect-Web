@@ -13,10 +13,10 @@ interface FileScreenDesktopProps {
 
 const FileScreenDesktop: React.FC<FileScreenDesktopProps> = ({ className = '' }) => {
   const router = useRouter();
-  const params = useSearchParams();
-  const folderId = params.get('folderId') || '';
-  const userId = params.get('userId') || '';
-  const folderName = params.get('folderName') || '';
+  const params = useSearchParams() || new URLSearchParams();
+  const folderId = params?.get('folderId') || '';
+  const userId = params?.get('userId') || '';
+  const folderName = params?.get('folderName') || '';
 
   const [files, setFiles] = useState<FileItemType[]>([]);
   const [folderInfo, setFolderInfo] = useState<FolderInfo | null>(null);

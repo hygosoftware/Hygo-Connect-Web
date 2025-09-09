@@ -23,7 +23,7 @@ type NavigationItemLocal = {
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = usePathname() || '';
   const { user } = useAuth();
   
   // Check if current route should show navigation

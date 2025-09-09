@@ -253,7 +253,7 @@ const AppointmentDetailPage: React.FC = () => {
       console.log(`${title}: ${message}`);
       // For now, we'll use a simple alert as fallback
       // You can replace this with your preferred notification system
-    } catch (_error) {
+    } catch {
       console.log(`${title}: ${message}`);
     }
   };
@@ -675,6 +675,13 @@ const AppointmentDetailPage: React.FC = () => {
       </main>
     </div>
   );
+};
+
+// Type export for Next.js page configuration
+export type { PageConfig } from 'next';
+
+export const config = {
+  runtime: 'nodejs',
 };
 
 export default AppointmentDetailPage;

@@ -39,6 +39,10 @@ interface ToastProviderProps {
 export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  const hideToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(toast => toast.id !== id));
+  }, []);
+
   const showToast = useCallback((toast: Omit<Toast, 'id'>) => {
     const id = Math.random().toString(36).substr(2, 9);
     const newToast: Toast = {
@@ -52,15 +56,14 @@ export const ToastProvider: React.FC<ToastProviderProps> = ({ children }) => {
     // Auto-hide toast after duration
     const duration = newToast.duration ?? 0;
     if (duration > 0) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         hideToast(id);
       }, duration);
+      
+      // Clean up the timer if the component unmounts
+      return () => clearTimeout(timer);
     }
-  }, []);
-
-  const hideToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(toast => toast.id !== id));
-  }, []);
+  }, [hideToast]);
 
   const clearAllToasts = useCallback(() => {
     setToasts([]);

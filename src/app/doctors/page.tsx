@@ -107,7 +107,7 @@ const convertApiDoctorToUiDoctor = (apiDoctor: ApiDoctor): Doctor => ({
 // -----------------------------------------
 const DoctorsPageContent: React.FC = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
+  const searchParams = useSearchParams() ?? new URLSearchParams();
 
   // State
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -139,16 +139,24 @@ const DoctorsPageContent: React.FC = () => {
   }, [loadDoctors]);
 
   // Get location from URL params
-  const locationFromParams = useMemo(() => {
+  const { locationFromParams, currentAddressFromParams } = useMemo(() => {
+    if (!searchParams) {
+      return { locationFromParams: null, currentAddressFromParams: '' };
+    }
+    
     const lat = searchParams.get('lat');
     const lng = searchParams.get('lng');
-    if (lat && lng) {
-      return { latitude: parseFloat(lat), longitude: parseFloat(lng) };
-    }
-    return null;
+    const address = searchParams.get('address') || '';
+    
+    const location = (lat && lng) 
+      ? { latitude: parseFloat(lat), longitude: parseFloat(lng) } 
+      : null;
+      
+    return {
+      locationFromParams: location,
+      currentAddressFromParams: address
+    };
   }, [searchParams]);
-
-  const currentAddressFromParams = searchParams.get('address') || '';
 
   // Filter options
   const specializations = useMemo(() => {

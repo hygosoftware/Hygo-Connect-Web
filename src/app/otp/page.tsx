@@ -14,6 +14,15 @@ const OTPPageContent: React.FC = () => {
 
   useEffect(() => {
     // Get email from URL search params
+    if (!searchParams) {
+      console.error('Search params not available');
+      setError('Invalid page state. Redirecting to login...');
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+      return;
+    }
+    
     const emailParam = searchParams.get('email');
     console.log('Email param from URL:', emailParam);
 

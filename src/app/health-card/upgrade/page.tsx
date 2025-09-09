@@ -72,7 +72,12 @@ const HealthCardUpgradeContent: React.FC = () => {
 
   const fetchPlanData = useCallback(async () => {
     try {
-      const planId = searchParams.get('planId');
+      if (!searchParams) {
+        console.warn('Search params not available');
+        return;
+      }
+      
+      const planId = searchParams.get('planId') || '';
       const response = await subscriptionservices.getallsubscription();
       
       let plans: SubscriptionPlan[] = [];

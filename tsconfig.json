@@ -36,11 +36,11 @@
     "**/*.ts",
     "**/*.tsx",
     "next-env.d.ts",
-    "src/app/appointments/[id]/page.d.ts",
     "src/types",
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    ".next"
   ]
 }
