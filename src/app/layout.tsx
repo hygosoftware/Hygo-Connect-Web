@@ -1,10 +1,9 @@
-import { Metadata } from "next";
+import { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppLayout } from "@/components/layouts";
 import PWASetup from "@/components/PWASetup";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { ToastProvider } from "@/contexts/ToastContext";
-// import SafariCompatibilityProvider from "../components/SafariCompatibilityProvider";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,7 +16,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const viewport = {
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
   themeColor: "#000000",
 };
 
@@ -48,22 +51,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en">
-      <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
-        <link rel="manifest" href="/manifest.json" />
-        <meta name="theme-color" content="#000000" />
-      </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`} suppressHydrationWarning={true}>
+      <body
+        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
+        suppressHydrationWarning
+      >
         <ToastProvider>
           <PWASetup />
-          <AppLayout>
-            {children}
-          </AppLayout>
+          <AppLayout>{children}</AppLayout>
           <PWAInstallPrompt />
         </ToastProvider>
       </body>
