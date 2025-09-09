@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'; // ✅ use Next.js Image
 import { Button, Typography } from '../atoms';
 import { EmailInput, OfflineBanner, ToastNotification } from '../molecules';
 import { AuthService } from '../../services/auth';
-import logo from '../../assets/hygologo.png';
 
 interface LoginFormProps {
   onSubmit?: (email: string) => void;
@@ -16,10 +16,7 @@ interface ToastState {
   type: 'info' | 'error' | 'success' | 'warning';
 }
 
-const LoginForm: React.FC<LoginFormProps> = ({
-  onSubmit,
-  className = '',
-}) => {
+const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, className = '' }) => {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,20 +27,13 @@ const LoginForm: React.FC<LoginFormProps> = ({
     type: 'info',
   });
 
-  // Simulate network connectivity check
+  // Connectivity check
   useEffect(() => {
-    // Only run on client side to avoid hydration mismatch
     if (typeof window !== 'undefined') {
-      const checkConnection = () => {
-        setIsConnected(navigator.onLine);
-      };
-
+      const checkConnection = () => setIsConnected(navigator.onLine);
       window.addEventListener('online', checkConnection);
       window.addEventListener('offline', checkConnection);
-
-      // Initial check
       checkConnection();
-
       return () => {
         window.removeEventListener('online', checkConnection);
         window.removeEventListener('offline', checkConnection);
@@ -51,25 +41,21 @@ const LoginForm: React.FC<LoginFormProps> = ({
     }
   }, []);
 
-  const showToast = (message: string, type: 'info' | 'error' | 'success' | 'warning' = 'info') => {
+  const showToast = (message: string, type: ToastState['type'] = 'info') =>
     setToast({ visible: true, message, type });
-  };
 
-  const hideToast = () => {
-    setToast(prev => ({ ...prev, visible: false }));
-  };
+  const hideToast = () =>
+    setToast((prev) => ({ ...prev, visible: false }));
 
-  const isValidEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
-  };
+  const isValidEmail = (email: string) =>
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSubmit = async () => {
     if (!isConnected) {
       showToast('No internet connection. Please check your network.', 'error');
       return;
     }
-    
+
     if (!isValidEmail(email)) {
       showToast('Please enter a valid email address', 'error');
       return;
@@ -77,29 +63,23 @@ const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       setIsLoading(true);
-
-      // Call the actual AuthService login method
       const response = await AuthService.login({ Email: email.trim() });
 
       if (response && response.success) {
         showToast('OTP sent successfully to email', 'success');
-
-        // Call onSubmit callback if provided
         onSubmit?.(email);
-
-        // Navigate to OTP page with email parameter after a delay to ensure session is established
         setTimeout(() => {
           router.push(`/otp?email=${encodeURIComponent(email)}`);
         }, 2000);
       } else {
-        const msg = typeof (response as any)?.message === 'string'
-          ? (response as any).message
-          : 'Failed to send OTP. Please try again.';
+        const msg =
+          typeof (response as any)?.message === 'string'
+            ? (response as any).message
+            : 'Failed to send OTP. Please try again.';
         showToast(msg, 'error');
       }
     } catch (error: any) {
-      const errorMessage = error.message || 'Failed to send OTP. Please try again.';
-      showToast(errorMessage, 'error');
+      showToast(error.message || 'Failed to send OTP. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -113,25 +93,25 @@ const LoginForm: React.FC<LoginFormProps> = ({
         <div className="w-full animate-fade-in-up">
           {/* Header Section */}
           <div className="ml-2 mb-8 flex flex-col items-start">
-  {/* Hygo Logo */}
-<div className="flex justify-center w-full">
-  <img src={typeof logo === 'string' ? logo : logo.src} alt="Hygo Logo" className="w-50 h-auto" />
-</div>
-  
-  <div className="flex justify-center w-full">
-  <Typography 
-    variant="subtitle1" 
-    color="secondary" 
-    className="mb-16"
-  >
-    Welcome aboard!
-  </Typography>
-</div>
-            <Typography 
-              variant="h2" 
-              color="primary" 
-              className="mb-2 font-bold"
-            >
+            {/* Hygo Logo */}
+            <div className="flex justify-center w-full">
+              <Image
+                src="/hygologo.png"
+                alt="Hygo Logo"
+                width={200}
+                height={60}
+                priority
+                unoptimized // ✅ avoids sharp
+              />
+            </div>
+
+            <div className="flex justify-center w-full">
+              <Typography variant="subtitle1" color="secondary" className="mb-16">
+                Welcome aboard!
+              </Typography>
+            </div>
+
+            <Typography variant="h2" color="primary" className="mb-2 font-bold">
               Wellness Simplified
             </Typography>
           </div>
@@ -158,11 +138,10 @@ const LoginForm: React.FC<LoginFormProps> = ({
             {isLoading ? 'Sending OTP...' : 'SEND CODE'}
           </Button>
 
-          {/* Terms and Conditions */}
-          <Typography 
-            variant="caption" 
-            color="text-secondary" 
-            align="center" 
+          <Typography
+            variant="caption"
+            color="text-secondary"
+            align="center"
             className="mt-6"
           >
             By continuing, you agree to our Terms of Service and Privacy Policy
