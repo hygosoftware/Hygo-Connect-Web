@@ -41,15 +41,17 @@ const AppointmentsPage: React.FC = () => {
 
     for (const apt of appointments) {
       const status = String(apt.status).toLowerCase();
-      if (status === 'cancelled' || status === 'canceled') {
-        // Always show cancelled appointments in Past
-        past.push(apt);
-        continue;
-      }
-      const d = new Date(apt.appointmentDate);
-      if (!isNaN(d.getTime()) && d >= new Date(now.toDateString())) {
+      const appointmentDate = new Date(apt.appointmentDate);
+      const isPastAppointment = !isNaN(appointmentDate.getTime()) && appointmentDate < new Date(now.toDateString());
+      
+      if (status === 'scheduled' && !isPastAppointment) {
+        // Only show scheduled appointments in Upcoming tab if the date is not passed
         upcoming.push(apt);
       } else {
+        // Show in Past tab if:
+        // 1. Status is cancelled/canceled
+        // 2. Status is completed
+        // 3. Status is scheduled but appointment date has passed
         past.push(apt);
       }
     }

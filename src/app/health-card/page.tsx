@@ -228,6 +228,7 @@ const HealthCardPage: React.FC = () => {
           title="Subscription Plans"
           subtitle="Choose your perfect health plan"
           icon="health-card"
+          variant="gradient"
           showBackButton={true}
           onBackPress={() => setShowSubscriptions(false)}
         />
@@ -296,6 +297,7 @@ const HealthCardPage: React.FC = () => {
         title="Health Card"
         subtitle="Your digital health companion"
         icon="health-card"
+        variant="gradient"
         showBackButton={true}
         onBackPress={handleGoBack}
       />

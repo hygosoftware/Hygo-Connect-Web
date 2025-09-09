@@ -43,11 +43,7 @@ const BookingContent: React.FC = () => {
   }, [searchParams, state.selectedDoctor, selectDoctor]);
 
   const handleGoBack = () => {
-    if (state.currentStep === 'selection' || state.currentStep === 'doctor') {
-      router.push('/');
-    } else {
-      goBack();
-    }
+    router.push('/');
   };
 
   const renderStepContent = () => {

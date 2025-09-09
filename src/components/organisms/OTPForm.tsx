@@ -182,14 +182,14 @@ const OTPForm: React.FC<OTPFormProps> = ({
   }
 
   return (
-    <div className={`min-h-screen bg-white ${className}`}>
+    <div className="min-h-screen w-full bg-white flex flex-col ${className}">
       {/* Back Button */}
       <div className="absolute top-6 left-4 z-10">
         {onBack && <BackButton onClick={onBack} className="mb-6" />}
       </div>
 
-      <div className="flex flex-col justify-center min-h-screen px-6 py-12 mobile-container">
-        <div className="w-full animate-fade-in-up">
+      <div className="flex-1 flex items-center justify-center p-4 w-full">
+        <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-sm p-6 animate-fade-in-up">
           {/* Header Section */}
           <div className="text-center mb-8">
             <Typography

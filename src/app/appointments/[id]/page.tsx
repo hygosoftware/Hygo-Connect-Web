@@ -76,6 +76,13 @@ interface Appointment {
   earlyStartDurationInMinutes?: number;
   isRescheduled?: boolean;
   rescheduledFrom?: Date | string;
+  rescheduleCount?: number;
+  rescheduleHistory?: Array<{
+    previousDate: Date | string;
+    previousTimeSlot: { from: string; to: string };
+    rescheduledAt: Date | string;
+    reason?: string;
+  }>;
   QRCode?: string;
   isDeleted?: boolean;
   familyId?: string;

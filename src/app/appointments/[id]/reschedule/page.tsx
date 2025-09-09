@@ -80,6 +80,13 @@ interface Appointment {
   earlyStartDurationInMinutes?: number;
   isRescheduled?: boolean;
   rescheduledFrom?: Date | string;
+  rescheduleCount?: number;
+  rescheduleHistory?: Array<{
+    previousDate: Date | string;
+    previousTimeSlot: { from: string; to: string };
+    rescheduledAt: Date | string;
+    reason?: string;
+  }>;
   QRCode?: string;
   isDeleted?: boolean;
   familyId?: string;
@@ -155,6 +162,20 @@ const ReschedulePage: React.FC = () => {
       return;
     }
 
+    // Check reschedule limit
+    const maxReschedules = 2;
+    const currentRescheduleCount = appointment.rescheduleCount || 0;
+    
+    if (currentRescheduleCount >= maxReschedules) {
+      showToast({
+        type: 'error',
+        title: 'Reschedule Limit Reached',
+        message: 'You have already rescheduled 2 times. Please cancel this appointment and book again.',
+        duration: 7000
+      });
+      return;
+    }
+
     try {
       console.log('=== Starting Reschedule Process ===');
       console.log('Selected Date:', selectedDate);
@@ -223,12 +244,16 @@ const ReschedulePage: React.FC = () => {
 
       const result = await rescheduleAppointment(appointmentId, rescheduleData);
       
-      // Enhanced success message based on subscription quota status
-      let successMessage = 'Your appointment has been rescheduled successfully!';
+      // Enhanced success message with reschedule count
+      const currentRescheduleCount = (appointment.rescheduleCount || 0) + 1;
+      const maxReschedules = 2;
+      
+      let successMessage = `Your appointment has been rescheduled successfully! `;
+      successMessage += `(Reschedule ${currentRescheduleCount} of ${maxReschedules})`;
+      
+      // Include subscription quota info if available
       if (result.subscriptionQuota?.quotaManaged) {
-        const rescheduleCount = result.subscriptionQuota.rescheduleCount;
-        const maxReschedules = result.subscriptionQuota.maxReschedules;
-        successMessage += ` Reschedule count: ${rescheduleCount}/${maxReschedules}`;
+        successMessage += ` (Quota: ${result.subscriptionQuota.rescheduleCount}/${result.subscriptionQuota.maxReschedules})`;
       }
       
       showToast({

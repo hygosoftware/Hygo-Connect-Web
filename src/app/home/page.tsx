@@ -57,12 +57,24 @@ const HomePage: React.FC = () => {
     try {
       setLoadingAppointments(true);
       const userAppointments = await appointmentService.getAppointmentsByUserId(user._id);
-      // Get only upcoming appointments (first 3 for home page display)
-      const upcomingAppointments = userAppointments
-        .filter(apt => new Date(apt.appointmentDate) >= new Date())
+      
+      // Get current date at midnight for accurate date comparison
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // Filter for scheduled appointments with today's or future dates
+      const scheduledAppointments = userAppointments
+        .filter(apt => {
+          const status = String(apt.status).toLowerCase();
+          const appointmentDate = new Date(apt.appointmentDate);
+          appointmentDate.setHours(0, 0, 0, 0);
+          
+          return status === 'scheduled' && appointmentDate >= today;
+        })
         .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
-        .slice(0, 3);
-      setAppointments(upcomingAppointments);
+        .slice(0, 3); // Get first 3 for home page display
+        
+      setAppointments(scheduledAppointments);
     } catch (error) {
       console.error('Failed to load appointments:', error);
       // Keep empty array on error, don't show error on home page

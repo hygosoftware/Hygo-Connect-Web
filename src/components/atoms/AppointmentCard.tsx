@@ -191,7 +191,7 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
     if (variant === 'modern') {
       return `${base} rounded-2xl border border-gray-200 hover:shadow-sm`;
     }
-    return `${base} rounded-t-3xl rounded-b-2xl mr-4 shadow-lg hover:shadow-xl min-w-[280px] max-w-[350px] sm:w-80`;
+    return `${base} rounded-t-3xl rounded-b-2xl mr-4 shadow-lg hover:shadow-xl min-w-[260px] max-w-[350px] sm:min-w-[280px] sm:w-80`;
   })();
 
   // Modern variant: entirely different flat layout
