@@ -96,9 +96,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, className = '' }) => {
             {/* Hygo Logo */}
             <div className="flex justify-center w-full">
               <Image
-                src="/assets/hygologo.png"
-                alt="Hygo Logo"
-                width={200}
+                src="hygologo.png"
+                alt="Hygo logo" 
+                width={200} 
                 height={60}
                 priority
                 unoptimized // ✅ avoids sharp
