@@ -41,24 +41,41 @@ const AppointmentsPage: React.FC = () => {
 
     for (const apt of appointments) {
       const status = String(apt.status).toLowerCase();
-      const appointmentDate = new Date(apt.appointmentDate);
-      const isPastAppointment = !isNaN(appointmentDate.getTime()) && appointmentDate < new Date(now.toDateString());
+      let appointmentDateTime: Date;
+      // Combine date and end time if available, otherwise just use date
+      if (apt.appointmentDate && apt.appointmentTime && apt.appointmentTime.to) {
+        // Assume time is in 'HH:mm' format
+        const datePart = apt.appointmentDate.split('T')[0];
+        const timePart = apt.appointmentTime.to;
+        appointmentDateTime = new Date(`${datePart}T${timePart.length === 5 ? timePart : timePart.padStart(5, '0')}:00`);
+      } else {
+        appointmentDateTime = new Date(apt.appointmentDate);
+      }
+      const isPastAppointment = !isNaN(appointmentDateTime.getTime()) && appointmentDateTime < now;
       
       if (status === 'scheduled' && !isPastAppointment) {
-        // Only show scheduled appointments in Upcoming tab if the date is not passed
+        // Only show scheduled appointments in Upcoming tab if the date/time is not passed
         upcoming.push(apt);
       } else {
         // Show in Past tab if:
         // 1. Status is cancelled/canceled
         // 2. Status is completed
-        // 3. Status is scheduled but appointment date has passed
+        // 3. Status is scheduled but appointment date/time has passed
         past.push(apt);
       }
     }
 
     // sort by date asc for upcoming, desc for past
-    upcoming.sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime());
-    past.sort((a, b) => new Date(b.appointmentDate).getTime() - new Date(a.appointmentDate).getTime());
+    upcoming.sort((a, b) => {
+      const aDate = a.appointmentDate && a.appointmentTime && a.appointmentTime.to ? new Date(`${a.appointmentDate.split('T')[0]}T${a.appointmentTime.to.length === 5 ? a.appointmentTime.to : a.appointmentTime.to.padStart(5, '0')}:00`) : new Date(a.appointmentDate);
+      const bDate = b.appointmentDate && b.appointmentTime && b.appointmentTime.to ? new Date(`${b.appointmentDate.split('T')[0]}T${b.appointmentTime.to.length === 5 ? b.appointmentTime.to : b.appointmentTime.to.padStart(5, '0')}:00`) : new Date(b.appointmentDate);
+      return aDate.getTime() - bDate.getTime();
+    });
+    past.sort((a, b) => {
+      const aDate = a.appointmentDate && a.appointmentTime && a.appointmentTime.to ? new Date(`${a.appointmentDate.split('T')[0]}T${a.appointmentTime.to.length === 5 ? a.appointmentTime.to : a.appointmentTime.to.padStart(5, '0')}:00`) : new Date(a.appointmentDate);
+      const bDate = b.appointmentDate && b.appointmentTime && b.appointmentTime.to ? new Date(`${b.appointmentDate.split('T')[0]}T${b.appointmentTime.to.length === 5 ? b.appointmentTime.to : b.appointmentTime.to.padStart(5, '0')}:00`) : new Date(b.appointmentDate);
+      return bDate.getTime() - aDate.getTime();
+    });
 
     return { upcoming, past };
   }, [appointments]);

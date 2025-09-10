@@ -23,6 +23,9 @@ const DateTimeSelection: React.FC = () => {
     }
   }, [state.selectedDate]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  // Map of slot.id to booking conflict (true if user has booked this slot)
+  const [slotConflicts, setSlotConflicts] = useState<{ [slotId: string]: boolean }>({});
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [rawApiSlots, setRawApiSlots] = useState<{ id: string; from: string; to: string; appointmentLimit?: number; availableSlots?: number; isAvailable?: boolean }[]>([]);
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<'morning' | 'afternoon' | 'evening'>('morning');
@@ -247,6 +250,7 @@ const DateTimeSelection: React.FC = () => {
     }
     setLoadingSlots(true);
     void (async () => {
+      setCheckingConflicts(true);
       const slots = await fetchSlotsForDate(date);
       // If selected date is today, mark past times as unavailable
       const today = new Date();
@@ -260,6 +264,37 @@ const DateTimeSelection: React.FC = () => {
           }))
         : slots;
       setTimeSlots(adjusted);
+
+      // Proactively check conflicts for each slot
+      const userId = TokenManager.getTokens().userId as string | null;
+      const doctorId = String(state.selectedDoctor?._id);
+      const clinicId = state.selectedClinic?._id;
+      const yyyy = date.getFullYear();
+      const mm = (date.getMonth() + 1).toString().padStart(2, '0');
+      const dd = date.getDate().toString().padStart(2, '0');
+      const dateStr = `${yyyy}-${mm}-${dd}`;
+      if (userId && doctorId && clinicId) {
+        const conflictMap: { [slotId: string]: boolean } = {};
+        await Promise.all(
+          adjusted.map(async (slot) => {
+            const raw = rawApiSlots.find((s) => s.id === slot.id);
+            const from = raw?.from || slot.time;
+            const to = raw?.to || slot.time;
+            const hasConflict = await appointmentService.checkUserBookingForSlot(
+              userId,
+              doctorId,
+              clinicId,
+              dateStr,
+              { from, to }
+            );
+            conflictMap[slot.id] = hasConflict;
+          })
+        );
+        setSlotConflicts(conflictMap);
+      } else {
+        setSlotConflicts({});
+      }
+      setCheckingConflicts(false);
       setLoadingSlots(false);
     })();
   }, [availableDateKeys, fetchSlotsForDate, selectDate, showToast]);
@@ -552,38 +587,54 @@ const DateTimeSelection: React.FC = () => {
 
             {/* Time Slots Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
-              {timeSlots
-                .filter(slot => {
-                  const hour = parseInt(slot.time.split(':')[0]);
-                  if (selectedTimePeriod === 'morning') return hour >= 6 && hour < 12;
-                  if (selectedTimePeriod === 'afternoon') return hour >= 12 && hour < 18;
-                  if (selectedTimePeriod === 'evening') return hour >= 18 || hour < 6;
-                  return true;
-                })
-                .map((slot) => (
-                  <button
-                    key={slot.id}
-                    disabled={!slot.available}
-                    onClick={() => handleSlotSelect(slot)}
-                    className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border transition-colors text-center ${
-                      slot.available 
-                        ? 'border-green-600 text-green-700 hover:bg-green-50' 
-                        : 'border-gray-300 text-gray-400 cursor-not-allowed'
-                    }`}
-                  >
-                    <div className={`text-xs sm:text-sm font-medium ${slot.available ? 'text-green-700' : 'text-gray-400'}`}>
-                      {(() => {
-                        const raw = rawApiSlots.find((s) => s.id === slot.id);
-                        const from = raw?.from || slot.time;
-                        const to = raw?.to;
-                        return to ? `${from} - ${to}` : from;
-                      })()}
-                    </div>
-                    <div className="text-[10px] sm:text-[11px] mt-1 text-gray-600">
-                      Available: {Math.max(0, (slot.maxBookings || 0) - (slot.bookedCount || 0))}
-                    </div>
-                  </button>
-                ))}
+              {checkingConflicts ? (
+                <div className="text-center w-full col-span-4 py-4">
+                  <Typography variant="body2" className="text-blue-600">Checking your bookings...</Typography>
+                </div>
+              ) : (
+                timeSlots
+                  .filter(slot => {
+                    const hour = parseInt(slot.time.split(':')[0]);
+                    if (selectedTimePeriod === 'morning') return hour >= 6 && hour < 12;
+                    if (selectedTimePeriod === 'afternoon') return hour >= 12 && hour < 18;
+                    if (selectedTimePeriod === 'evening') return hour >= 18 || hour < 6;
+                    return true;
+                  })
+                  .map((slot) => {
+                    const conflict = slotConflicts[slot.id];
+                    const disabled = !slot.available || conflict;
+                    return (
+                      <button
+                        key={slot.id}
+                        disabled={disabled}
+                        onClick={() => handleSlotSelect(slot)}
+                        className={`w-full px-3 py-2.5 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl border transition-colors text-center ${
+                          disabled
+                            ? 'border-gray-300 text-gray-400 cursor-not-allowed'
+                            : 'border-green-600 text-green-700 hover:bg-green-50'
+                        }`}
+                        aria-disabled={disabled}
+                        title={conflict ? 'You have already booked this slot' : undefined}
+                      >
+                        <div className={`text-xs sm:text-sm font-medium ${disabled ? 'text-gray-400' : 'text-green-700'}`}>
+                          {(() => {
+                            const raw = rawApiSlots.find((s) => s.id === slot.id);
+                            const from = raw?.from || slot.time;
+                            const to = raw?.to;
+                            return to ? `${from} - ${to}` : from;
+                          })()}
+                        </div>
+                        <div className="text-[10px] sm:text-[11px] mt-1 text-gray-600">
+                          {conflict ? (
+                            <span className="text-red-500 font-semibold">Already booked</span>
+                          ) : (
+                            <>Available: {Math.max(0, (slot.maxBookings || 0) - (slot.bookedCount || 0))}</>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })
+              )}
             </div>
 
             {timeSlots.filter(slot => {

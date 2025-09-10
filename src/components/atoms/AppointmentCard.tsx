@@ -56,18 +56,68 @@ const AppointmentCard: React.FC<AppointmentCardProps> = ({
   paymentStatus,
 }) => {
   const router = useRouter();
+  
+  // Log appointment data for debugging
+  React.useEffect(() => {
+    console.log('Appointment Data:', {
+      date,
+      time,
+      actualStartTime,
+      actualEndTime,
+      status,
+      mode,
+      doctor: {
+        name: doctor?.fullName,
+        specialty: doctor?.specializations
+      },
+      clinic: clinicName || clinic?.clinicName,
+      location: clinicCity || clinic?.clinicAddress?.city,
+      appointmentId,
+      currentDate: new Date().toISOString()
+    });
+  }, [date, time, actualStartTime, actualEndTime, status, mode, doctor, clinicName, clinic, appointmentId]);
 
   const formatDate = (dateString: string) => {
+    // If the date is already in the format we want (e.g., 'Wed, Sep 10'), return as is
+    if (/^[A-Za-z]{3},\s[A-Za-z]{3}\s\d{1,2}$/.test(dateString)) {
+      return dateString;
+    }
+
     try {
-      const parsedDate = new Date(dateString);
-      if (isNaN(parsedDate.getTime())) return dateString;
-      return parsedDate.toLocaleDateString('en-US', {
+      // First try parsing with Date constructor
+      let parsedDate = new Date(dateString);
+      
+      // If the date is invalid, try parsing with Date.parse
+      if (isNaN(parsedDate.getTime())) {
+        const timestamp = Date.parse(dateString);
+        if (!isNaN(timestamp)) {
+          parsedDate = new Date(timestamp);
+        } else {
+          // If still invalid, try removing timezone info and parse again
+          const [datePart] = dateString.split('T');
+          if (datePart) {
+            parsedDate = new Date(datePart + 'T00:00:00');
+          }
+        }
+      }
+
+      // If still invalid, return the original string
+      if (isNaN(parsedDate.getTime())) {
+        console.warn('Invalid date string:', dateString);
+        return dateString;
+      }
+
+      // Format the date with weekday, day, and month
+      const options: Intl.DateTimeFormatOptions = {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
-      });
+        timeZone: 'Asia/Kolkata' // Using Indian timezone as default
+      };
+
+      return parsedDate.toLocaleDateString('en-US', options);
     } catch (error) {
-      console.error('Error formatting date:', error);
+      console.error('Error formatting date:', error, 'Date string:', dateString);
       return dateString;
     }
   };

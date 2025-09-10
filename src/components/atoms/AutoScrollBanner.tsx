@@ -112,7 +112,7 @@ const AutoScrollBanner: React.FC<AutoScrollBannerProps> = ({
           {/* Content layer */}
           <div className="absolute inset-0 rounded-2xl p-4 md:p-6 flex flex-col justify-between md:grid md:grid-cols-2 md:gap-4">
             {/* Left: Text */}
-            <div className="relative z-10 md:flex md:flex-col md:justify-center md:items-start bg-gradient-to-t from-black/40 via-transparent to-transparent rounded-2xl md:bg-transparent">
+            <div className="relative z-10 md:flex md:flex-col md:justify-center md:items-start rounded-2xl md:bg-transparent">
               <div>
                 <Typography variant="h5" className="text-white font-bold mb-1 text-lg md:text-2xl">
                   {item.title}

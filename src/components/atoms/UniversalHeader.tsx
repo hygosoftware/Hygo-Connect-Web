@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
 import { BackButton, Typography, Icon } from './';
 import { useHeader } from './HeaderWrapper';
 
@@ -27,13 +28,23 @@ const UniversalHeader: React.FC<UniversalHeaderProps> = ({
   subtitle,
   showMenuButton = true,
 }) => {
+  const router = useRouter();
   const { onBackPress: contextBackPress, shouldShowBackButton, getPageTitle, onMobileMenuToggle } = useHeader();
 
   // Determine if back button should be shown
   const shouldShow = showBackButton !== undefined ? showBackButton : shouldShowBackButton();
   
-  // Determine back press handler
-  const handleBackPress = onBackPress || contextBackPress;
+  // Enhanced back press handler
+  const enhancedBackPress = () => {
+    if (typeof window !== 'undefined' && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push('/home'); // Home page fallback
+    }
+  };
+
+  // Determine back press handler: give priority to explicit onBackPress, else use enhancedBackPress
+  const handleBackPress = onBackPress || enhancedBackPress;
   
   // Determine title
   const pageTitle = title || getPageTitle();

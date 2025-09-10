@@ -62,18 +62,27 @@ const HomePage: React.FC = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       
-      // Filter for scheduled appointments with today's or future dates
+      // Filter for scheduled appointments with future date+end time
+      const now = new Date();
       const scheduledAppointments = userAppointments
         .filter(apt => {
           const status = String(apt.status).toLowerCase();
-          const appointmentDate = new Date(apt.appointmentDate);
-          appointmentDate.setHours(0, 0, 0, 0);
-          
-          return status === 'scheduled' && appointmentDate >= today;
+          let appointmentDateTime: Date;
+          if (apt.appointmentDate && apt.appointmentTime && apt.appointmentTime.to) {
+            const datePart = apt.appointmentDate.split('T')[0];
+            const timePart = apt.appointmentTime.to;
+            appointmentDateTime = new Date(`${datePart}T${timePart.length === 5 ? timePart : timePart.padStart(5, '0')}:00`);
+          } else {
+            appointmentDateTime = new Date(apt.appointmentDate);
+          }
+          return status === 'scheduled' && appointmentDateTime >= now;
         })
-        .sort((a, b) => new Date(a.appointmentDate).getTime() - new Date(b.appointmentDate).getTime())
+        .sort((a, b) => {
+          const aDate = a.appointmentDate && a.appointmentTime && a.appointmentTime.to ? new Date(`${a.appointmentDate.split('T')[0]}T${a.appointmentTime.to.length === 5 ? a.appointmentTime.to : a.appointmentTime.to.padStart(5, '0')}:00`) : new Date(a.appointmentDate);
+          const bDate = b.appointmentDate && b.appointmentTime && b.appointmentTime.to ? new Date(`${b.appointmentDate.split('T')[0]}T${b.appointmentTime.to.length === 5 ? b.appointmentTime.to : b.appointmentTime.to.padStart(5, '0')}:00`) : new Date(b.appointmentDate);
+          return aDate.getTime() - bDate.getTime();
+        })
         .slice(0, 3); // Get first 3 for home page display
-        
       setAppointments(scheduledAppointments);
     } catch (error) {
       console.error('Failed to load appointments:', error);

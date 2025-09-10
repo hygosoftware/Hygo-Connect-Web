@@ -85,8 +85,16 @@ const BookingContent: React.FC = () => {
       <UniversalHeader
         title="Book Appointment"
         variant="gradient"
-        showBackButton={true}
-        onBackPress={handleGoBack}
+        showBackButton
+        onBackPress={() => {
+          // If not at the first step, go back in booking flow. Else, exit to home.
+          const firstSteps = ['selection', 'doctor'];
+          if (!firstSteps.includes(state.currentStep)) {
+            goBack();
+          } else {
+            router.push('/home');
+          }
+        }}
         showMenuButton={false}
       />
 

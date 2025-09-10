@@ -2338,10 +2338,20 @@ export const appointmentService = {
     timeSlot: { from: string; to: string }
   ): Promise<boolean> => {
     try {
-      const response = await apiClient.get(`/Appointment/${userId}`);
-      console.log("response.data", response.data)
-
-      const appointments = (response.data as any)?.appointments || (response.data as any)?.data || response.data || [];
+      const response = await apiClient.get(`/Appointment/user/${userId}`);
+      console.log("response.data", response.data);
+      // Normalize appointments as in getAppointmentsByUserId
+      const raw = response.data as any;
+      let appointments: any[] = [];
+      if (Array.isArray(raw)) {
+        appointments = raw;
+      } else if (Array.isArray(raw?.appointments)) {
+        appointments = raw.appointments;
+      } else if (Array.isArray(raw?.data)) {
+        appointments = raw.data;
+      } else if (raw && typeof raw === 'object' && Object.keys(raw).length > 0) {
+        appointments = [raw];
+      }
       if (!Array.isArray(appointments)) return false;
 
       const hasConflict = appointments.some((appointment: any) => {
@@ -2355,12 +2365,7 @@ export const appointmentService = {
         const requestedDate = new Date(date).toISOString().split('T')[0];
         if (appointmentDate !== requestedDate) return false;
 
-        // Check doctor and clinic match (id or nested object)
-        const sameDoctor = String(appointment.doctor) === String(doctorId) || String(appointment.doctor?._id) === String(doctorId);
-        const sameClinic = String(appointment.clinic) === String(clinicId) || String(appointment.clinic?._id) === String(clinicId);
-        if (!sameDoctor || !sameClinic) return false;
-
-        // Compare time slots for overlap
+        // Compare time slots for overlap (ignore doctor/clinic)
         const existingFrom = appointment.timeSlot?.from || appointment.appointmentTime?.from;
         const existingTo = appointment.timeSlot?.to || appointment.appointmentTime?.to;
         if (!existingFrom || !existingTo) return false;
