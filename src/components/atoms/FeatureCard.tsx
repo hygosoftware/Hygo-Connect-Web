@@ -32,14 +32,7 @@ const FeatureCard: React.FC<FeatureCardProps> = ({
       </div>
       <Typography 
         variant="caption" 
-        className="text-gray-700 mt-1 text-center leading-tight whitespace-normal break-words max-w-[72px] sm:max-w-[80px]"
-        style={{
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis'
-        }}
+        className="text-gray-700 mt-1 text-center leading-tight whitespace-nowrap overflow-hidden text-ellipsis px-1"
       >
         {title}
       </Typography>
