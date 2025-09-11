@@ -134,9 +134,9 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
       </div>
 
       {/* Body Content - No top padding needed with sticky header */}
-      <div className="w-full py-6 flex flex-col gap-6">
+      <div className="px-4 sm:px-6 lg:px-8 py-6">
         {/* Search Bar */}
-        <div className="w-full">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Input
@@ -287,7 +287,7 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
 
         {/* Results Summary */}
         {!loading && !error && (
-          <div className="w-full">
+          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-[#0E3293]/10 rounded-xl flex items-center justify-center mr-3">
@@ -365,7 +365,7 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-0">
+          <div className="space-y-3">
             {displayDoctors.map((doctor, index) => (
               <DoctorListItem
                 key={doctor._id}
@@ -395,14 +395,14 @@ const DoctorListItem: React.FC<DoctorListItemProps> = ({ doctor, onPress, getFul
 
   return (
     <div
-      className="w-full cursor-pointer group"
+      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 cursor-pointer group hover:bg-gray-50"
       onClick={onPress}
       style={{
         animationDelay: `${index * 50}ms`,
         animation: 'fadeInUp 0.4s ease-out forwards'
       }}
     >
-      <div className="w-full">
+      <div className="p-4">
         <div className="flex items-center space-x-4">
           {/* Doctor Image and Status */}
           <div className="relative flex-shrink-0">
