@@ -56,8 +56,21 @@ const OTPPageContent: React.FC = () => {
       const response = await AuthService.verifyOTP(email, otp);
 
       if (response && response.success) {
-        // Navigate to home page after successful verification
-        window.location.href = '/';
+        // Set 'token' cookie for Next.js middleware compatibility
+        if (typeof window !== 'undefined' && response.accessToken) {
+          // Set a cookie for 7 days
+          const expires = new Date();
+          expires.setDate(expires.getDate() + 7);
+          document.cookie = `token=${response.accessToken}; expires=${expires.toUTCString()}; path=/; SameSite=Strict`;
+          // Also set accessToken in sessionStorage for useAuth
+          try {
+            sessionStorage.setItem('accessToken', response.accessToken);
+          } catch (e) { /* ignore */ }
+        }
+        // Add a short delay to ensure cookie/storage is set before redirect
+        setTimeout(() => {
+          router.push('/home');
+        }, 200);
       } else {
         setError('OTP verification failed. Please try again.');
       }

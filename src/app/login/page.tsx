@@ -1,18 +1,28 @@
 'use client';
 
 import React from 'react';
-import { LoginForm } from '../../components/organisms';
+import { useRouter } from 'next/navigation';
+import LoginForm from '../../components/organisms/LoginForm';
 
 const LoginPage: React.FC = () => {
+  const router = useRouter();
+
   const handleLoginSubmit = (email: string) => {
-    console.log('Login submitted with email:', email);
-    // Here you would typically navigate to the OTP page
-    // For now, we'll just log the email
+    if (!email || !email.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+  
+    // ✅ Navigate to OTP page directly
+    router.push(`/otp?email=${encodeURIComponent(email)}`);
   };
 
+
   return (
-    <main>
-      <LoginForm onSubmit={handleLoginSubmit} />
+    <main className="flex items-center justify-center min-h-screen bg-white">
+      <div className="w-full max-w-md p-6 bg-white rounded-xl shadow-lg">
+        <LoginForm onSubmit={handleLoginSubmit} />
+      </div>
     </main>
   );
 };

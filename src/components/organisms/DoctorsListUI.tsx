@@ -134,9 +134,9 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
       </div>
 
       {/* Body Content - No top padding needed with sticky header */}
-      <div className="px-4 sm:px-6 lg:px-8 py-6">
+      <div className="w-full py-6 flex flex-col gap-6">
         {/* Search Bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-6">
+        <div className="w-full">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <Input
@@ -287,7 +287,7 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
 
         {/* Results Summary */}
         {!loading && !error && (
-          <div className="bg-white/80 backdrop-blur-sm rounded-xl p-4 border border-gray-200 mb-6">
+          <div className="w-full">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-[#0E3293]/10 rounded-xl flex items-center justify-center mr-3">
@@ -365,7 +365,7 @@ const DoctorsListUI: React.FC<DoctorsListUIProps> = ({
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-0">
             {displayDoctors.map((doctor, index) => (
               <DoctorListItem
                 key={doctor._id}
@@ -395,14 +395,14 @@ const DoctorListItem: React.FC<DoctorListItemProps> = ({ doctor, onPress, getFul
 
   return (
     <div
-      className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-100 cursor-pointer group hover:bg-gray-50"
+      className="w-full cursor-pointer group"
       onClick={onPress}
       style={{
         animationDelay: `${index * 50}ms`,
         animation: 'fadeInUp 0.4s ease-out forwards'
       }}
     >
-      <div className="p-4">
+      <div className="w-full">
         <div className="flex items-center space-x-4">
           {/* Doctor Image and Status */}
           <div className="relative flex-shrink-0">
@@ -466,13 +466,13 @@ const DoctorListItem: React.FC<DoctorListItemProps> = ({ doctor, onPress, getFul
               
               {/* Right side - Availability and Price */}
               <div className="flex flex-col items-end ml-4 flex-shrink-0">
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                {/* <div className={`px-2 py-1 rounded-full text-xs font-medium ${
                   doctor.isAvailableNow 
                     ? 'bg-green-100 text-green-700' 
                     : 'bg-gray-100 text-gray-600'
                 }`}>
                   {doctor.isAvailableNow ? 'Available' : 'Busy'}
-                </div>
+                </div> */}
                 
                 <div className="text-right mt-2">
                   <div className="text-lg font-bold text-[#0E3293]">

@@ -291,7 +291,7 @@ export const TokenManager = {
     }
   },
 };
-
+let isVerifyingOTP = false;
 // --- Auth Service ---
 export const AuthService = {
   // Signup or login (using email)
@@ -311,29 +311,32 @@ export const AuthService = {
 
   // Verify OTP
   verifyOTP: async (Email: string, OTP: string) => {
+    if (isVerifyingOTP) {
+      console.warn('⏳ OTP verification already in progress. Please wait.');
+      return { success: false, message: 'OTP verification already in progress' };
+    }
+
+    isVerifyingOTP = true;
+
     try {
       console.log('🔐 Starting OTP verification for:', Email);
+      console.log('🔹 OTP payload:', { Email, OTP });
+
       const response = await apiClient.post<AuthResponse>('/verify-otp', {
         Email,
         OTP,
       });
-      
-      // Store tokens if verification successful
+
       const responseData = response.data;
-      console.log('📋 OTP API Response:', {
-        status: response.status,
-        responseDataKeys: Object.keys(responseData),
-        hasAccessToken: !!responseData.accessToken,
-        hasRefreshToken: !!responseData.refreshToken,
-        hasUser: !!responseData.user,
-        fullResponse: responseData
-      });
-      
-      // Debug: Log the actual structure to understand the response
-      console.log('🔍 Full response structure:', JSON.stringify(responseData, null, 2));
-      
-      // Check if we have the required data (tokens are nested under message property)
-      const messageData = responseData.message as any; // Type assertion since the interface is incorrect
+      console.log('📋 OTP API Response:', responseData);
+
+      // Extract the message data
+      const messageData = responseData.message as {
+        accessToken?: string;
+        refreshToken?: string;
+        user?: User;
+      };
+
       if (
         response.status === 200 &&
         messageData?.accessToken &&
@@ -346,42 +349,42 @@ export const AuthService = {
           messageData.refreshToken,
           messageData.user
         );
-        
-        // Verify tokens were stored
+
         const storedTokens = TokenManager.getTokens();
-        console.log('🔍 Verification - tokens after storage:', {
-          hasAccessToken: !!storedTokens.accessToken,
-          hasRefreshToken: !!storedTokens.refreshToken,
-          hasUserId: !!storedTokens.userId,
-          accessTokenLength: storedTokens.accessToken?.length || 0
+        console.log('🔍 Tokens after storage:', {
+          accessToken: !!storedTokens.accessToken,
+          refreshToken: !!storedTokens.refreshToken,
+          userId: !!storedTokens.userId,
         });
-        
-        // Check storage health
+
         const storageHealth = TokenManager.checkStorageHealth();
         console.log('🏥 Storage health check:', storageHealth);
-        
+
+        return {
+          success: true,
+          accessToken: messageData.accessToken,
+          refreshToken: messageData.refreshToken,
+          user: messageData.user,
+        };
       } else {
-        console.error('❌ OTP verification incomplete - missing required data:', {
-          status: response.status,
-          hasAccessToken: !!messageData?.accessToken,
-          hasRefreshToken: !!messageData?.refreshToken,
-          hasUser: !!messageData?.user,
-          responseStructure: Object.keys(responseData),
-          messageStructure: messageData ? Object.keys(messageData) : 'message is not an object'
-        });
-        throw new Error('OTP verification failed - incomplete response data.');
+        console.error('❌ OTP verification incomplete - missing required data:', messageData);
+        return { success: false, message: 'OTP verification failed - incomplete response data' };
       }
-      
-      // Return success response for compatibility
-      return {
-        success: true,
-        accessToken: messageData.accessToken,
-        refreshToken: messageData.refreshToken,
-        user: messageData.user
-      };
     } catch (error: unknown) {
-      console.error('💥 OTP verification failed:', error);
-      throw error;
+      if (axios.isAxiosError(error)) {
+        console.error('💥 OTP verification failed:', error.response?.data || error.message);
+
+        const backendMessage =
+          error.response?.data?.message ||
+          'Request failed with status code ' + error.response?.status;
+
+        return { success: false, message: backendMessage };
+      } else {
+        console.error('💥 OTP verification failed (non-Axios error):', error);
+        return { success: false, message: 'Unknown error occurred during OTP verification' };
+      }
+    } finally {
+      isVerifyingOTP = false; // Reset lock
     }
   },
 

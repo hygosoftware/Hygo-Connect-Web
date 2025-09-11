@@ -3,6 +3,8 @@ import { useRouter } from 'next/navigation';
 import { Button, Typography, BackButton } from '../atoms';
 import { OTPInputGroup, ResendSection, ToastNotification } from '../molecules';
 import { AuthService } from '../../services/auth';
+import Image from 'next/image';
+import hygoLogo from '../../assets/hygologo.png';
 
 interface OTPFormProps {
   email?: string;
@@ -188,10 +190,20 @@ const OTPForm: React.FC<OTPFormProps> = ({
         {onBack && <BackButton onClick={onBack} className="mb-6" />}
       </div>
 
-      <div className="flex-1 flex items-center justify-center p-4 w-full">
+      <div className="flex-1 flex mt-16 justify-center p-4 w-full">
         <div className="w-full max-w-md mx-auto bg-white rounded-lg shadow-sm p-6 animate-fade-in-up">
           {/* Header Section */}
           <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <Image
+                src={hygoLogo}
+                alt="Hygo Logo"
+                width={256}
+                height={256}
+                className="mx-auto rounded-full"
+                priority
+              />
+            </div>
             <Typography
               variant="h4"
               className="text-2xl font-bold text-gray-900 mb-2"

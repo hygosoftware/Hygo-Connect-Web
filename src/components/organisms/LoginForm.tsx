@@ -1,6 +1,9 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; // ✅ use Next.js Image
+import hygoLogo from '../../assets/hygologo.png';
 import { Button, Typography } from '../atoms';
 import { EmailInput, OfflineBanner, ToastNotification } from '../molecules';
 import { AuthService } from '../../services/auth';
@@ -65,19 +68,16 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, className = '' }) => {
       setIsLoading(true);
       const response = await AuthService.login({ Email: email.trim() });
 
+      console.log('AuthService.login response:', response);
       if (response && response.success) {
         showToast('OTP sent successfully to email', 'success');
-        onSubmit?.(email);
-        setTimeout(() => {
-          router.push(`/otp?email=${encodeURIComponent(email)}`);
-        }, 2000);
+        router.push(`/otp?email=${encodeURIComponent(email)}`);
       } else {
-        const msg =
-          typeof (response as any)?.message === 'string'
-            ? (response as any).message
-            : 'Failed to send OTP. Please try again.';
+        const msg = typeof response?.message === 'string'
+          ? response.message
+          : 'Failed to send OTP. Please try again.';
         showToast(msg, 'error');
-      }
+      }      
     } catch (error: any) {
       showToast(error.message || 'Failed to send OTP. Please try again.', 'error');
     } finally {
@@ -96,12 +96,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, className = '' }) => {
             {/* Hygo Logo */}
             <div className="flex justify-center w-full">
               <Image
-                src="hygologo.png"
-                alt="Hygo logo" 
-                width={200} 
-                height={60}
+                src={hygoLogo}
+                alt="Hygo logo"
+                width={256}
+                height={256}
+                className="mx-auto rounded-full"
                 priority
-                unoptimized // ✅ avoids sharp
               />
             </div>
 

@@ -98,7 +98,7 @@ const BookingContent: React.FC = () => {
         showMenuButton={false}
       />
 
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {isDesktop ? (
           <div className="flex min-h-[calc(100vh-4rem)]">
             {state.currentStep !== 'selection' && state.currentStep !== 'doctor' && (

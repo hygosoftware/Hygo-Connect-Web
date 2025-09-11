@@ -17,9 +17,9 @@ const BookingTabNavigation: React.FC<BookingTabNavigationProps> = ({
   if (isDesktop) {
     // Desktop version - horizontal tabs at top
     return (
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex space-x-8">
+      <div className="bg-white border-b border-gray-200 w-full">
+        <div className="w-full">
+          <div className="flex space-x-8 w-full">
             <button
               onClick={() => onFlowChange('doctor')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
@@ -64,7 +64,7 @@ const BookingTabNavigation: React.FC<BookingTabNavigationProps> = ({
   // Mobile version - top tab bar
   return (
     <div className="bg-white border-b border-gray-200 md:hidden">
-      <div className="grid grid-cols-2 max-w-md mx-auto">
+      <div className="grid grid-cols-2 w-full">
         <button
           onClick={() => onFlowChange('doctor')}
           className={`relative flex flex-col items-center justify-center py-3 px-4 transition-colors duration-200 ${
