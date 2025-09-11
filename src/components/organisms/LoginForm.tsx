@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image'; // ✅ use Next.js Image
-import hygoLogo from '../../assets/hygologo.png';
 import { Button, Typography } from '../atoms';
 import { EmailInput, OfflineBanner, ToastNotification } from '../molecules';
 import { AuthService } from '../../services/auth';
@@ -96,7 +95,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, className = '' }) => {
             {/* Hygo Logo */}
             <div className="flex justify-center w-full">
               <Image
-                src={hygoLogo}
+                src="/hygologo.png"
                 alt="Hygo logo"
                 width={256}
                 height={256}

@@ -4,7 +4,6 @@ import { Button, Typography, BackButton } from '../atoms';
 import { OTPInputGroup, ResendSection, ToastNotification } from '../molecules';
 import { AuthService } from '../../services/auth';
 import Image from 'next/image';
-import hygoLogo from '../../assets/hygologo.png';
 
 interface OTPFormProps {
   email?: string;
@@ -196,7 +195,7 @@ const OTPForm: React.FC<OTPFormProps> = ({
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <Image
-                src={hygoLogo}
+                src="/hygologo.png"
                 alt="Hygo Logo"
                 width={256}
                 height={256}
