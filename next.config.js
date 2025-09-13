@@ -6,54 +6,54 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: 'img.freepik.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'images.unsplash.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'res.cloudinary.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'cdn.pixabay.com',
-        port: '',
         pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
-        port: '',
         pathname: '/**',
       },
     ],
   },
-  webpack: (config, { isServer }) => {
+
+  webpack: (config) => {
     // Add TypeScript file extensions
     config.resolve.extensions.push('.ts', '.tsx');
     return config;
   },
+
   typescript: {
-    // Enable type checking during build
+    // Stop build if type errors exist
     ignoreBuildErrors: false,
   },
-  // Enable React Strict Mode
+
   reactStrictMode: true,
-  // Enable SWC compiler with minification and optimizations
+
   compiler: {
-    // Enable SWC minification
-    removeConsole: process.env.NODE_ENV === 'production',
-    // Enable styled-components support
     styledComponents: true,
+
+    // 🚀 Remove all console logs in production
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? { exclude: ['error'] } // keep error logs, remove others
+        : false,
   },
-  // Configure modularize imports
+
   modularizeImports: {
     '@heroicons/react/solid': {
       transform: '@heroicons/react/solid/{{member}}',
