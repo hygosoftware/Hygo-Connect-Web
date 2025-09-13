@@ -501,22 +501,22 @@ const HomePage: React.FC = () => {
 
         {/* Health Promotion Banners */}
         <div className="px-4 my-3">
-          <div className="flex justify-between items-center mb-3">
+          {/* <div className="flex justify-between items-center mb-3">
             <Typography variant="h5" className="font-semibold text-gray-800">
               Health Promotions
             </Typography>
-          </div>
+          </div> */}
 
           {/* Mobile: keep auto scroll banner */}
-          <div className="md:hidden">
+          {/* <div className="md:hidden">
             <AutoScrollBanner
               data={bannerData}
               autoScrollInterval={4000}
             />
-          </div>
+          </div> */}
 
           {/* Desktop: grid cards with non-cropped images (now horizontally scrollable) */}
-          <div className="hidden md:block">
+          {/* <div className="hidden md:block">
             <div ref={promoScrollRef} className="flex overflow-x-auto space-x-4 pb-4 scrollbar-hide">
               {Array.from({ length: duplication }).map((_, dupIndex) => (
                 <React.Fragment key={`dup-${dupIndex}`}>
@@ -555,7 +555,7 @@ const HomePage: React.FC = () => {
                 </React.Fragment>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Top Doctors Section */}

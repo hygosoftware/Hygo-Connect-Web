@@ -1,10 +1,32 @@
 import { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { AppLayout } from "@/components/layouts";
-import PWASetup from "@/components/PWASetup";
-import PWAInstallPrompt from "@/components/PWAInstallPrompt";
-import { ToastProvider } from "@/contexts/ToastContext";
 import "./globals.css";
+import ClientLayout from "./ClientLayout";
+import React from 'react';
+
+export const metadata: Metadata = {
+  title: "Hygo - Health & Wellness Platform",
+  description: "Your comprehensive health and wellness companion",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icons/icon-192x192.png",
+    shortcut: "/icons/icon-192x192.png",
+    apple: "/icons/icon-192x192.png",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Hygo",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#000000",
+};
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,55 +38,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-  themeColor: "#000000",
-};
-
-export const metadata: Metadata = {
-  title: "Hygo - Health & Wellness Platform",
-  description: "Your comprehensive health and wellness companion",
-  manifest: "/manifest.json",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "Hygo",
-  },
-  formatDetection: {
-    telephone: false,
-  },
-  openGraph: {
-    type: "website",
-    siteName: "Hygo Connect",
-    title: "Hygo - Health & Wellness Platform",
-    description: "Your comprehensive health and wellness companion",
-  },
-  icons: {
-    icon: "/icons/icon-192x192.png",
-    shortcut: "/icons/icon-192x192.png",
-    apple: "/icons/icon-192x192.png",
-  },
-};
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}
-        suppressHydrationWarning
-      >
-        <ToastProvider>
-          <PWASetup />
-          <AppLayout>{children}</AppLayout>
-          <PWAInstallPrompt />
-        </ToastProvider>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+      <body>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   );
